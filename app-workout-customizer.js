@@ -13,6 +13,49 @@
     return box.value;
   }
 
+  function persistWithoutRender() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }
+
+  if (typeof state.sessionNotes !== 'string') state.sessionNotes = '';
+
+  function injectSessionNotes() {
+    if (!state.sessionStarted) return;
+    const actions = document.querySelector('#train .training-actions');
+    if (!actions || document.getElementById('sessionNotes')) return;
+
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.style.marginTop = '16px';
+    card.style.padding = '20px';
+    card.style.background = '#14243a';
+
+    const heading = document.createElement('h3');
+    heading.textContent = 'Session notes';
+    heading.style.marginBottom = '14px';
+
+    const textarea = document.createElement('textarea');
+    textarea.id = 'sessionNotes';
+    textarea.rows = 4;
+    textarea.placeholder = 'Sleep, fatigue, technique, soreness, sticking points...';
+    textarea.value = state.sessionNotes || '';
+    textarea.style.minHeight = '100px';
+    textarea.style.resize = 'vertical';
+    textarea.addEventListener('input', () => {
+      state.sessionNotes = textarea.value;
+      persistWithoutRender();
+    });
+
+    card.append(heading, textarea);
+    actions.insertAdjacentElement('beforebegin', card);
+  }
+
+  const baseRenderTrain = renderTrain;
+  renderTrain = function () {
+    baseRenderTrain();
+    injectSessionNotes();
+  };
+
   window.addExerciseToWorkout = function (workoutIndex) {
     const nameInput = document.getElementById('newExerciseName');
     const prescriptionInput = document.getElementById('newExercisePrescription');
@@ -63,5 +106,53 @@
     if (!confirm(`Remove ${exerciseName} from ${decodeText(workout.name)}?`)) return;
     workout.exercises.splice(exerciseIndex, 1);
     saveState();
+  };
+
+  const baseStartWorkout = window.startWorkout;
+  window.startWorkout = function (index) {
+    state.sessionNotes = '';
+    persistWithoutRender();
+    return baseStartWorkout(index);
+  };
+
+  const baseFinishWorkout = window.finishWorkout;
+  window.finishWorkout = function () {
+    const notes = state.sessionNotes || '';
+    baseFinishWorkout();
+    const completed = state.workoutLogs[state.workoutLogs.length - 1];
+    if (completed) completed.notes = notes;
+    state.sessionNotes = '';
+    persistWithoutRender();
+    renderAll();
+  };
+
+  const baseCancelWorkout = window.cancelWorkout;
+  window.cancelWorkout = function () {
+    state.sessionNotes = '';
+    return baseCancelWorkout();
+  };
+
+  const baseAdvanceWorkout = window.advanceWorkout;
+  window.advanceWorkout = function () {
+    state.sessionNotes = '';
+    return baseAdvanceWorkout();
+  };
+
+  const baseShiftTrainDate = window.shiftTrainDate;
+  window.shiftTrainDate = function (days) {
+    state.sessionNotes = '';
+    return baseShiftTrainDate(days);
+  };
+
+  const baseSetTrainDate = window.setTrainDate;
+  window.setTrainDate = function (value) {
+    state.sessionNotes = '';
+    return baseSetTrainDate(value);
+  };
+
+  const baseGoTrainToday = window.goTrainToday;
+  window.goTrainToday = function () {
+    state.sessionNotes = '';
+    return baseGoTrainToday();
   };
 })();
