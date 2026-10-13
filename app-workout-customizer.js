@@ -1,6 +1,4 @@
 (function () {
-  const baseRenderTrain = renderTrain;
-
   function encodeText(value) {
     return String(value || '')
       .trim()
@@ -15,91 +13,123 @@
     return box.value;
   }
 
-  function currentWorkoutIndex() {
-    return state.rotationIndex % state.rotation.length;
+  function selectedWorkoutIndex() {
+    const select = document.getElementById('customWorkoutTarget');
+    if (select) return Number(select.value);
+    return Number.isInteger(window._customWorkoutTarget)
+      ? window._customWorkoutTarget
+      : state.rotationIndex % state.rotation.length;
   }
 
-  function enhanceWorkoutCustomization() {
-    const list = document.getElementById('exerciseList');
-    if (!list) return;
-
-    const workoutIndex = currentWorkoutIndex();
+  function renderExerciseList(container, workoutIndex) {
     const workout = state.rotation[workoutIndex];
+    container.innerHTML = '';
 
-    list.querySelectorAll('.exercise').forEach((exerciseEl, exerciseIndex) => {
-      const setGrid = exerciseEl.querySelector('.set-grid');
-      if (!setGrid) return;
+    workout.exercises.forEach((exercise, exerciseIndex) => {
+      const row = document.createElement('div');
+      row.className = 'day';
+
+      const top = document.createElement('div');
+      top.className = 'row between wrap';
+
+      const copy = document.createElement('div');
+      const name = document.createElement('b');
+      name.textContent = decodeText(exercise.name);
+      const prescription = document.createElement('div');
+      prescription.className = 'muted small';
+      prescription.textContent = decodeText(exercise.prescription || '');
+      copy.append(name, prescription);
 
       const actions = document.createElement('div');
       actions.className = 'row wrap';
-      actions.style.marginTop = '8px';
 
       const editButton = document.createElement('button');
       editButton.type = 'button';
       editButton.className = 'btn ghost';
-      editButton.textContent = 'Edit exercise';
-      editButton.addEventListener('click', () => window.editWorkoutExercise(exerciseIndex));
+      editButton.textContent = 'Edit';
+      editButton.addEventListener('click', () => window.editWorkoutExercise(workoutIndex, exerciseIndex));
 
       const removeButton = document.createElement('button');
       removeButton.type = 'button';
       removeButton.className = 'btn ghost';
       removeButton.textContent = 'Remove';
-      removeButton.addEventListener('click', () => window.removeWorkoutExercise(exerciseIndex));
+      removeButton.addEventListener('click', () => window.removeWorkoutExercise(workoutIndex, exerciseIndex));
 
       actions.append(editButton, removeButton);
-      setGrid.insertAdjacentElement('beforebegin', actions);
+      top.append(copy, actions);
+      row.append(top);
+      container.append(row);
     });
+  }
 
-    const customizer = document.createElement('div');
-    customizer.className = 'day';
-    customizer.style.marginTop = '14px';
+  window.renderWorkoutCustomizerSettings = function () {
+    const settingsGrid = document.querySelector('#settings > .grid.two');
+    if (!settingsGrid) return;
 
-    const headingRow = document.createElement('div');
-    headingRow.className = 'row between wrap';
+    const card = document.createElement('div');
+    card.className = 'card';
 
-    const heading = document.createElement('div');
-    const title = document.createElement('h3');
-    title.textContent = 'Customize workout exercises';
+    const title = document.createElement('h2');
+    title.textContent = 'Workout exercises';
+
     const subtitle = document.createElement('div');
     subtitle.className = 'muted small';
-    subtitle.textContent = 'Add any exercise you want to one specific workout. Changes are saved permanently in this browser.';
-    heading.append(title, subtitle);
+    subtitle.textContent = 'Customize exercises for any workout without changing the Train screen layout.';
 
-    const count = document.createElement('span');
-    count.className = 'badge';
-    count.textContent = `${workout.exercises.length} exercises in ${decodeText(workout.name)}`;
-    headingRow.append(heading, count);
+    const stack = document.createElement('div');
+    stack.className = 'stack';
+    stack.style.marginTop = '12px';
 
-    const controls = document.createElement('div');
-    controls.className = 'set-grid';
-    controls.style.marginTop = '12px';
-
+    const workoutField = document.createElement('div');
+    workoutField.className = 'field';
+    const workoutLabel = document.createElement('label');
+    workoutLabel.textContent = 'Workout';
     const workoutSelect = document.createElement('select');
     workoutSelect.id = 'customWorkoutTarget';
-    state.rotation.forEach((item, index) => {
+
+    state.rotation.forEach((workout, index) => {
       const option = document.createElement('option');
       option.value = String(index);
-      option.textContent = `${decodeText(item.name)} (${item.exercises.length})`;
+      option.textContent = `${decodeText(workout.name)} (${workout.exercises.length})`;
       workoutSelect.appendChild(option);
     });
-    workoutSelect.value = String(
-      Number.isInteger(window._customWorkoutTarget) ? window._customWorkoutTarget : workoutIndex
-    );
+
+    const initialIndex = Number.isInteger(window._customWorkoutTarget)
+      ? window._customWorkoutTarget
+      : state.rotationIndex % state.rotation.length;
+    workoutSelect.value = String(initialIndex);
+    workoutField.append(workoutLabel, workoutSelect);
+
+    const list = document.createElement('div');
+    list.id = 'customExerciseList';
+    renderExerciseList(list, initialIndex);
+
     workoutSelect.addEventListener('change', () => {
       window._customWorkoutTarget = Number(workoutSelect.value);
+      renderExerciseList(list, window._customWorkoutTarget);
     });
 
+    const nameField = document.createElement('div');
+    nameField.className = 'field';
+    const nameLabel = document.createElement('label');
+    nameLabel.textContent = 'New exercise';
     const nameInput = document.createElement('input');
     nameInput.id = 'newExerciseName';
     nameInput.type = 'text';
-    nameInput.placeholder = 'Exercise name — type anything';
+    nameInput.placeholder = 'Type any exercise name';
     nameInput.autocomplete = 'off';
+    nameField.append(nameLabel, nameInput);
 
+    const prescriptionField = document.createElement('div');
+    prescriptionField.className = 'field';
+    const prescriptionLabel = document.createElement('label');
+    prescriptionLabel.textContent = 'Notes / sets / reps';
     const prescriptionInput = document.createElement('input');
     prescriptionInput.id = 'newExercisePrescription';
     prescriptionInput.type = 'text';
-    prescriptionInput.placeholder = 'Notes / sets / rep target (optional)';
+    prescriptionInput.placeholder = 'Optional';
     prescriptionInput.autocomplete = 'off';
+    prescriptionField.append(prescriptionLabel, prescriptionInput);
 
     const addButton = document.createElement('button');
     addButton.type = 'button';
@@ -113,21 +143,15 @@
       });
     });
 
-    controls.append(workoutSelect, nameInput, prescriptionInput, addButton);
-    customizer.append(headingRow, controls);
-    list.insertAdjacentElement('afterend', customizer);
-  }
-
-  renderTrain = function () {
-    baseRenderTrain();
-    enhanceWorkoutCustomization();
+    stack.append(workoutField, list, nameField, prescriptionField, addButton);
+    card.append(title, subtitle, stack);
+    settingsGrid.append(card);
   };
 
   window.addExerciseToWorkout = function () {
     const nameInput = document.getElementById('newExerciseName');
     const prescriptionInput = document.getElementById('newExercisePrescription');
-    const select = document.getElementById('customWorkoutTarget');
-    if (!nameInput || !select) return;
+    if (!nameInput) return;
 
     const rawName = nameInput.value.trim();
     if (!rawName) {
@@ -135,7 +159,7 @@
       return;
     }
 
-    const targetIndex = Number(select.value);
+    const targetIndex = selectedWorkoutIndex();
     const targetWorkout = state.rotation[targetIndex];
     if (!targetWorkout) return;
 
@@ -149,14 +173,13 @@
     setTimeout(() => document.getElementById('newExerciseName')?.focus(), 0);
   };
 
-  window.editWorkoutExercise = function (exerciseIndex) {
-    const workout = state.rotation[currentWorkoutIndex()];
+  window.editWorkoutExercise = function (workoutIndex, exerciseIndex) {
+    const workout = state.rotation[workoutIndex];
     const exercise = workout?.exercises?.[exerciseIndex];
     if (!exercise) return;
 
     const nextName = prompt('Exercise name', decodeText(exercise.name));
-    if (nextName === null) return;
-    if (!nextName.trim()) return;
+    if (nextName === null || !nextName.trim()) return;
 
     const nextPrescription = prompt(
       'Notes / sets / rep target',
@@ -166,11 +189,12 @@
 
     exercise.name = encodeText(nextName);
     exercise.prescription = encodeText(nextPrescription) || 'Custom exercise';
+    window._customWorkoutTarget = workoutIndex;
     saveState();
   };
 
-  window.removeWorkoutExercise = function (exerciseIndex) {
-    const workout = state.rotation[currentWorkoutIndex()];
+  window.removeWorkoutExercise = function (workoutIndex, exerciseIndex) {
+    const workout = state.rotation[workoutIndex];
     const exercise = workout?.exercises?.[exerciseIndex];
     if (!exercise) return;
 
@@ -178,6 +202,7 @@
     if (!confirm(`Remove ${exerciseName} from ${decodeText(workout.name)}?`)) return;
 
     workout.exercises.splice(exerciseIndex, 1);
+    window._customWorkoutTarget = workoutIndex;
     saveState();
   };
 })();

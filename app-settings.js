@@ -8,6 +8,7 @@ function renderSettings(){
       <div class="card"><h2>Settings & Backup</h2><div class="stack"><button class="btn" onclick="exportData()">Export backup</button><label class="btn" style="text-align:center">Import backup<input id="importFile" type="file" accept="application/json" style="display:none"></label><button class="btn danger" onclick="resetApp()">Reset all app data</button><div class="muted small">Data is stored in this browser on this device. Export a backup before clearing browser data or changing devices.</div></div></div>
     </div>`;
   document.getElementById('importFile').addEventListener('change',importData);
+  if(window.renderWorkoutCustomizerSettings) window.renderWorkoutCustomizerSettings();
 }
 window.saveGoal=function(){ state.goal.currentWeight=+document.getElementById('currentGoalWeight').value; state.goal.targetWeight=+document.getElementById('targetGoalWeight').value; state.goal.deadline=document.getElementById('goalDeadline').value; state.calorie.weight=state.goal.currentWeight; saveState(); };
 window.saveMacros=function(){ state.calorie.protein=+document.getElementById('proteinInput').value; state.calorie.fat=+document.getElementById('fatInput').value; saveState(); };
