@@ -3,6 +3,7 @@ function renderSchedule(){
   const plan = {Monday:'Train',Tuesday:'Train',Wednesday:'Train',Thursday:'Rest',Friday:'Train',Saturday:'Train',Sunday:'Rest'};
   const today = new Intl.DateTimeFormat('en-US',{weekday:'long'}).format(new Date());
   document.getElementById('schedule').innerHTML = `
+    <div class="page-heading"><div><div class="page-kicker">POWERBUILD TRACKER</div><h1>Schedule</h1><p class="page-subtitle">Keep the rolling split moving without losing your place.</p></div></div>
     <div class="grid two">
       <div class="card"><h2>Rolling 5-day PPL</h2><div class="notice">Train Mon / Tue / Wed / Fri / Sat. Rest Thu / Sun. Keep moving through the six-workout rotation — don’t restart at Push A every Monday.</div><div class="stack" style="margin-top:14px">${order.map(d=>`<div class="day ${d===today?'today':''}"><div class="row between"><b>${d}</b><span class="badge">${plan[d]}</span></div>${plan[d]==='Train'?'<div class="muted small">Continue the next workout in your current 6-session rotation.</div>':'<div class="muted small">Recovery / light activity.</div>'}</div>`).join('')}</div></div>
       <div class="card"><h2>Strength structure</h2><div class="stack"><div class="day"><b>Main strength lift</b><div class="muted">Top set 3–5 reps @ RPE ~8, then 3 backoff sets of 4–6.</div></div><div class="day"><b>Accessories</b><div class="muted">Use double progression: add reps first, then load once you own the top of the range.</div></div><div class="day"><b>Powerbuilder balance</b><div class="muted">Prioritize squat, bench, and seated barbell OHP strength while preserving enough accessory volume for aesthetics.</div></div></div></div>
@@ -15,6 +16,7 @@ function renderProgress(){
   const last=bw.length?bw[bw.length-1].weight:state.goal.currentWeight;
   const goalPct=clamp(((state.goal.currentWeight-last)/(state.goal.currentWeight-state.goal.targetWeight||1))*100,0,100);
   document.getElementById('progress').innerHTML = `
+    <div class="page-heading"><div><div class="page-kicker">POWERBUILD TRACKER</div><h1>Progress</h1><p class="page-subtitle">Track bodyweight and strength targets over time.</p></div></div>
     <div class="grid three">
       <div class="card kpi"><div class="label">BODYWEIGHT</div><div class="stat">${last.toFixed(1)} lb</div><div class="muted small">Goal ${state.goal.targetWeight} lb by ${state.goal.deadline}</div></div>
       <div class="card kpi"><div class="label">BODYWEIGHT PROGRESS</div><div class="stat">${Math.round(goalPct)}%</div><div class="progressbar" style="margin-top:12px"><span style="width:${goalPct}%"></span></div></div>
@@ -34,6 +36,7 @@ function renderCalories(){
   const c=state.calorie, m=maintenanceEstimate(), g=goalCalc();
   const paceWarning=Math.abs(g.weekly) > 2 ? '<span class="danger">Aggressive pace</span>' : Math.abs(g.weekly)>1.25 ? '<span class="warn">Moderately aggressive</span>' : '<span class="good">Reasonable pace</span>';
   document.getElementById('calories').innerHTML=`
+    <div class="page-heading"><div><div class="page-kicker">POWERBUILD TRACKER</div><h1>Calorie tracker</h1><p class="page-subtitle">Estimate maintenance and adjust intake for your current goal.</p></div></div>
     <div class="grid two">
       <div class="card"><h2>Daily activity</h2><div class="stack">
         ${sliderField('weight','Body weight',150,200,1,c.weight,' lb')}

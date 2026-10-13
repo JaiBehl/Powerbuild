@@ -3,40 +3,48 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#0a0d12" />
-  <title>Powerbuild</title>
+  <meta name="theme-color" content="#0b1422" />
+  <title>Powerbuild — Training Tracker</title>
   <link rel="stylesheet" href="/styles.css" />
 </head>
 <body>
   <div class="app-shell">
-    <header class="topbar">
-      <div>
-        <div class="eyebrow">POWERBUILD</div>
-        <h1>Training + Nutrition</h1>
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M7 7.4 5.3 5.7a2.1 2.1 0 0 1 3-3L10 4.4m7 12.2 1.7 1.7a2.1 2.1 0 0 1-3 3L14 19.6M14.4 4 20 9.6M4 14.4 9.6 20M9 7l8 8M7 9l8 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </div>
+        <div>
+          <div class="brand-name">POWERBUILD</div>
+          <div class="brand-sub">STRENGTH × PHYSIQUE</div>
+        </div>
       </div>
-      <div class="header-pill" id="headerGoal">160 lb goal</div>
-    </header>
 
-    <nav class="tabs" aria-label="Main navigation">
-      <button class="tab active" data-tab="train">Train</button>
-      <button class="tab" data-tab="schedule">Schedule</button>
-      <button class="tab" data-tab="progress">Progress</button>
-      <button class="tab" data-tab="calories">Calorie Tracker</button>
-      <button class="tab" data-tab="settings">Settings & Backup</button>
-    </nav>
+      <nav class="tabs" aria-label="Main navigation">
+        <button class="tab active" data-tab="train"><span class="nav-icon">⚒</span><span>Train</span></button>
+        <button class="tab" data-tab="schedule"><span class="nav-icon">▣</span><span>Schedule</span></button>
+        <button class="tab" data-tab="progress"><span class="nav-icon">↗</span><span>Progress</span></button>
+        <button class="tab" data-tab="calories"><span class="nav-icon">♨</span><span>Calorie tracker</span></button>
+        <button class="tab" data-tab="settings"><span class="nav-icon">⚙</span><span>Settings &amp; backup</span></button>
+      </nav>
 
-    <main>
-      <section id="train" class="panel active"></section>
-      <section id="schedule" class="panel"></section>
-      <section id="progress" class="panel"></section>
-      <section id="calories" class="panel"></section>
-      <section id="settings" class="panel"></section>
-    </main>
+      <div class="sidebar-footer">Your training data stays in this browser. Export backups regularly.</div>
+    </aside>
+
+    <div class="workspace">
+      <main class="content">
+        <section id="train" class="panel active"></section>
+        <section id="schedule" class="panel"></section>
+        <section id="progress" class="panel"></section>
+        <section id="calories" class="panel"></section>
+        <section id="settings" class="panel"></section>
+      </main>
+    </div>
   </div>
+
   <script src="/app-core.js"></script>
   <script src="/app-workout-customizer.js"></script>
   <script src="/app-views.js"></script>
   <script src="/app-settings.js"></script>
-  <!-- Vercel Git deployment trigger -->
 </body>
 </html>
