@@ -1,0 +1,7 @@
+import React from 'react';
+import {ChevronLeft,ChevronRight} from 'lucide-react';
+import {cycle,workouts,isoToday,scheduledWorkout} from './data';
+
+export default function ScheduleTab({db,setTab,setDate,viewWeek,setViewWeek,weekDates}){
+  return <><section className="panel"><div className="between"><h2>Weekly rotation</h2><div className="actions"><button className="iconbtn" onClick={()=>setViewWeek(x=>x-1)}><ChevronLeft/></button><button className="secondary" onClick={()=>setViewWeek(0)}>Current</button><button className="iconbtn" onClick={()=>setViewWeek(x=>x+1)}><ChevronRight/></button></div></div><div className="weekgrid">{weekDates.map((d,i)=>{const w=scheduledWorkout(d,db.settings);const s=db.sessions.find(s=>s.date===d);return <button key={d} className={'daycard '+(d===isoToday()?'today':'')} onClick={()=>{setDate(d);setTab('today')}}><small>{['MON','TUE','WED','THU','FRI','SAT','SUN'][i]}</small><strong>{Number(d.slice(-2))}</strong><span>{s?.type||w||'Rest'}</span>{s?.finished&&<em>✓ Done</em>}</button>})}</div><p className="muted note">A completed or manually logged workout is shown for that date. The planned rotation advances on scheduled training days even if a session is skipped; adjust the rotation offset in Settings if you want to shift it.</p></section><section className="panel"><h3>Six-workout cycle</h3><div className="cyclegrid">{cycle.map((c,i)=><div className="cycleitem" key={c}><span>{i+1}</span><strong>{c}</strong><small>{(db.templates?.[c]||workouts[c]).length} exercises</small></div>)}</div></section></>;
+}
