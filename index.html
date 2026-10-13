@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0a0d12" />
+  <title>Powerbuild</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div>
+        <div class="eyebrow">POWERBUILD</div>
+        <h1>Training + Nutrition</h1>
+      </div>
+      <div class="header-pill" id="headerGoal">160 lb goal</div>
+    </header>
+
+    <nav class="tabs" aria-label="Main navigation">
+      <button class="tab active" data-tab="train">Train</button>
+      <button class="tab" data-tab="schedule">Schedule</button>
+      <button class="tab" data-tab="progress">Progress</button>
+      <button class="tab" data-tab="calories">Calorie Tracker</button>
+      <button class="tab" data-tab="settings">Settings & Backup</button>
+    </nav>
+
+    <main>
+      <section id="train" class="panel active"></section>
+      <section id="schedule" class="panel"></section>
+      <section id="progress" class="panel"></section>
+      <section id="calories" class="panel"></section>
+      <section id="settings" class="panel"></section>
+    </main>
+  </div>
+  <script src="/app.js"></script>
+</body>
+</html>
