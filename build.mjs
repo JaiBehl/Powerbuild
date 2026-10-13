@@ -6,6 +6,7 @@ const files = [
   'index.html',
   'styles.css',
   'app-core.js',
+  'app-workout-customizer.js',
   'app-views.js',
   'app-settings.js'
 ];
