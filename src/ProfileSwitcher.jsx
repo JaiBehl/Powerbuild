@@ -1,5 +1,6 @@
 import React,{useState} from 'react';
 import {ChevronDown,Pencil,Plus,Trash2,UserRound} from 'lucide-react';
+import './profile.css';
 
 export default function ProfileSwitcher({profiles,activeId,onSwitch,onCreate,onRename,onDelete}){
   const [open,setOpen]=useState(false);
