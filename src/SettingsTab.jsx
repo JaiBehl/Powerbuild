@@ -3,6 +3,7 @@ import {Download,Upload,RotateCcw,Plus,Trash2} from 'lucide-react';
 import {cycle,initialSettings} from './data';
 import {calorieDefaults} from './CalorieTracker';
 import {fromDisplayWeight,toDisplayWeight,unitName} from './units';
+import './ui-polish.css';
 
 export default function SettingsTab({db,patch,patchSettings,exportJson,exportCsv,importJson,importError,cloneTemplates,profileName='My profile'}){
   const units=unitName(db.settings.units);
