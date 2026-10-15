@@ -1,5 +1,6 @@
 import React,{useEffect,useState} from 'react';
 import {Plus,Trash2} from 'lucide-react';
+import './cardio.css';
 
 const emptyDraft={name:'',durationMinutes:'',calories:''};
 
