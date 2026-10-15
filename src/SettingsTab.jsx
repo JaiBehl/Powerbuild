@@ -3,6 +3,7 @@ import {Download,Upload,RotateCcw,Plus,Trash2} from 'lucide-react';
 import {cycle,initialSettings} from './data';
 import {calorieDefaults} from './CalorieTracker';
 import {fromDisplayWeight,toDisplayWeight,unitName} from './units';
+import './ui-polish.css';
 
 export default function SettingsTab({db,patch,patchSettings,exportJson,exportCsv,importJson,importError,cloneTemplates,profileName='My profile'}){
   const units=unitName(db.settings.units);
@@ -48,19 +49,20 @@ export default function SettingsTab({db,patch,patchSettings,exportJson,exportCsv
     </section>
 
     <section className="panel">
-      <div className="between"><div><h2>Strength goals</h2><p className="muted">Goals are optional. Add one for any exercise you care about, with its own target weight and deadline.</p></div><span className="goalpill">{goals.length} active</span></div>
-      {goals.length===0?<p className="empty">No strength goals set. Add one below whenever you want.</p>:<div className="weightlist">{goals.map(g=><div key={g.id} style={{alignItems:'end',flexWrap:'wrap'}}>
-        <label style={{flex:'2 1 230px'}}>Exercise<input list="strength-exercises" value={g.exercise} onChange={e=>updateGoal(g.id,{exercise:e.target.value})}/></label>
-        <label style={{flex:'1 1 130px'}}>Target ({units})<input type="number" min="0" step={units==='kg'?'0.5':'2.5'} value={toDisplayWeight(g.targetWeight,units,1)} onChange={e=>updateGoal(g.id,{targetWeight:fromDisplayWeight(e.target.value,units)})}/></label>
-        <label style={{flex:'1 1 160px'}}>Target date<input type="date" value={g.deadline||''} onChange={e=>updateGoal(g.id,{deadline:e.target.value})}/></label>
-        <button className="iconbtn subtle" title="Remove strength goal" onClick={()=>removeGoal(g.id)}><Trash2 size={15}/></button>
+      <div className="between"><div><h2>Strength goals</h2><p className="muted">Set goals only for the exercises you want to chase. Every goal can have its own target weight and target date.</p></div><span className="goalpill">{goals.length} active</span></div>
+      {goals.length===0?<p className="empty">No strength goals yet. Add one below whenever you want to track a specific lift.</p>:<div className="goal-editor-list">{goals.map(g=><div className="goal-editor-row" key={g.id}>
+        <label className="goal-field goal-exercise">Exercise<input list="strength-exercises" value={g.exercise} onChange={e=>updateGoal(g.id,{exercise:e.target.value})}/></label>
+        <label className="goal-field">Goal weight ({units})<input type="number" min="0" step={units==='kg'?'0.5':'2.5'} value={toDisplayWeight(g.targetWeight,units,1)} onChange={e=>updateGoal(g.id,{targetWeight:fromDisplayWeight(e.target.value,units)})}/></label>
+        <label className="goal-field">Goal date<input type="date" value={g.deadline||''} onChange={e=>updateGoal(g.id,{deadline:e.target.value})}/></label>
+        <button className="iconbtn subtle goal-remove" title="Remove strength goal" onClick={()=>removeGoal(g.id)}><Trash2 size={15}/></button>
       </div>)}</div>}
       <datalist id="strength-exercises">{knownExercises.map(name=><option key={name} value={name}/>)}</datalist>
-      <div className="formgrid" style={{marginBottom:10}}>
+      <div className="formgrid goal-add-grid">
         <label>Exercise<input list="strength-exercises" placeholder="Any exercise" value={newExercise} onChange={e=>setNewExercise(e.target.value)}/></label>
-        <label>Target ({units})<input type="number" min="0" step={units==='kg'?'0.5':'2.5'} placeholder={units==='kg'?'100':'225'} value={newTarget} onChange={e=>setNewTarget(e.target.value)}/></label>
-        <label>Target date<input type="date" value={newDeadline} onChange={e=>setNewDeadline(e.target.value)}/></label>
+        <label>Goal weight ({units})<input type="number" min="0" step={units==='kg'?'0.5':'2.5'} placeholder={units==='kg'?'100':'225'} value={newTarget} onChange={e=>setNewTarget(e.target.value)}/></label>
+        <label>Goal date<input type="date" value={newDeadline} onChange={e=>setNewDeadline(e.target.value)}/></label>
       </div>
+      <p className="muted goal-helper">You can leave any exercise without a goal and add or remove goals whenever you want.</p>
       <button className="secondary" onClick={addGoal}><Plus size={16}/> Add strength goal</button>
     </section>
 
