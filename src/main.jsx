@@ -1,31 +1,36 @@
 import React,{useEffect,useMemo,useState} from 'react';
 import {createRoot} from 'react-dom/client';
 import {Dumbbell,CalendarDays,ChartNoAxesCombined,Settings as SettingsIcon,Target,Flame} from 'lucide-react';
-import {workouts,initialSettings,isoToday,scheduledWorkout,createSession,e1rm} from './data';
+import {workouts,initialSettings,legacyStrengthGoals,isoToday,scheduledWorkout,createSession,e1rm} from './data';
 import TrainTab from './TrainTab';
 import ScheduleTab from './ScheduleTab';
 import ProgressTab from './ProgressTab';
 import SettingsTab from './SettingsTab';
 import CalorieTracker,{calorieDefaults} from './CalorieTracker';
 import ProfileSwitcher from './ProfileSwitcher';
-import {ensureProfiles,loadProfileDb,profileDataKey,removeProfileDb,saveProfileDb,saveProfileMeta} from './profiles';
+import {ensureProfiles,loadProfileDb,removeProfileDb,saveProfileDb,saveProfileMeta} from './profiles';
+import {toDisplayWeight,unitName} from './units';
 import './style.css';
 
 const LEGACY_KEY='powerbuild-tracker-v1';
 const cloneTemplates=()=>JSON.parse(JSON.stringify(workouts));
 
 function normalizeDb(x={}){
+  const incomingSettings={...initialSettings,...(x.settings||{})};
+  const hasExplicitGoals=Array.isArray(x.strengthGoals);
+  const shouldMigrateGoals=!hasExplicitGoals&&x&&typeof x==='object'&&Object.keys(x).length>0&&x.settings;
   return {
-    settings:{...initialSettings,...(x.settings||{})},
+    settings:incomingSettings,
+    strengthGoals:hasExplicitGoals?x.strengthGoals:(shouldMigrateGoals?legacyStrengthGoals(incomingSettings.strengthDeadline):[]),
     sessions:Array.isArray(x.sessions)?x.sessions:[],
     weights:Array.isArray(x.weights)?x.weights:[],
     calories:Array.isArray(x.calories)?x.calories:[],
     calorieSettings:{...calorieDefaults,...(x.calorieSettings||{})},
-    templates:Array.isArray(x.templates)?x.templates:cloneTemplates(),
+    templates:x.templates&&typeof x.templates==='object'&&!Array.isArray(x.templates)?x.templates:cloneTemplates(),
   };
 }
 
-const freshDb=()=>normalizeDb({});
+const freshDb=()=>normalizeDb({strengthGoals:[]});
 
 function loadLegacy(){
   try{
@@ -36,14 +41,21 @@ function loadLegacy(){
     const current=JSON.parse(localStorage.getItem('powerbuild-app-v1'));
     if(current){
       const currentWeight=Number(current.goal?.currentWeight||180);
+      const strengthDeadline=current.strengthGoals?.deadline||initialSettings.strengthDeadline;
+      const strengthGoals=[
+        {id:'legacy-squat-goal',exercise:'Barbell back squat',targetWeight:Number(current.strengthGoals?.squat||405),deadline:strengthDeadline},
+        {id:'legacy-bench-goal',exercise:'Touch-and-go bench press',targetWeight:Number(current.strengthGoals?.bench||315),deadline:strengthDeadline},
+        {id:'legacy-ohp-goal',exercise:'Supported seated barbell OHP',targetWeight:Number(current.strengthGoals?.ohp||225),deadline:strengthDeadline},
+      ];
       return normalizeDb({
         settings:{
           ...initialSettings,
           startWeight:currentWeight,
           targetWeight:Number(current.goal?.targetWeight||initialSettings.targetWeight),
           weightDeadline:current.goal?.deadline||initialSettings.weightDeadline,
-          strengthDeadline:current.strengthGoals?.deadline||initialSettings.strengthDeadline,
+          strengthDeadline,
         },
+        strengthGoals,
         sessions:[],
         weights:Array.isArray(current.bodyweightLogs)?current.bodyweightLogs:[],
         calories:[],
@@ -169,15 +181,16 @@ function App(){
     })));
     return m;
   },[db.sessions]);
-  const chartData=Object.entries(history[chartLift]||{}).sort(([a],[b])=>a.localeCompare(b)).map(([d,value])=>({date:d.slice(5),value:Math.round(value)}));
+  const chartData=Object.entries(history[chartLift]||{}).sort(([a],[b])=>a.localeCompare(b)).map(([d,value])=>({date:d.slice(5),value}));
   const finished=db.sessions.filter(s=>s.finished).sort((a,b)=>b.date.localeCompare(a.date));
   const latestWeight=[...db.weights].sort((a,b)=>b.date.localeCompare(a.date))[0];
 
   const safeProfileName=(activeProfile?.name||'profile').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'profile';
   const exportJson=()=>download(`powerbuild-${safeProfileName}-backup.json`,JSON.stringify(db,null,2),'application/json');
   const exportCsv=()=>{
-    const rows=[['Date','Workout','Exercise','Set','Weight','Reps','RPE','Set type','Completed']];
-    db.sessions.forEach(s=>s.exercises.forEach(e=>e.sets.forEach((v,i)=>rows.push([s.date,s.type,e.name,i+1,v.weight,v.reps,v.rpe,v.tag,v.done]))));
+    const unit=unitName(db.settings.units);
+    const rows=[['Date','Workout','Exercise','Set',`Weight (${unit})`,'Reps','RPE','Set type','Completed']];
+    db.sessions.forEach(s=>s.exercises.forEach(e=>e.sets.forEach((v,i)=>rows.push([s.date,s.type,e.name,i+1,v.weight===''?'':toDisplayWeight(v.weight,db.settings.units,2),v.reps,v.rpe,v.tag,v.done]))));
     download(`powerbuild-${safeProfileName}-sets.csv`,rows.map(r=>r.map(v=>'"'+String(v??'').replaceAll('"','""')+'"').join(',')).join('\n'),'text/csv');
   };
   async function importJson(ev){
@@ -200,6 +213,7 @@ function App(){
     settings:['Preferences & backups','Your plan, goals, and local data.'],
   };
   const [title,subtitle]=headings[tab];
+  const unit=unitName(db.settings.units);
 
   return <div className="app">
     <aside className="sidebar">
@@ -209,7 +223,7 @@ function App(){
       <div className="side-foot">Profiles and training data stay in this browser. Export backups regularly.</div>
     </aside>
     <main>
-      <header><div><p className="eyebrow">POWERBUILD TRACKER</p><h1>{title}</h1><p className="muted">{subtitle}</p></div><span className="goalpill"><Target size={15}/> {db.settings.targetWeight} lb · {db.settings.weightDeadline}</span></header>
+      <header><div><p className="eyebrow">POWERBUILD TRACKER</p><h1>{title}</h1><p className="muted">{subtitle}</p></div><span className="goalpill"><Target size={15}/> {toDisplayWeight(db.settings.targetWeight,db.settings.units,1)} {unit} · {db.settings.weightDeadline}</span></header>
       {tab==='today'&&<TrainTab {...{db,patch,date,setDate,scheduled,session,updateSession,start,showManual,setShowManual,manualType,setManualType,changeDate}}/>}
       {tab==='calendar'&&<ScheduleTab {...{db,setTab,setDate,viewWeek,setViewWeek,weekDates}}/>}
       {tab==='progress'&&<ProgressTab {...{db,patch,date,setDate,setTab,weightEntry,setWeightEntry,history,chartLift,setChartLift,chartData,finished,latestWeight}}/>}
