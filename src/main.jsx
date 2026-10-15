@@ -15,13 +15,12 @@ import './style.css';
 const LEGACY_KEY='powerbuild-tracker-v1';
 const cloneTemplates=()=>JSON.parse(JSON.stringify(workouts));
 
-function normalizeDb(x={}){
+function normalizeDb(x={},options={}){
   const incomingSettings={...initialSettings,...(x.settings||{})};
   const hasExplicitGoals=Array.isArray(x.strengthGoals);
-  const shouldMigrateGoals=!hasExplicitGoals&&x&&typeof x==='object'&&Object.keys(x).length>0&&x.settings;
   return {
     settings:incomingSettings,
-    strengthGoals:hasExplicitGoals?x.strengthGoals:(shouldMigrateGoals?legacyStrengthGoals(incomingSettings.strengthDeadline):[]),
+    strengthGoals:hasExplicitGoals?x.strengthGoals:(options.migrateLegacyGoals?legacyStrengthGoals(incomingSettings.strengthDeadline):[]),
     sessions:Array.isArray(x.sessions)?x.sessions:[],
     weights:Array.isArray(x.weights)?x.weights:[],
     calories:Array.isArray(x.calories)?x.calories:[],
@@ -35,7 +34,7 @@ const freshDb=()=>normalizeDb({strengthGoals:[]});
 function loadLegacy(){
   try{
     const x=JSON.parse(localStorage.getItem(LEGACY_KEY));
-    if(x&&Array.isArray(x.sessions)) return normalizeDb(x);
+    if(x&&Array.isArray(x.sessions)) return normalizeDb(x,{migrateLegacyGoals:true});
   }catch{}
   try{
     const current=JSON.parse(localStorage.getItem('powerbuild-app-v1'));
@@ -87,7 +86,7 @@ const initialProfileState=ensureProfiles(loadLegacy,freshDb);
 
 function App(){
   const [profileState,setProfileState]=useState(()=>initialProfileState);
-  const [db,setDb]=useState(()=>normalizeDb(loadProfileDb(initialProfileState.activeProfileId,freshDb)));
+  const [db,setDb]=useState(()=>normalizeDb(loadProfileDb(initialProfileState.activeProfileId,freshDb),{migrateLegacyGoals:initialProfileState.activeProfileId==='primary'}));
   const [tab,setTab]=useState('today');
   const [date,setDate]=useState(isoToday());
   const [viewWeek,setViewWeek]=useState(0);
@@ -125,7 +124,7 @@ function App(){
   function switchProfile(id){
     if(id===profileState.activeProfileId||!profileState.profiles.some(p=>p.id===id))return;
     saveProfileDb(profileState.activeProfileId,db);
-    const next=normalizeDb(loadProfileDb(id,freshDb));
+    const next=normalizeDb(loadProfileDb(id,freshDb),{migrateLegacyGoals:id==='primary'});
     setDb(next);
     setProfileState(p=>({...p,activeProfileId:id}));
     resetProfileUi();
