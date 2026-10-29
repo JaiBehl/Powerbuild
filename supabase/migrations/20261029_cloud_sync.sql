@@ -8,6 +8,7 @@ create table if not exists public.powerbuild_cloud_state (
 );
 
 alter table public.powerbuild_cloud_state enable row level security;
+grant select, insert, update on public.powerbuild_cloud_state to authenticated;
 
 drop policy if exists "powerbuild_select_own" on public.powerbuild_cloud_state;
 create policy "powerbuild_select_own" on public.powerbuild_cloud_state
