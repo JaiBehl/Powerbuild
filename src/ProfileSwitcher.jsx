@@ -36,7 +36,7 @@ export default function ProfileSwitcher({profiles,activeId,onSwitch,onCreate,onR
         <input value={name} onChange={e=>setName(e.target.value)} placeholder="New profile name" maxLength={30}/>
         <button className="profile-add" type="submit" title="Create profile"><Plus size={15}/></button>
       </form>
-      <p className="profile-help">Each profile keeps completely separate local data on this browser.</p>
+      <p className="profile-help">Profiles keep separate logs. When signed in, all profiles sync to your account.</p>
     </div>}
   </div>;
 }
