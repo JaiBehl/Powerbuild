@@ -8,6 +8,8 @@ const publishableKey=import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 const supabase=url&&publishableKey?createClient(url,publishableKey):null;
 const lastSyncKey=(id)=>'powerbuild-cloud-last-v1:'+id;
 const validSnapshot=(x)=>x&&x.profileState&&Array.isArray(x.profileState.profiles)&&x.profileState.profiles.length>0&&x.profileData&&typeof x.profileData==='object';
+const sorted=(x)=>Array.isArray(x)?x.map(sorted):x&&typeof x==='object'?Object.fromEntries(Object.keys(x).sort().filter(k=>x[k]!==undefined).map(k=>[k,sorted(x[k])])):x;
+const stableStringify=(x)=>JSON.stringify(sorted(x));
 
 export function useCloudSync({db,profileState,applySnapshot}){
   const [user,setUser]=useState(null);
@@ -28,14 +30,14 @@ export function useCloudSync({db,profileState,applySnapshot}){
       p.id===profileState.activeProfileId?db:loadProfileDb(p.id,()=>({}))
     ])),
   };
-  const snapshotJson=JSON.stringify(snapshot);
+  const snapshotJson=stableStringify(snapshot);
   const currentSnapshot=useRef(snapshotJson);
   currentSnapshot.current=snapshotJson;
 
   const acceptRemote=useCallback((row,id)=>{
     if(!validSnapshot(row?.payload))throw Error('Cloud backup has an invalid format. Your local data was left untouched.');
     revision.current=Number(row.revision);
-    lastSynced.current=JSON.stringify(row.payload);
+    lastSynced.current=stableStringify(row.payload);
     localStorage.setItem(lastSyncKey(id),lastSynced.current);
     applyRef.current(row.payload);
     setRemote(null);
@@ -70,7 +72,7 @@ export function useCloudSync({db,profileState,applySnapshot}){
       if(fetchError){setError(fetchError.message);setStatus('error');return;}
       if(!data){setRemote(null);revision.current=0;setStatus('empty');return;}
       if(!validSnapshot(data.payload)){setError('Cloud data format is invalid. Local data is safe.');setStatus('error');return;}
-      const cloudJson=JSON.stringify(data.payload);
+      const cloudJson=stableStringify(data.payload);
       const known=localStorage.getItem(lastSyncKey(user.id));
       if(cloudJson===currentSnapshot.current){
         revision.current=Number(data.revision);
