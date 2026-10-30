@@ -28,7 +28,7 @@ test('offline edits survive reload and upload on retry; sign-out preserves local
  const backend=fakeBackend();await backend.install(context);await seed(page);await login(page);await page.getByRole('button',{name:'Upload this device',exact:true}).click();await syncActive(page);
  backend.offline=true;await saveWeight(page,'2026-10-30',185);await expect(page.getByRole('button',{name:'Retry sync',exact:true})).toBeVisible({timeout:15000});await page.reload();
  await expect.poll(async()=> (await readDb(page)).weights[0].weight).toBe(185);
- backend.offline=false;await page.getByRole('button',{name:'Retry sync',exact:true}).click();await expect.poll(()=>backend.row.payload.profileData.test.weights[0]?.weight,{timeout:20000}).toBe(185);await syncActive(page);
+ await expect(page.getByRole('button',{name:'Retry sync',exact:true})).toBeVisible({timeout:15000});backend.offline=false;await page.getByRole('button',{name:'Retry sync',exact:true}).click();await expect.poll(()=>backend.row.payload.profileData.test.weights[0]?.weight,{timeout:20000}).toBe(185);await syncActive(page);
  await page.getByRole('button',{name:'Sign out',exact:true}).click();await expect(page.getByRole('button',{name:'Sign in',exact:true})).toBeVisible();expect((await readDb(page)).weights[0].weight).toBe(185);
 });
 test('signup and resend use the current origin for confirmation',async({page,context})=>{

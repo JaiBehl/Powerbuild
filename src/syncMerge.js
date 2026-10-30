@@ -7,6 +7,8 @@ export function mergeCloudSnapshots(base,local,remote){
  const conflicts=[];
  const walk=(b,l,r,path)=>{
   if(same(l,r))return l;if(same(l,b))return r;if(same(r,b))return l;
+  if(b===absent&&[l,r].every(x=>x&&typeof x==='object'&&!Array.isArray(x)))b={};
+  if(b===absent&&Array.isArray(l)&&Array.isArray(r))b=[];
   if([b,l,r].every(x=>x!==absent&&x&&typeof x==='object'&&!Array.isArray(x))){
    return Object.fromEntries([...new Set([...Object.keys(b),...Object.keys(l),...Object.keys(r)])].flatMap(k=>{
     const value=walk(Object.hasOwn(b,k)?b[k]:absent,Object.hasOwn(l,k)?l[k]:absent,Object.hasOwn(r,k)?r[k]:absent,path+'.'+k);
