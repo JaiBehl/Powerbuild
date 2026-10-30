@@ -2,7 +2,7 @@ import {PanelScopeContext} from './panelScope';
 import {saveRecoveryPoint,listRecoveryPoints} from './recovery';
 import {validateProfileDb,removesData} from './backupSafety';
 import {isISODate,addCalendarDays,startOfWeek} from './dates';
-import {buildStrengthHistory,resolveExerciseName} from './exerciseCatalog';
+import {buildStrengthHistory,resolveExerciseName,selectedExerciseName} from './exerciseCatalog';
 import {normalizeDayPlans,normalizeCalorieSettings} from './nutrition';
 import {normalizeTemplates} from './workoutOperations';
 import React,{useEffect,useMemo,useRef,useState} from 'react';
@@ -105,7 +105,7 @@ function App(){
   const [date,setDateState]=useState(isoToday());
   const setDate=value=>{if(isISODate(value))setDateState(value);};
   const [viewWeek,setViewWeek]=useState(0);
-  const [chartLift,setChartLift]=useState('Touch-and-go bench press');
+  const [selectedChartLift,setChartLift]=useState('Touch-and-go bench press');
   const [importError,setImportError]=useState('');
   const [historyImportStatus,setHistoryImportStatus]=useState('');
   const [showManual,setShowManual]=useState(false);
@@ -218,6 +218,7 @@ function App(){
     setProfileState(p=>({...p,profiles:p.profiles.filter(x=>x.id!==id)}));
   }
 
+  const chartLift=selectedExerciseName(selectedChartLift,db);
   const history=useMemo(()=>buildStrengthHistory(db.sessions,db.exerciseAliases),[db.sessions,db.exerciseAliases]);
   const chartData=Object.entries(history[resolveExerciseName(chartLift,db.exerciseAliases)]||{}).sort(([a],[b])=>a.localeCompare(b)).map(([d,value])=>({date:d,value}));
   const finished=db.sessions.filter(s=>s.finished).sort((a,b)=>b.date.localeCompare(a.date));

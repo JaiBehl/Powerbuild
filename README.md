@@ -56,6 +56,10 @@ Weekly review passed the full CI gate. Destructive profile edits now create boun
 
 Undo/recovery and storage-failure tests passed the full CI gate. Panel collapse state now persists on the device across tabs/reloads, scoped independently to profile, tab and panel; exercise cards use stable template/session identity. Descriptions/counts remain visible and mounted drafts stay intact. Preferences are separate from synced training data and safely fall back if storage is unavailable. Added persistence/profile-isolation tests and a phone-width pass across all tabs.
 
+### Final consistency pass
+
+All five additions passed their individual full-suite gates. Added regressions for malformed backup fields, cleared/invalid deadlines, alias removal while selected, obsolete auth responses and the old build entry point. `build.mjs` now delegates to Vite rather than copying an incomplete site. `npm run test:all` runs tests, production build and browser regressions. CI keeps browser traces/screenshots for seven days. Final complete-suite verification precedes merging.
+
 ## Current handoff
 
 | Item | Audited state |

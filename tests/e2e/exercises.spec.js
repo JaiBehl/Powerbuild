@@ -20,3 +20,11 @@ test('a 225 single is recorded as 225 rather than 232.5 in goals',async({page})=
  await expect(card(page,'Strength goals')).toContainText('225 lb');await expect(card(page,'Strength goals')).not.toContainText('232.5');
  await expect(card(page,'Estimated 1RM trend')).toContainText('Singles use the actual logged load');
 });
+
+test('removing a selected alias keeps chart and PR selectors valid',async({page})=>{
+ await seed(page);await openTab(page,'Settings & backup');const aliases=card(page,'Exercise names & aliases');
+ await aliases.getByLabel('Exercise alias',{exact:true}).fill('Barbell bench press');await aliases.getByLabel('Canonical exercise name',{exact:true}).fill('Custom flat press');await aliases.getByRole('button',{name:'Save exercise link',exact:true}).click();
+ await openTab(page,'Progress');await card(page,'Personal records').getByLabel('Exercise for records',{exact:true}).selectOption('Custom flat press');
+ await openTab(page,'Settings & backup');await card(page,'Exercise names & aliases').getByLabel('Remove link barbell bench press',{exact:true}).click();await openTab(page,'Progress');
+ await expect(card(page,'Personal records').getByLabel('Exercise for records',{exact:true})).toHaveValue('Touch-and-go bench press');await expect(page.getByLabel('Select exercise to chart',{exact:true})).toHaveValue('Touch-and-go bench press');
+});

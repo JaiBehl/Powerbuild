@@ -11,7 +11,7 @@ const REFERENCE={heightIn:71,weightLb:180,sex:'male',age:18,baseline:2300};
 
 export default function CalorieTracker({db,patch,date,setDate,entry,setEntry}){
   const units=unitName(db.settings.units);
-  const {cs,stored,goal,weight,heightIn,age,sex,estimatedBaseline,customBaseline,baselineMode,baseline,heightFeet,heightRemainder,cardioExtra,walkExtra,runExtra,liftExtra,maintenance,days,daysRemaining,goalDifference,goalRate,calculatedTarget,mode,calorieTargetMode,manualCalorieTarget,target,calculatedProtein,calculatedFat,calculatedCarbs,macroTargetMode,protein,carbs,fat,macroCalories}=calculateNutrition(db,date);
+  const {cs,stored,goal,weight,heightIn,age,sex,estimatedBaseline,customBaseline,baselineMode,baseline,heightFeet,heightRemainder,cardioExtra,walkExtra,runExtra,liftExtra,maintenance,days,daysRemaining,validDeadline,goalDifference,goalRate,calculatedTarget,mode,calorieTargetMode,manualCalorieTarget,target,calculatedProtein,calculatedFat,calculatedCarbs,macroTargetMode,protein,carbs,fat,macroCalories}=calculateNutrition(db,date);
   const update=(key,value)=>patch(p=>updateDayPlan(p,date,{calorieSettings:{[key]:value}}));
   const changeGoal=(key,value)=>patch(p=>updateDayPlan({...p,settings:{...p.settings,[key]:value}},date,{goal:{[key]:value}}));
   const record=db.calories.find(x=>x.date===date);
@@ -125,7 +125,8 @@ export default function CalorieTracker({db,patch,date,setDate,entry,setEntry}){
           <input type="number" min="0" step="1" value={manualCalorieTarget} onChange={e=>update('customCalorieTarget',Math.max(0,Number(e.target.value)||0))}/>
         </label>}
       </div>
-      {daysRemaining<=0&&<p className="error">The selected deadline has passed or is today. The calculation uses a one-day fallback; choose a future date for a meaningful goal.</p>}
+      {!validDeadline&&<p className="error">Choose a valid goal deadline. Maintenance is still calculated; goal math uses a one-day fallback until a date is selected.</p>}
+      {validDeadline&&daysRemaining<=0&&<p className="error">The selected deadline has passed or is today. The calculation uses a one-day fallback; choose a future date for a meaningful goal.</p>}
       {calculatedTarget<=0&&<p className="error">The mathematical calorie target for this goal is {calculatedTarget.toLocaleString()} kcal/day, which is not a viable food intake. Set a realistic deadline or choose your own daily target.</p>}
       {calculatedTarget>maintenance*1.5&&<p className="muted note">This goal implies a large surplus. Consider checking your rate of weight change over time rather than treating the calculated result as a required intake.</p>}
     </CalorieSection>

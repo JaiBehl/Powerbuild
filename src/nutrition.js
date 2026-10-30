@@ -1,3 +1,4 @@
+import {isISODate} from './dates.js';
 export const calorieDefaults={
   baselineMode:'estimate',
   customBaseline:2300,
@@ -51,7 +52,7 @@ export function calculateNutrition(db,date){
  const record=db.calories.find(x=>x.date===date),cardioExtra=(record?.cardio||[]).reduce((sum,x)=>sum+Math.max(0,Number(x.calories)||0),0);
  const walkExtra=cs.milesWalked*weight*.45,runExtra=cs.milesRun*weight*.72,liftExtra=cs.lifted?cs.liftHours*175:0;
  const maintenance=Math.round(baseline+walkExtra+runExtra+liftExtra+cardioExtra);
- const daysRemaining=Math.round((new Date(goal.weightDeadline+'T12:00:00')-new Date(date+'T12:00:00'))/86400000),days=Math.max(1,daysRemaining);
+ const validDeadline=isISODate(goal.weightDeadline),daysRemaining=validDeadline?Math.round((new Date(goal.weightDeadline+'T12:00:00')-new Date(date+'T12:00:00'))/86400000):null,days=Math.max(1,daysRemaining??1);
  const goalDifference=Number(goal.targetWeight)-weight,goalRate=goalDifference*7/days,calculatedTarget=Math.round(maintenance+goalDifference*3500/days);
  const mode=Math.abs(goalDifference)<.1?'Maintain':goalDifference>0?'Bulk':'Cut';
  const calorieTargetMode=cs.calorieTargetMode==='custom'?'custom':'calculated';
@@ -61,5 +62,5 @@ export function calculateNutrition(db,date){
  const macroTargetMode=cs.macroTargetMode==='custom'?'custom':'calculated';
  const protein=macroTargetMode==='custom'?Math.max(0,Number(cs.customProtein??calculatedProtein)):calculatedProtein,carbs=macroTargetMode==='custom'?Math.max(0,Number(cs.customCarbs??calculatedCarbs)):calculatedCarbs,fat=macroTargetMode==='custom'?Math.max(0,Number(cs.customFat??calculatedFat)):calculatedFat;
  const macroCalories=Math.round(protein*4+carbs*4+fat*9);
- return {cs,stored,goal,weight,heightIn,age,sex,estimatedBaseline,customBaseline,baselineMode,baseline,heightFeet,heightRemainder,cardioExtra,walkExtra,runExtra,liftExtra,maintenance,days,daysRemaining,goalDifference,goalRate,calculatedTarget,mode,calorieTargetMode,manualCalorieTarget,target,calculatedProtein,calculatedFat,calculatedCarbs,macroTargetMode,protein,carbs,fat,macroCalories};
+ return {cs,stored,goal,weight,heightIn,age,sex,estimatedBaseline,customBaseline,baselineMode,baseline,heightFeet,heightRemainder,cardioExtra,walkExtra,runExtra,liftExtra,maintenance,days,daysRemaining,validDeadline,goalDifference,goalRate,calculatedTarget,mode,calorieTargetMode,manualCalorieTarget,target,calculatedProtein,calculatedFat,calculatedCarbs,macroTargetMode,protein,carbs,fat,macroCalories};
 }

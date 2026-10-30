@@ -36,3 +36,9 @@ test('signup and resend use the current origin for confirmation',async({page,con
  await expect(page.locator('.cloud-panel')).toContainText('Check your email');await page.getByRole('button',{name:'Resend confirmation email',exact:true}).click();await expect(page.locator('.cloud-panel')).toContainText('Confirmation email requested');
  const auth=backend.auth.filter(x=>/signup|resend/.test(x.url));expect(auth.length).toBe(2);for(const request of auth)expect(new URL(request.url).searchParams.get('redirect_to')).toBe('http://127.0.0.1:4173');
 });
+
+test('a response from a signed-out session cannot reactivate sync or replace later local edits',async({page,context})=>{
+ const backend=fakeBackend();await backend.install(context);await seed(page);await login(page);await page.getByRole('button',{name:'Upload this device',exact:true}).click();await syncActive(page);
+ backend.hold=true;await saveWeight(page,'2026-10-30',185);await expect.poll(()=>backend.pending.length).toBe(1);await page.getByRole('button',{name:'Sign out',exact:true}).click();await expect(page.getByRole('button',{name:'Sign in',exact:true})).toBeVisible();
+ await saveWeight(page,'2026-10-30',190);backend.release();await expect.poll(()=>backend.row.payload.profileData.test.weights[0]?.weight).toBe(185);await expect(page.getByRole('button',{name:'Sign in',exact:true})).toBeVisible();expect((await readDb(page)).weights[0].weight).toBe(190);
+});

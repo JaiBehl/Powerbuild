@@ -26,3 +26,8 @@ test('manual weight can reconnect to new Progress weigh-ins',async({page})=>{
  await openTab(page,'Calorie tracker');await expect(card(page,'Baseline maintenance').getByLabel('Weight (lb)',{exact:true})).toHaveValue('185');
  await expect(card(page,'Baseline maintenance').getByLabel('Weight (lb)',{exact:true})).toBeDisabled();
 });
+
+test('clearing a goal deadline leaves maintenance available and displays guidance',async({page})=>{
+ await seed(page);await openTab(page,'Calorie tracker');await card(page,'Bodyweight goal').getByLabel('Goal deadline',{exact:true}).fill('');
+ await expect(card(page,'Daily calorie target')).toContainText('Choose a valid goal deadline');await expect(card(page,'Daily calorie target')).toContainText('2,887');await expect(page.getByRole('heading',{level:1})).toBeVisible();
+});

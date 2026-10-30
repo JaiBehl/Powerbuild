@@ -1,7 +1,7 @@
 import WeeklyReview from './WeeklyReview';
 import {rollingWeightAverage} from './trends';
 import PersonalRecords from './PersonalRecords';
-import {exerciseChoices,resolveExerciseName} from './exerciseCatalog';
+import {exerciseNames,resolveExerciseName} from './exerciseCatalog';
 import React,{useMemo,useState} from 'react';
 import {LineChart,Line,XAxis,YAxis,Tooltip,ResponsiveContainer,CartesianGrid} from 'recharts';
 import {Plus,Trash2} from 'lucide-react';
@@ -102,7 +102,7 @@ export default function ProgressTab({db,patch,date,setDate,setTab,weightEntry,se
     <PersonalRecords db={db} date={date} setDate={setDate} lift={chartLift} setLift={setChartLift}/>
     <CalorieSection title="Estimated 1RM trend" description="Singles use the actual logged load; 2–15 reps use an estimate. Hover for exact dates and values." summary={displayChartData.length+' logged dates'}>
 
-      <div className="trend-lift-selector"><select value={chartLift} aria-label="Select exercise to chart" onChange={e=>setChartLift(e.target.value)}>{exerciseChoices(['Barbell bench press','Barbell back squat','Supported seated barbell OHP',...Object.keys(history)],db.exerciseAliases).map(n=><option key={n}>{n}</option>)}</select></div>
+      <div className="trend-lift-selector"><select value={chartLift} aria-label="Select exercise to chart" onChange={e=>setChartLift(e.target.value)}>{exerciseNames(db).map(n=><option key={n}>{n}</option>)}</select></div>
 
       <div className="trend-controls">
         <div className="trend-range" role="group" aria-label="Chart date range">
@@ -125,7 +125,7 @@ export default function ProgressTab({db,patch,date,setDate,setTab,weightEntry,se
 
     </CalorieSection>
 
-    <CalorieSection title="Bodyweight trend" description="View your recorded bodyweight over time with year-aware tooltips." summary={allBodyweightLogs.length+' weigh-ins'}>
+    <CalorieSection title="Bodyweight trend" description="Raw weigh-ins and a seven-day average, with year-aware tooltips." summary={allBodyweightLogs.length+' weigh-ins'}>
 
       <div className="trend-controls">
         <div className="trend-range" role="group" aria-label="Bodyweight chart date range">

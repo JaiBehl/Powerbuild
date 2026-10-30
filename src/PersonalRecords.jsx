@@ -1,12 +1,12 @@
 import React from 'react';
 import CalorieSection from './CalorieSection';
 import {personalRecords} from './trainingStats';
-import {exerciseChoices} from './exerciseCatalog';
+import {exerciseNames} from './exerciseCatalog';
 import {formatWeight,unitName} from './units';
 const display=(record,units)=>record?formatWeight(record.value,units,1)+' · '+record.date:'No record';
 export default function PersonalRecords({db,date,setDate,lift,setLift}){
  const units=unitName(db.settings.units),result=personalRecords(db,lift,date);
- const names=exerciseChoices([...Object.values(db.templates).flat().map(e=>e[0]),...db.sessions.flatMap(s=>s.exercises.map(e=>e.name))],db.exerciseAliases);
+ const names=exerciseNames(db);
  return <CalorieSection title="Personal records" description="Actual singles, estimated strength and rep PRs, with all-time and recent comparisons." summary={result.all.count+' qualifying sets'}>
  <div className="formgrid"><label>Exercise<select aria-label="Exercise for records" value={lift} onChange={e=>setLift(e.target.value)}>{names.map(name=><option key={name}>{name}</option>)}</select></label><label>Records through date<input aria-label="Records through date" type="date" value={date} onChange={e=>setDate(e.target.value)}/></label></div>
  <p className="muted">All time through {date}. Recent means the last 90 calendar days. Only completed, positive-load sets count. Actual singles and multi-rep estimates are separate.</p>

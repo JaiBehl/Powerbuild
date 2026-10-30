@@ -61,8 +61,8 @@ export function useCloudSync({db,profileState,applySnapshot}){
   }catch(e){
    if(owner.current!==id||busy.current!==task)return;
    if(String(e.message).includes('SYNC_CONFLICT')){
-    try{const {data,error}=await supabase.from('powerbuild_cloud_state').select('payload,revision').eq('user_id',id).maybeSingle();if(error)throw error;if(data)receive(data,id);else{setStatus('empty');setRemote(null);}}
-    catch(fetchError){setError(fetchError.message);setStatus('offline');}
+    try{const {data,error}=await supabase.from('powerbuild_cloud_state').select('payload,revision').eq('user_id',id).maybeSingle();if(owner.current!==id||busy.current!==task)return;if(error)throw error;if(data)receive(data,id);else{setStatus('empty');setRemote(null);}}
+    catch(fetchError){if(owner.current===id&&busy.current===task){setError(fetchError.message);setStatus('offline');}}
    }else{setError('Could not sync: '+e.message+'. Your data is still saved on this device.');setStatus('offline');}
   }finally{if(busy.current===task)busy.current=null;}
  },[user?.id,receive]);
