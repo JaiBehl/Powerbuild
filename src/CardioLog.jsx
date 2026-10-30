@@ -32,7 +32,7 @@ export default function CardioLog({date,setDate,entries,onChange,totalCalories,c
     <div className="between cardio-heading">
       <div>
         <h3>Custom cardio</h3>
-        <p className="muted">Log any cardio session for this date. Enter the calories burned you want added to maintenance.</p>
+        <p className="muted">Log any cardio session for this date. Enter active calories above rest. Avoid logging the same activity in both the sliders and this list.</p>
       </div>
       <div className="cardio-date-total">
         <input aria-label="Cardio date" type="date" value={date} onChange={e=>setDate(e.target.value)}/>

@@ -4,7 +4,7 @@ test('bench history and goal use one series across standard names',async({page})
  const a=makeSession('Push A','2026-10-29'),b=makeSession('Push B','2026-10-30');a.exercises[0].sets[0]={weight:180,reps:5,done:true};b.exercises.find(e=>e.name==='Touch-and-go bench press').sets[0]={weight:190,reps:5,done:true};
  await seed(page,makeDb({sessions:[a,b],strengthGoals:[{id:'goal',exercise:'Touch-and-go bench press',targetWeight:315,deadline:'2027-10-12'}]}));await openTab(page,'Progress');
  await expect(card(page,'Estimated 1RM trend')).toContainText('2 logged dates');
- await expect(card(page,'Strength goals')).toContainText('221.7 lb');
+ await expect(card(page,'Strength goals')).toContainText('216.2 lb');
 });
 test('custom exercise links persist and remove without changing original logs',async({page})=>{
  await seed(page);await openTab(page,'Settings & backup');
@@ -18,7 +18,7 @@ test('a 225 single is recorded as 225 rather than 232.5 in goals',async({page})=
  const s=makeSession();s.exercises[0].sets[0]={weight:225,reps:1,done:true};
  await seed(page,makeDb({sessions:[s],strengthGoals:[{id:'bench-goal',exercise:'Touch-and-go bench press',targetWeight:315,deadline:'2027-10-12'}]}));await openTab(page,'Progress');
  await expect(card(page,'Strength goals')).toContainText('225 lb');await expect(card(page,'Strength goals')).not.toContainText('232.5');
- await expect(card(page,'Estimated 1RM trend')).toContainText('Singles use the actual logged load');
+ await expect(card(page,'Estimated 1RM trend')).toContainText('Singles keep the achieved load');
 });
 
 test('removing a selected alias keeps chart and PR selectors valid',async({page})=>{

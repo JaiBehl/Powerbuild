@@ -1,4 +1,4 @@
-import {e1rm} from './data.js';
+import {e1rm} from './strengthEstimation.js';
 export const exerciseNameKey=value=>String(value||'').trim().toLowerCase().replace(/\s+/g,' ');
 const standard={
  'barbell bench press':'Touch-and-go bench press','touch-and-go bench press':'Touch-and-go bench press',
@@ -27,8 +27,11 @@ export function exerciseChoices(names,aliases={}){return [...new Set(names.map(n
 export function buildStrengthHistory(sessions,aliases={}){
  const history={};
  for(const session of sessions)for(const exercise of session.exercises)for(const set of exercise.sets){
-  if(!set.done)continue;const value=e1rm(set.weight,set.reps);if(value===null)continue;
-  const name=resolveExerciseName(exercise.name,aliases);history[name]??={};history[name][session.date]=Math.max(history[name][session.date]||0,value);
+  if(!set.done)continue;const name=resolveExerciseName(exercise.name,aliases);
+  const estimated=e1rm(set.weight,set.reps,set.rpe,name);
+  const achieved=Number(set.reps)===1&&Number.isFinite(Number(set.weight))&&Number(set.weight)>0?Number(set.weight):null;
+  const value=estimated??achieved;if(value===null)continue;
+  history[name]??={};history[name][session.date]=Math.max(history[name][session.date]||0,value);
  }
  return history;
 }

@@ -1,16 +1,23 @@
 import {isISODate} from './dates.js';
+import {maintenanceEstimate} from './maintenance.js';
 export const calorieDefaults={
   baselineMode:'estimate',
   customBaseline:2300,
+  rmrEquation:'tenHaaf',
+  baselineFactor:1.2,
+  maintenanceMode:'estimate',
+  customMaintenance:null,
   heightIn:71,
   bodyWeight:null,
   weightMode:'auto',
   sex:'male',
   age:18,
   milesWalked:4,
+  walkMinutesPerMile:22.5,
   milesRun:0,
   lifted:true,
   liftHours:1.5,
+  liftMet:3.5,
   proteinPerLb:1,
   fatPerLb:.3,
   calorieTargetMode:'calculated',
@@ -38,20 +45,14 @@ export function updateDayPlan(db,date,changes){
 export function normalizeDayPlans(db){
  return {...db,calories:db.calories.map(day=>({...day,plan:structuredClone(resolveDayPlan(db,day.date))}))};
 }
-const kgPerLb=1/2.2046226218;
-const bmr=(w,h,a,s)=>10*w*kgPerLb+6.25*h*2.54-5*a+(s==='female'?-161:5);
-const referenceBmr=bmr(180,71,18,'male');
 export function calculateNutrition(db,date){
  const {calorieSettings:cs,goal}=resolveDayPlan(db,date),stored=cs;
  const scaleWeight=[...db.weights].filter(w=>w.date<=date).sort((a,b)=>b.date.localeCompare(a.date))[0]?.weight||goal.startWeight||180;
  const weight=cs.weightMode==='manual'&&Number(cs.bodyWeight)>0?Number(cs.bodyWeight):Number(scaleWeight);
  const heightIn=Math.max(48,Math.min(96,Number(cs.heightIn)||71)),age=Math.max(13,Math.min(100,Number(cs.age)||18)),sex=cs.sex==='female'?'female':'male';
- const estimatedBaseline=Math.round(Math.max(1200,2300+bmr(weight,heightIn,age,sex)-referenceBmr));
- const customBaseline=Number(cs.customBaseline??cs.baseMaintenance??2300)||2300,baselineMode=cs.baselineMode==='custom'?'custom':'estimate',baseline=baselineMode==='custom'?customBaseline:estimatedBaseline;
  const heightFeet=Math.floor(heightIn/12),heightRemainder=Math.round(heightIn%12);
  const record=db.calories.find(x=>x.date===date),cardioExtra=(record?.cardio||[]).reduce((sum,x)=>sum+Math.max(0,Number(x.calories)||0),0);
- const walkExtra=cs.milesWalked*weight*.45,runExtra=cs.milesRun*weight*.72,liftExtra=cs.lifted?cs.liftHours*175:0;
- const maintenance=Math.round(baseline+walkExtra+runExtra+liftExtra+cardioExtra);
+ const expenditure=maintenanceEstimate({...cs,heightIn,age,sex},weight,cardioExtra),{estimatedBaseline,customBaseline,baselineMode,baseline,walkExtra,runExtra,liftExtra,maintenance}=expenditure;
  const validDeadline=isISODate(goal.weightDeadline),daysRemaining=validDeadline?Math.round((new Date(goal.weightDeadline+'T12:00:00')-new Date(date+'T12:00:00'))/86400000):null,days=Math.max(1,daysRemaining??1);
  const goalDifference=Number(goal.targetWeight)-weight,goalRate=goalDifference*7/days,calculatedTarget=Math.round(maintenance+goalDifference*3500/days);
  const mode=Math.abs(goalDifference)<.1?'Maintain':goalDifference>0?'Bulk':'Cut';
@@ -62,5 +63,5 @@ export function calculateNutrition(db,date){
  const macroTargetMode=cs.macroTargetMode==='custom'?'custom':'calculated';
  const protein=macroTargetMode==='custom'?Math.max(0,Number(cs.customProtein??calculatedProtein)):calculatedProtein,carbs=macroTargetMode==='custom'?Math.max(0,Number(cs.customCarbs??calculatedCarbs)):calculatedCarbs,fat=macroTargetMode==='custom'?Math.max(0,Number(cs.customFat??calculatedFat)):calculatedFat;
  const macroCalories=Math.round(protein*4+carbs*4+fat*9);
- return {cs,stored,goal,weight,heightIn,age,sex,estimatedBaseline,customBaseline,baselineMode,baseline,heightFeet,heightRemainder,cardioExtra,walkExtra,runExtra,liftExtra,maintenance,days,daysRemaining,validDeadline,goalDifference,goalRate,calculatedTarget,mode,calorieTargetMode,manualCalorieTarget,target,calculatedProtein,calculatedFat,calculatedCarbs,macroTargetMode,protein,carbs,fat,macroCalories};
+ return {...expenditure,cs,stored,goal,weight,heightIn,age,sex,estimatedBaseline,customBaseline,baselineMode,baseline,heightFeet,heightRemainder,cardioExtra,walkExtra,runExtra,liftExtra,maintenance,days,daysRemaining,validDeadline,goalDifference,goalRate,calculatedTarget,mode,calorieTargetMode,manualCalorieTarget,target,calculatedProtein,calculatedFat,calculatedCarbs,macroTargetMode,protein,carbs,fat,macroCalories};
 }

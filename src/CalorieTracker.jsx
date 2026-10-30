@@ -7,11 +7,10 @@ import {displayMacroRate,fromDisplayWeight,storeMacroRate,toDisplayRate,toDispla
 
 export {calorieDefaults} from './nutrition';
 import {calculateNutrition,updateDayPlan,updateDayRecord as updateNutritionDay} from './nutrition';
-const REFERENCE={heightIn:71,weightLb:180,sex:'male',age:18,baseline:2300};
 
 export default function CalorieTracker({db,patch,date,setDate,entry,setEntry}){
   const units=unitName(db.settings.units);
-  const {cs,stored,goal,weight,heightIn,age,sex,estimatedBaseline,customBaseline,baselineMode,baseline,heightFeet,heightRemainder,cardioExtra,walkExtra,runExtra,liftExtra,maintenance,days,daysRemaining,validDeadline,goalDifference,goalRate,calculatedTarget,mode,calorieTargetMode,manualCalorieTarget,target,calculatedProtein,calculatedFat,calculatedCarbs,macroTargetMode,protein,carbs,fat,macroCalories}=calculateNutrition(db,date);
+  const {cs,stored,goal,weight,heightIn,age,sex,estimatedBaseline,customBaseline,baselineMode,baseline,heightFeet,heightRemainder,cardioExtra,walkExtra,runExtra,liftExtra,maintenance,days,daysRemaining,validDeadline,goalDifference,goalRate,calculatedTarget,mode,calorieTargetMode,manualCalorieTarget,target,calculatedProtein,calculatedFat,calculatedCarbs,macroTargetMode,protein,carbs,fat,macroCalories,rmr,rmrMethod,adult,baselineFactor,walkPace,liftMet,estimatedMaintenance,maintenanceMode,customMaintenance,maintenanceOverrideValid}=calculateNutrition(db,date);
   const update=(key,value)=>patch(p=>updateDayPlan(p,date,{calorieSettings:{[key]:value}}));
   const changeGoal=(key,value)=>patch(p=>updateDayPlan({...p,settings:{...p.settings,[key]:value}},date,{goal:{[key]:value}}));
   const record=db.calories.find(x=>x.date===date);
@@ -27,7 +26,6 @@ export default function CalorieTracker({db,patch,date,setDate,entry,setEntry}){
 
   const displayedGoal=toDisplayWeight(goal.targetWeight,units,1);
   const displayedWeight=toDisplayWeight(weight,units,1);
-  const referenceWeight=toDisplayWeight(REFERENCE.weightLb,units,1);
   const rateUnit=units==='kg'?'kg/week':'lb/week';
   const proteinRate=displayMacroRate(cs.proteinPerLb,units,2);
   const fatRate=displayMacroRate(cs.fatPerLb,units,2);
@@ -64,9 +62,10 @@ export default function CalorieTracker({db,patch,date,setDate,entry,setEntry}){
       description="Estimate your base daily calories using height, weight, age and sex, or enter a custom baseline."
       summary={baseline.toLocaleString()+' kcal'}
     >
-      <p className="muted">The app estimate is calibrated so 5'11&quot;, {referenceWeight} {units}, male, age 18 equals exactly 2,300 kcal/day before the activities below are added.</p>
+      <p className="muted">Resting metabolism: approximately {Math.round(rmr).toLocaleString()} kcal/day ({rmrMethod==='tenHaaf'?'ten Haaf, recreational athletes':'Mifflin–St Jeor, general adults'}). The baseline adds an allowance for ordinary daily living and digestion; logged activity is added separately.</p>
       <div className="formgrid">
         <label>Baseline source<select value={baselineMode} onChange={e=>update('baselineMode',e.target.value)}><option value="estimate">Use app estimate</option><option value="custom">Use my own baseline</option></select></label>
+        {baselineMode==='estimate'&&<><label>Resting metabolism formula<select value={cs.rmrEquation} onChange={e=>update('rmrEquation',e.target.value)}><option value="tenHaaf">Recreational athlete, age 18–35 (ten Haaf)</option><option value="mifflin">General adult (Mifflin–St Jeor)</option></select></label><label>Unlogged daily living factor<input type="number" min="1.1" max="1.5" step="0.05" value={baselineFactor} onChange={e=>update('baselineFactor',Number(e.target.value))}/></label></>}
         {baselineMode==='custom'&&<label>Custom baseline (kcal)<input type="number" min="800" max="7000" step="10" value={customBaseline} onChange={e=>update('customBaseline',Number(e.target.value))}/></label>}
         <label>Weight source<select aria-label="Weight source" value={cs.weightMode} onChange={e=>patch(p=>updateDayPlan(p,date,{calorieSettings:{weightMode:e.target.value,bodyWeight:cs.bodyWeight??weight}}))}><option value="auto">Follow weigh-ins</option><option value="manual">Enter weight manually</option></select></label>
         <label>Weight ({units})<input type="number" min="20" max="700" step="0.1" disabled={cs.weightMode==='auto'} value={displayedWeight} onChange={e=>update('bodyWeight',fromDisplayWeight(e.target.value,units))}/></label>
@@ -75,9 +74,11 @@ export default function CalorieTracker({db,patch,date,setDate,entry,setEntry}){
         <label>Height (feet)<input type="number" min="4" max="8" step="1" value={heightFeet} onChange={e=>update('heightIn',Number(e.target.value)*12+heightRemainder)}/></label>
         <label>Height (inches)<input type="number" min="0" max="11" step="1" value={heightRemainder} onChange={e=>update('heightIn',heightFeet*12+Number(e.target.value))}/></label>
       </div>
+      {cs.rmrEquation==='tenHaaf'&&(age<18||age>35)&&<p className="muted note">The athlete equation was developed for ages 18–35. Mifflin–St Jeor is used outside that range.</p>}
+      {!adult&&<p className="error">These are adult equations and are not validated for people under 18.</p>}
+      <p className="muted">Keep the daily living factor near 1.2 when walking and exercise are logged below. Do not also include those activities in this factor or a custom baseline. These are starting estimates; no equation measures your personal maintenance.</p>
       <p className="muted">{cs.weightMode==='auto'?'Following the most recent weigh-in on or before this date. New weigh-ins update the calculation automatically.':'Using a manual weight for this date. Choose Follow weigh-ins to reconnect Progress entries.'}</p>
-      {baselineMode==='estimate'&&<p className="muted note">Estimated baseline: <strong>{estimatedBaseline.toLocaleString()} kcal/day</strong>. Height, weight, age, and sex adjust the 2,300-kcal reference using the Mifflin–St Jeor metabolic relationship. Treat it as a starting estimate and calibrate against 2–3 weeks of scale trends.</p>}
-      {baselineMode==='custom'&&<p className="muted note">Custom mode uses your entered baseline directly. Keep walking, running, lifting, and custom cardio out of that number because those activities are added separately below.</p>}
+      {baselineMode==='custom'&&<p className="muted note">Custom baseline mode uses your entered number before net activity. Keep logged activity out of this number. A known total maintenance overrides both baseline and activity.</p>}
     </CalorieSection>
 
     <CalorieSection
@@ -85,13 +86,16 @@ export default function CalorieTracker({db,patch,date,setDate,entry,setEntry}){
       description="Adjust walking, running and lifting to estimate activity-related calorie expenditure."
       summary={Math.round(walkExtra+runExtra+liftExtra).toLocaleString()+' kcal'}
     >
-      <p className="muted">Activities below are added on top of the selected baseline. Avoid counting the same activity again under Custom cardio.</p>
+      <p className="muted">{maintenanceMode==='custom'?'These activities remain logged, but your known maintenance total replaces the full estimate.':'Net activity is added to the selected baseline. Avoid counting the same activity again under Custom cardio.'}</p>
       <div className="formgrid">
         <label>Miles walked<input type="range" min="0" max="15" step=".25" value={cs.milesWalked} onChange={e=>update('milesWalked',Number(e.target.value))}/><strong>{cs.milesWalked} miles</strong></label>
+        <label>Walking pace (minutes per mile)<input type="number" min="15" max="40" step="0.5" value={walkPace} onChange={e=>update('walkMinutesPerMile',Number(e.target.value))}/></label>
         <label>Miles run (5:00/mile)<input type="range" min="0" max="10" step=".25" value={cs.milesRun} onChange={e=>update('milesRun',Number(e.target.value))}/><strong>{cs.milesRun} miles</strong></label>
         <label>Lifted today?<select value={cs.lifted?'yes':'no'} onChange={e=>update('lifted',e.target.value==='yes')}><option value="yes">Yes</option><option value="no">No</option></select></label>
         <label>Lifting duration (hours)<input type="range" min="1" max="3" step=".25" disabled={!cs.lifted} value={cs.liftHours} onChange={e=>update('liftHours',Number(e.target.value))}/><strong>{cs.liftHours} hours</strong></label>
+        <label>Average lifting intensity<select disabled={!cs.lifted} value={liftMet} onChange={e=>update('liftMet',Number(e.target.value))}><option value="3.5">Typical lifting with rests (3.5 MET)</option><option value="5">Squat/deadlift focused (5 MET)</option><option value="6">Vigorous session average (6 MET)</option></select></label>
       </div>
+      <p className="muted">Activity estimates count calories above rest. Walking/running assume level ground; hills and short sprints add uncertainty. Lifting intensity is the average across the whole session, including rests—not the RPE of a set. Avoid counting the same activity again as custom cardio.</p>
     </CalorieSection>
 
     <CalorieSection
@@ -113,8 +117,10 @@ export default function CalorieTracker({db,patch,date,setDate,entry,setEntry}){
         <div className="metric"><small>CALCULATED GOAL</small><strong>{calculatedTarget.toLocaleString()} <span>kcal</span></strong></div>
         <div className="metric"><small>DAILY CALORIE GOAL</small><strong>{target.toLocaleString()} <span>kcal</span></strong></div>
       </div>
-      <p className="muted note">Maintenance is calculated from your baseline and recorded activity regardless of your weight goal. The goal-based calculation is <b>{Math.abs(toDisplayRate(goalRate,units,2)).toFixed(2)} {rateUnit}</b> {mode==='Bulk'?'gain':mode==='Cut'?'loss':'change'} per week using the remaining days. No arbitrary calorie adjustment cap is applied. These values are estimates, not safe-intake recommendations.</p>
+      <p className="muted note">Maintenance uses your chosen estimate or known total, independently of your weight goal. The goal-based calculation is <b>{Math.abs(toDisplayRate(goalRate,units,2)).toFixed(2)} {rateUnit}</b> {mode==='Bulk'?'gain':mode==='Cut'?'loss':'change'} per week using the remaining days. No arbitrary calorie adjustment cap is applied. These values are estimates, not safe-intake recommendations.</p>
       <div className="formgrid">
+        <label>Maintenance source<select value={maintenanceMode} onChange={e=>patch(p=>updateDayPlan(p,date,{calorieSettings:{maintenanceMode:e.target.value,customMaintenance:cs.customMaintenance??estimatedMaintenance}}))}><option value="estimate">Estimate from baseline + activity</option><option value="custom">Use my known total maintenance</option></select></label>
+        {maintenanceMode==='custom'&&<label>Known total maintenance (kcal/day)<input type="number" min="1" step="10" value={customMaintenance} onChange={e=>update('customMaintenance',Number(e.target.value))}/></label>}
         <label>Daily calorie goal source
           <select value={calorieTargetMode} onChange={e=>setCalorieTargetMode(e.target.value)}>
             <option value="calculated">Calculate from weight goal + deadline</option>
@@ -125,6 +131,8 @@ export default function CalorieTracker({db,patch,date,setDate,entry,setEntry}){
           <input type="number" min="0" step="1" value={manualCalorieTarget} onChange={e=>update('customCalorieTarget',Math.max(0,Number(e.target.value)||0))}/>
         </label>}
       </div>
+      <p className="muted">{maintenanceMode==='custom'?'Your known total replaces the full estimate; activity is not added again. ':'Estimate from baseline + activity: '+estimatedMaintenance.toLocaleString()+' kcal/day. '}Compare consistently logged intake with several weeks of weight averages. Stable weight with complete logs is more useful for personal calibration than a single day. Missing meals or water-weight changes prevent reliable automatic calibration.</p>
+      {maintenanceMode==='custom'&&!maintenanceOverrideValid&&<p className="error">Enter a positive known maintenance value. The activity estimate is used until a valid value is entered.</p>}
       {!validDeadline&&<p className="error">Choose a valid goal deadline. Maintenance is still calculated; goal math uses a one-day fallback until a date is selected.</p>}
       {validDeadline&&daysRemaining<=0&&<p className="error">The selected deadline has passed or is today. The calculation uses a one-day fallback; choose a future date for a meaningful goal.</p>}
       {calculatedTarget<=0&&<p className="error">The mathematical calorie target for this goal is {calculatedTarget.toLocaleString()} kcal/day, which is not a viable food intake. Set a realistic deadline or choose your own daily target.</p>}
