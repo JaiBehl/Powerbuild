@@ -28,6 +28,9 @@ export default function CalorieTracker({db,patch,date,setDate,entry,setEntry}){
   const displayedGoal=toDisplayWeight(goal.targetWeight,units,1);
   const displayedWeight=toDisplayWeight(weight,units,1);
   const rateUnit=units==='kg'?'kg/week':'lb/week';
+  const displayedGoalRate=toDisplayRate(goalRate,units,2);
+  const hasGoalPace=validDeadline&&daysRemaining>0&&Number.isFinite(displayedGoalRate);
+  const goalPace=hasGoalPace?(displayedGoalRate>0?'+':'')+displayedGoalRate.toFixed(2)+' '+rateUnit:null;
   const proteinRate=displayMacroRate(cs.proteinPerLb,units,2);
   const fatRate=displayMacroRate(cs.fatPerLb,units,2);
 
@@ -38,7 +41,7 @@ export default function CalorieTracker({db,patch,date,setDate,entry,setEntry}){
     <CalorieSection
       title="Bodyweight goal"
       description="Choose your target weight and deadline for bulk, cut, or maintenance planning."
-      summary={displayedGoal+' '+units+' · '+goal.weightDeadline}
+      summary={displayedGoal+' '+units+' · '+goal.weightDeadline+(goalPace?' · '+goalPace:'')}
       className="calorie-weight-goal"
     >
       <div className="weight-goal-summary-row">
@@ -46,6 +49,8 @@ export default function CalorieTracker({db,patch,date,setDate,entry,setEntry}){
           <small>CURRENT PLAN</small>
           <strong>{mode}</strong>
           <span>Current weight: {displayedWeight} {units}. Goal: {displayedGoal} {units} by {goal.weightDeadline}.</span>
+          <span><b>Weekly goal pace:</b> <output aria-label="Weekly goal pace">{goalPace||'Choose a future deadline.'}</output></span>
+          {hasGoalPace&&<span>Average weekly change needed to reach this goal by the deadline.</span>}
         </div>
         <div className="weight-goal-target">
           <small>BODYWEIGHT TARGET</small>

@@ -17,3 +17,11 @@ test('automatic nutrition weight ignores invalid/future measurements, uses the n
  const weights=[{date:'2026-10-29',weight:180},{date:'2026-10-30',weight:185},{date:'2026-10-30',weight:186},{date:'2026-10-30',weight:0},{date:'2026-10-30',weight:Infinity},{date:'2026-10-31',weight:190},{date:'not-a-date',weight:500}];const db=makeDb({weights});const before=structuredClone(db);const n=calculateNutrition(db,'2026-10-30');assert.equal(n.weight,186);assert.equal(n.weightSource,'weigh-in');assert.equal(n.weightDate,'2026-10-30');assert.equal(calculateNutrition(db,'2026-10-29').weight,180);assert.deepEqual(db,before);
  const fallback=calculateNutrition(makeDb(),'2026-10-30');assert.equal(fallback.weight,180);assert.equal(fallback.weightSource,'fallback');assert.equal(fallback.weightDate,null);
 });
+test('weekly goal rate tracks bulk, cut and maintenance deadlines using the active weight source',()=>{
+ const db=makeDb({weights:[{date:'2026-10-29',weight:180},{date:'2026-10-30',weight:181}]});
+ const bulk=updateDayPlan(db,'2026-10-30',{goal:{targetWeight:183,weightDeadline:'2026-11-13'}});assert.equal(calculateNutrition(bulk,'2026-10-30').goalRate,1);
+ const cut=updateDayPlan(bulk,'2026-10-30',{goal:{targetWeight:179}});assert.equal(calculateNutrition(cut,'2026-10-30').goalRate,-1);
+ const maintain=updateDayPlan(cut,'2026-10-30',{goal:{targetWeight:181}});assert.equal(calculateNutrition(maintain,'2026-10-30').goalRate,0);
+ const manual=updateDayPlan(maintain,'2026-10-30',{calorieSettings:{weightMode:'manual',bodyWeight:179}});assert.equal(calculateNutrition(manual,'2026-10-30').goalRate,1);
+ assert.equal(calculateNutrition(bulk,'2026-10-29').goalRate,0);assert.equal(calculateNutrition(bulk,'2026-10-30').daysRemaining,14);
+});
