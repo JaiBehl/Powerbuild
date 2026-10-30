@@ -10,3 +10,10 @@ test('snapshot validation rejects missing profile databases and malformed sessio
 
 test('independent foods and cardio added on the same new date can combine',()=>{const base=snap(),a=structuredClone(base),b=structuredClone(base);a.profileData.test.calories=[{date:'2026-10-30',items:[{id:'food',calories:100}],cardio:[]}];b.profileData.test.calories=[{date:'2026-10-30',items:[],cardio:[{id:'cardio',calories:200}]}];const result=mergeCloudSnapshots(base,a,b);assert.deepEqual(result.conflicts,[]);assert.equal(result.snapshot.profileData.test.calories[0].items.length,1);assert.equal(result.snapshot.profileData.test.calories[0].cardio.length,1);});
 test('concurrent opaque template changes are not silently combined',()=>{const base=snap(),a=structuredClone(base),b=structuredClone(base);a.profileData.test.templates['Push A'][0][0]='Local bench';b.profileData.test.templates['Push A'][0][0]='Remote bench';assert.ok(mergeCloudSnapshots(base,a,b).conflicts.length);});
+
+test('concurrent new workouts on the same date require a choice instead of creating duplicate dates',()=>{
+ const base=snap(),a=structuredClone(base),b=structuredClone(base);
+ a.profileData.test.sessions=[{id:'device-a-workout',date:'2026-10-30',type:'Push A',exercises:[]}];
+ b.profileData.test.sessions=[{id:'device-b-workout',date:'2026-10-30',type:'Push B',exercises:[]}];
+ const result=mergeCloudSnapshots(base,a,b);assert.ok(result.conflicts.length);assert.equal(result.snapshot.profileData.test.sessions.length,1);
+});
