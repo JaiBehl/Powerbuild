@@ -1,6 +1,7 @@
 import React,{useState} from 'react';
 import {Plus,Pencil,Save,Trash2,X,BookmarkPlus} from 'lucide-react';
 import ServingPicker from './ServingPicker';
+import CalorieSection from './CalorieSection';
 import {MEALS,NUTRIENTS,emptyFood,asNumber,sumFoods,formatAmount,normalizeMeal,makeLoggedFood,savedFoodFrom,portionOfLoggedFood} from './foodLibrary';
 
 export default function FoodLog({date,setDate,items=[],updateDayRecord,entry,setEntry,target,macros,onSaveToLibrary}){
@@ -63,10 +64,14 @@ export default function FoodLog({date,setDate,items=[],updateDayRecord,entry,set
     }catch(e){setError(e.message);}
   };
 
-  return <section className="panel food-log-panel">
-    <div className="between">
-      <div><h2>Food &amp; meal log</h2><p className="muted">Log foods individually. Enter nutrition for one serving and choose how many servings you ate; daily totals update automatically.</p></div>
-      <input aria-label="Food log date" type="date" value={date} onChange={e=>{setDate(e.target.value);setEditingId(null);setError('');setMessage('');}}/>
+  return <CalorieSection
+    title="Food & meal log"
+    description="Log foods and servings individually; their calories and macros update your daily totals."
+    summary={logged.length+' '+(logged.length===1?'entry':'entries')+' · '+formatAmount(totals.calories)+' kcal'}
+    className="food-log-panel"
+  >
+    <div className="food-log-date-row">
+      <label>Log date <input aria-label="Food log date" type="date" value={date} onChange={e=>{setDate(e.target.value);setEditingId(null);setError('');setMessage('');}}/></label>
     </div>
 
     <div className="summary food-summary">
@@ -125,5 +130,5 @@ export default function FoodLog({date,setDate,items=[],updateDayRecord,entry,set
         </div>;
       })}
     </div>
-  </section>;
+  </CalorieSection>;
 }
