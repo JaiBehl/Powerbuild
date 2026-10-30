@@ -9,7 +9,7 @@ import {fromDisplayWeight,toDisplayWeight,unitName} from './units';
 import CalorieSection from './CalorieSection';
 import './ui-polish.css';
 
-export default function SettingsTab({db,patch,patchSettings,exportJson,exportCsv,importJson,importError,cloneTemplates,importHistoricalJson,historyImportStatus,profileName='My profile',profileId='primary',onRestoreWorkspace,cloudEnabled=false}){
+export default function SettingsTab({db,patch,patchSettings,exportJson,exportCsv,importJson,importError,cloneTemplates,importHistoricalJson,historyImportStatus,profileName='My profile',profileId='primary',onRestoreWorkspace,onExportWorkspace,cloudEnabled=false}){
   const units=unitName(db.settings.units);
   const [newExercise,setNewExercise]=useState('');
   const [newTarget,setNewTarget]=useState('');
@@ -72,7 +72,7 @@ export default function SettingsTab({db,patch,patchSettings,exportJson,exportCsv
     <ExerciseAliases db={db} patch={patch}/>
     <HistoricalImportPanel db={db} patch={patch} profileId={profileId} profileName={profileName}/>
     <CalorieSection title="Backups & exports" description="Export workouts and profile backups, or import data into the selected profile." summary={profileName+' · '+db.sessions.length+' workouts'}><p className="muted">These actions only affect <b>{profileName}</b>. Its logs are saved automatically on this device. {cloudEnabled?'Cloud sync is connected.':'Sign in to cloud sync to share data across devices.'} Export a JSON backup periodically, especially before clearing browser data.</p><div className="actions"><button className="primary" onClick={exportJson}><Download size={17}/> Export profile backup</button><button className="secondary" onClick={exportCsv}><Download size={17}/> Export sets CSV</button><label className="secondary upload"><Upload size={17}/> Import into this profile<input type="file" accept=".json,application/json" onChange={importJson} hidden/></label></div>{importError&&<p className="error">{importError}</p>}</CalorieSection>
-    <RecoveryPanel db={db} patch={patch} profileId={profileId} profileName={profileName} onRestoreWorkspace={onRestoreWorkspace}/>
+    <RecoveryPanel db={db} patch={patch} profileId={profileId} profileName={profileName} onRestoreWorkspace={onRestoreWorkspace} onExportWorkspace={onExportWorkspace}/>
     <CalorieSection title="Reset profile" description={"Permanently erase workouts, nutrition, goals and settings for "+profileName+" only."} summary={profileName} className="warning">
       <p className="muted">Clears only this profile's workout logs, weight entries, nutrition, strength goals, custom exercises, and settings. Other profiles are untouched. Back up your profile first.</p>
       <button className="danger" onClick={()=>{if(confirm(`Erase all data in ${profileName}? Other profiles will not be affected.`))patch({settings:{...initialSettings},strengthGoals:[],sessions:[],weights:[],calories:[],savedFoods:[],exerciseAliases:{},calorieSettings:{...calorieDefaults},templates:cloneTemplates()},{checkpoint:'Before profile reset'})}}><RotateCcw size={16}/> Reset profile</button>

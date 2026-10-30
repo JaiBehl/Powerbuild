@@ -21,3 +21,15 @@ test('ordinary storage failure shows an error while current edits remain exporta
  await page.getByPlaceholder('Sleep, fatigue, technique, soreness, sticking points...').fill('Still in memory');
  await expect(page.getByRole('alert')).toContainText('could not be saved');await expect(page.getByPlaceholder('Sleep, fatigue, technique, soreness, sticking points...')).toHaveValue('Still in memory');const download=page.waitForEvent('download');await page.getByRole('button',{name:'Export current profile',exact:true}).click();expect((await download).suggestedFilename()).toContain('backup.json');
 });
+
+test('portable all-profile backup round trips through the recovery interface',async({page})=>{
+ await seed(page,makeDb({sessions:[makeSession()]}));await openTab(page,'Settings & backup');const panel=card(page,'Recovery copies');
+ const wait=page.waitForEvent('download');await panel.getByRole('button',{name:'Export all profiles',exact:true}).click();const download=await wait,stream=await download.createReadStream(),chunks=[];for await(const chunk of stream)chunks.push(chunk);const backup=Buffer.concat(chunks);const data=JSON.parse(backup.toString());expect(data.profileData.test.sessions.length).toBe(1);
+ page.once('dialog',d=>d.accept());await page.getByRole('button',{name:'Reset profile',exact:true}).click();await expect.poll(async()=> (await readDb(page)).sessions.length).toBe(0);
+ page.once('dialog',d=>d.accept());await panel.getByLabel('All-profile backup JSON',{exact:true}).setInputFiles({name:'all-profiles.json',mimeType:'application/json',buffer:backup});await expect.poll(async()=> (await readDb(page)).sessions.length).toBe(1);
+});
+test('invalid all-profile JSON cannot replace existing profiles',async({page})=>{
+ await seed(page,makeDb({sessions:[makeSession()]}));await openTab(page,'Settings & backup');const panel=card(page,'Recovery copies');page.once('dialog',d=>d.accept());
+ await panel.getByLabel('All-profile backup JSON',{exact:true}).setInputFiles({name:'bad-account.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify({profileState:{profiles:[{id:'missing'}]},profileData:{}}))});
+ await expect(panel).toContainText('Existing profiles were left unchanged');expect((await readDb(page)).sessions.length).toBe(1);
+});

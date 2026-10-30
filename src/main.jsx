@@ -1,3 +1,4 @@
+import {validCloudSnapshot} from './syncMerge';
 import {PanelScopeContext} from './panelScope';
 import {saveRecoveryPoint,listRecoveryPoints} from './recovery';
 import {validateProfileDb,removesData} from './backupSafety';
@@ -139,7 +140,7 @@ function App(){
     }catch(e){setStorageError(e.message);return false;}
   };
   const workspaceSnapshot=()=>({profileState,profileData:Object.fromEntries(profileState.profiles.map(p=>[p.id,p.id===profileState.activeProfileId?dbRef.current:loadProfileDb(p.id,freshDb)]))});
-  const restoreWorkspace=point=>{if(!point?.data?.profileState||!point.data.profileData)throw Error('Invalid all-profile recovery copy.');Object.values(point.data.profileData).forEach(validateProfileDb);saveRecoveryPoint('workspace','Before all-profile restore',workspaceSnapshot());applyCloudSnapshot(point.data);};
+  const restoreWorkspace=point=>{if(!validCloudSnapshot(point?.data))throw Error('Invalid all-profile backup. Existing profiles were left unchanged.');Object.values(point.data.profileData).forEach(validateProfileDb);saveRecoveryPoint('workspace','Before all-profile restore',workspaceSnapshot());applyCloudSnapshot(point.data);};
   const undo=()=>{
     try{
       if(!undoPoint||undoPoint.profileId!==profileState.activeProfileId||JSON.stringify(dbRef.current)!==undoPoint.expected){setUndoPoint(null);return;}
@@ -292,7 +293,7 @@ function App(){
       {tab==='calendar'&&<ScheduleTab {...{db,setTab,setDate,viewWeek,setViewWeek,weekDates}}/>}
       {tab==='progress'&&<ProgressTab {...{db,patch,date,setDate,setTab,weightEntry,setWeightEntry,history,chartLift,setChartLift,chartData,finished,latestWeight}}/>}
       {tab==='calories'&&<CalorieTracker {...{db,patch,date,setDate,entry:calorieEntry,setEntry:setCalorieEntry}}/>}
-      {tab==='settings'&&<SettingsTab {...{db,patch,patchSettings,exportJson,exportCsv,importJson,importError,cloneTemplates,importHistoricalJson,historyImportStatus}} onRestoreWorkspace={restoreWorkspace} profileId={profileState.activeProfileId} profileName={activeProfile?.name||'My profile'} cloudEnabled={!!cloud.user&&['synced','saving'].includes(cloud.status)}/>} 
+      {tab==='settings'&&<SettingsTab {...{db,patch,patchSettings,exportJson,exportCsv,importJson,importError,cloneTemplates,importHistoricalJson,historyImportStatus}} onExportWorkspace={()=>download('powerbuild-all-profiles-backup.json',JSON.stringify(workspaceSnapshot(),null,2),'application/json')} onRestoreWorkspace={restoreWorkspace} profileId={profileState.activeProfileId} profileName={activeProfile?.name||'My profile'} cloudEnabled={!!cloud.user&&['synced','saving'].includes(cloud.status)}/>} 
       <footer>Powerbuild Tracker · Local-first workout log · Estimates are not medical or coaching guarantees.</footer>
     </main>
   </div></PanelScopeContext.Provider>;

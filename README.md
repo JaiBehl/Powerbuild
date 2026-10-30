@@ -68,6 +68,10 @@ The final consistency pass passed: 58 unit/integration tests, 35 browser tests a
 
 Production-check unit tests and the full regression gate passed. Recorded nutrition plans now retain their fallback starting weight when profile defaults change. Settings labels distinguish new-date defaults from a recorded day's goal, and regressions verify old versus new date behavior. Existing real weigh-ins still update automatic weight selection for their dates.
 
+### Portable all-profile recovery
+
+Default-plan consistency passed the full gate. Recovery now exports/imports all-profile backup JSON, including the account-copy format downloaded during sync conflicts. Restore validates every listed profile and saves the current workspace first. Browser tests verify a complete export → reset → file restore round trip and rejection of an invalid account file without replacing existing profiles.
+
 ## Current handoff
 
 | Item | Audited state |
