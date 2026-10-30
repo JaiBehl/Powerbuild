@@ -9,6 +9,7 @@ import SettingsTab from './SettingsTab';
 import CalorieTracker,{calorieDefaults} from './CalorieTracker';
 import ProfileSwitcher from './ProfileSwitcher';
 import {useCloudSync,CloudPanel} from './cloudSync';
+import {validateHistoricalImport,mergeHistoricalImport} from './historicalImport';
 import {ensureProfiles,loadProfileDb,removeProfileDb,saveProfileDb,saveProfileMeta} from './profiles';
 import {toDisplayWeight,unitName} from './units';
 import './style.css';
@@ -93,6 +94,7 @@ function App(){
   const [viewWeek,setViewWeek]=useState(0);
   const [chartLift,setChartLift]=useState('Barbell bench press');
   const [importError,setImportError]=useState('');
+  const [historyImportStatus,setHistoryImportStatus]=useState('');
   const [showManual,setShowManual]=useState(false);
   const [manualType,setManualType]=useState('Push A');
   const [weightEntry,setWeightEntry]=useState('');
@@ -136,6 +138,7 @@ function App(){
     setWeightEntry('');
     setCalorieEntry({calories:'',protein:'',carbs:'',fat:''});
     setImportError('');
+    setHistoryImportStatus('');
   }
 
   function switchProfile(id){
@@ -221,6 +224,28 @@ function App(){
     ev.target.value='';
   }
 
+  async function importHistoricalJson(ev){
+    try{
+      const file=ev.target.files?.[0];
+      if(!file)return;
+      if(file.size>5_000_000)throw Error('File exceeds the 5 MB historical-import limit.');
+      const incoming=validateHistoricalImport(JSON.parse(await file.text()));
+      const proposed=mergeHistoricalImport(db,incoming);
+      const count=incoming.sessions.length;
+      if(!confirm('Merge '+count+' dated workouts and '+incoming.weights.length+
+        ' bodyweight entries into '+(activeProfile?.name||'this profile')+
+        '? Existing data will be kept. Export a profile backup first if needed.'))return;
+      setDb(p=>mergeHistoricalImport(p,incoming).db);
+      const c=proposed.counts;
+      setHistoryImportStatus('Imported '+c.newSessions+' new workout dates, '+
+        c.addedExercises+' exercise entries and '+c.addedWeights+
+        ' bodyweight measurements. '+c.skippedExistingExercises+
+        ' existing exercises and '+c.skippedExistingWeights+
+        ' same-day weight entries were left unchanged. Re-importing is safe.');
+    }catch(e){setHistoryImportStatus('Import failed: '+String(e?.message||e));}
+    finally{ev.target.value='';}
+  }
+
   const headings={
     today:['Workout logger','Log every set, track overload, and protect recovery.'],
     calendar:['Rolling PPL schedule','Five training days. Six sessions in continuous rotation.'],
@@ -245,7 +270,7 @@ function App(){
       {tab==='calendar'&&<ScheduleTab {...{db,setTab,setDate,viewWeek,setViewWeek,weekDates}}/>}
       {tab==='progress'&&<ProgressTab {...{db,patch,date,setDate,setTab,weightEntry,setWeightEntry,history,chartLift,setChartLift,chartData,finished,latestWeight}}/>}
       {tab==='calories'&&<CalorieTracker {...{db,patch,date,setDate,entry:calorieEntry,setEntry:setCalorieEntry}}/>}
-      {tab==='settings'&&<SettingsTab {...{db,patch,patchSettings,exportJson,exportCsv,importJson,importError,cloneTemplates}} profileName={activeProfile?.name||'My profile'} cloudEnabled={!!cloud.user&&['synced','saving'].includes(cloud.status)}/>} 
+      {tab==='settings'&&<SettingsTab {...{db,patch,patchSettings,exportJson,exportCsv,importJson,importError,cloneTemplates,importHistoricalJson,historyImportStatus}} profileName={activeProfile?.name||'My profile'} cloudEnabled={!!cloud.user&&['synced','saving'].includes(cloud.status)}/>} 
       <footer>Powerbuild Tracker · Local-first workout log · Estimates are not medical or coaching guarantees.</footer>
     </main>
   </div>;
