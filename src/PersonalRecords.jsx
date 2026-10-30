@@ -8,7 +8,7 @@ const estimateDisplay=(record,units)=>record?<>{display(record,units)}<small cla
 export default function PersonalRecords({db,date,setDate,lift,setLift}){
  const units=unitName(db.settings.units),result=personalRecords(db,lift,date);
  const names=exerciseNames(db);
- return <CalorieSection title="Personal records" description="Actual singles, estimated strength and rep PRs, with all-time and recent comparisons." summary={result.all.count+' qualifying sets'}>
+ return <CalorieSection title="Personal records" description="Achieved singles, RPE-aware strength estimates and rep PRs, with all-time and recent comparisons." summary={result.all.count+' qualifying sets'}>
  <div className="formgrid"><label>Exercise<select aria-label="Exercise for records" value={lift} onChange={e=>setLift(e.target.value)}>{names.map(name=><option key={name}>{name}</option>)}</select></label><label>Records through date<input aria-label="Records through date" type="date" value={date} onChange={e=>setDate(e.target.value)}/></label></div>
  <p className="muted">All time through {date}. Recent means the last 90 calendar days. Achieved singles show the load actually lifted. Estimates use RPE 7–10 (10 − RPE = reps in reserve), up to 10 reps including reserve. Blank RPE assumes failure and may underestimate capacity; easy sets are excluded from predictions.</p>
  <div className="records-scroll"><table className="records-table"><thead><tr><th>Record</th><th>All time</th><th>Last 90 days</th></tr></thead><tbody>

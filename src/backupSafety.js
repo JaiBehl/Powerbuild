@@ -15,7 +15,7 @@ export function validateProfileDb(value){
  const checkSettings=settings=>{
   if(settings!==undefined&&(!settings||typeof settings!=='object'||Array.isArray(settings)))throw Error('Calorie settings are invalid.');
   if(!settings)return;
-  for(const key of ['customBaseline','heightIn','bodyWeight','age','milesWalked','milesRun','liftHours','proteinPerLb','fatPerLb','customCalorieTarget','customProtein','customCarbs','customFat'])number(settings[key],key);
+  for(const key of ['customBaseline','heightIn','bodyWeight','age','milesWalked','milesRun','liftHours','proteinPerLb','fatPerLb','customCalorieTarget','customProtein','customCarbs','customFat','baselineFactor','customMaintenance','walkMinutesPerMile','liftMet'])number(settings[key],key);
   if(settings.lifted!==undefined&&typeof settings.lifted!=='boolean')throw Error('Lifted setting must be true or false.');
  };
  checkSettings(value.calorieSettings);

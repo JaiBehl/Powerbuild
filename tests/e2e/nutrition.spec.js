@@ -29,7 +29,7 @@ test('manual weight can reconnect to new Progress weigh-ins',async({page})=>{
 
 test('clearing a goal deadline leaves maintenance available and displays guidance',async({page})=>{
  await seed(page);await openTab(page,'Calorie tracker');await card(page,'Bodyweight goal').getByLabel('Goal deadline',{exact:true}).fill('');
- await expect(card(page,'Daily calorie target')).toContainText('Choose a valid goal deadline');await expect(card(page,'Daily calorie target')).toContainText('2,887');await expect(page.getByRole('heading',{level:1})).toBeVisible();
+ await expect(card(page,'Daily calorie target')).toContainText('Choose a valid goal deadline');await expect(card(page,'Daily calorie target')).toContainText('3,166');await expect(page.getByRole('heading',{level:1})).toBeVisible();
 });
 
 test('changing starting defaults does not rewrite an already recorded date',async({page})=>{

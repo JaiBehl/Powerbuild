@@ -45,3 +45,7 @@ test('easy singles and high-rep achievements survive while prediction gates excl
   assert.equal(r.single.value,225);assert.equal(r.repPRs[15].value,150);assert.equal(r.estimated,null);
   assert.equal(buildStrengthHistory(sessions)['Touch-and-go bench press']['2026-10-30'],225);
 });
+test('bodyweight and assisted exercises cannot predict maxes from added load alone',()=>{
+  for(const name of ['Weighted pull-up','Assisted chin-up','Dips','Pull-up or lat pulldown'])assert.equal(e1rm(25,5,8,name),null);
+  assert.equal(e1rm(25,1,10,'Weighted pull-up'),25); // achieved added load only
+});

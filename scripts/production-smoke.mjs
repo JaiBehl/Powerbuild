@@ -8,7 +8,7 @@ export async function inspectProduction(origin,fetcher=fetch){
  if(!asset)throw Error('Production HTML does not reference a Vite application bundle.');
  const bundleResponse=await fetcher(asset.href,{signal:AbortSignal.timeout(15000),cache:'no-store'});
  if(!bundleResponse.ok)throw Error('Production bundle returned '+bundleResponse.status);
- const bundle=await bundleResponse.text(),required=['Personal records','Weekly review','Recovery copies','Follow weigh-ins','Saved Foods'];
+ const bundle=await bundleResponse.text(),required=['Personal records','Weekly review','Recovery copies','Follow weigh-ins','Saved Foods','RPE-aware','Resting metabolism formula'];
  const missing=required.filter(label=>!bundle.includes(label));if(missing.length)throw Error('Production bundle is missing release features: '+missing.join(', '));
  return {origin:base.origin,asset:asset.pathname,features:required};
 }

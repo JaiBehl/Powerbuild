@@ -21,3 +21,29 @@ test('unknown effort is labelled and easy or high-rep sets retain rep records',a
   await expect(prediction).toContainText('227.5 lb');await expect(prediction).toContainText('RPE missing · assumes failure');
   await expect(records.getByRole('row').filter({hasText:/^5/})).toContainText('300 lb');
 });
+test('maintenance formula and known-total override work without double-counting activity',async({page})=>{
+  await seed(page);await openTab(page,'Calorie tracker');const baseline=card(page,'Baseline maintenance'),target=card(page,'Daily calorie target');
+  await expect(target.locator('.metric').filter({hasText:'EST. MAINTENANCE'})).toContainText('3,166');
+  await baseline.getByLabel('Resting metabolism formula').selectOption('mifflin');await expect(baseline).toContainText('Mifflin–St Jeor');
+  await baseline.getByLabel('Baseline source').selectOption('custom');await baseline.getByLabel('Custom baseline (kcal)').fill('2300');
+  await expect(target.locator('.metric').filter({hasText:'EST. MAINTENANCE'})).toContainText('2,936');
+  await target.getByLabel('Maintenance source').selectOption('custom');await target.getByLabel('Known total maintenance (kcal/day)').fill('3000');
+  await expect(target.locator('.metric').filter({hasText:'EST. MAINTENANCE'})).toContainText('3,000');
+  const cardio=card(page,'Custom cardio');await cardio.getByLabel('Exercise',{exact:true}).fill('Synthetic bike');await cardio.getByLabel('Duration (min)',{exact:true}).fill('20');await cardio.getByLabel('Calories burned',{exact:true}).fill('100');await cardio.getByRole('button',{name:'Add cardio',exact:true}).click();
+  await expect(target.locator('.metric').filter({hasText:'EST. MAINTENANCE'})).toContainText('3,000');
+  await target.getByLabel('Known total maintenance (kcal/day)').fill('0');await expect(target).toContainText('Enter a positive known maintenance');await expect(target.getByLabel('Maintenance source')).toHaveValue('custom');
+});
+test('pace intensity and maintenance overrides persist only on their selected date',async({page})=>{
+  await seed(page);await openTab(page,'Calorie tracker');await card(page,'Food & meal log').getByLabel('Food log date').fill('2026-10-29');
+  await card(page,'Daily activity').getByLabel('Walking pace (minutes per mile)').fill('20');await card(page,'Daily activity').getByLabel('Average lifting intensity').selectOption('6');
+  await card(page,'Daily calorie target').getByLabel('Maintenance source').selectOption('custom');await card(page,'Daily calorie target').getByLabel('Known total maintenance (kcal/day)').fill('3200');
+  await page.reload();await openTab(page,'Calorie tracker');await card(page,'Food & meal log').getByLabel('Food log date').fill('2026-10-29');
+  await expect(card(page,'Daily activity').getByLabel('Walking pace (minutes per mile)')).toHaveValue('20');await expect(card(page,'Daily activity').getByLabel('Average lifting intensity')).toHaveValue('6');
+  await card(page,'Food & meal log').getByLabel('Food log date').fill(DAY);await expect(card(page,'Daily activity').getByLabel('Walking pace (minutes per mile)')).toHaveValue('22.5');await expect(card(page,'Daily calorie target').getByLabel('Maintenance source')).toHaveValue('estimate');
+});
+test('adult formula limits are visible and new controls fit a phone viewport',async({page})=>{
+  await page.setViewportSize({width:390,height:844});await seed(page,makeDb({calorieSettings:{age:17}}));await openTab(page,'Calorie tracker');
+  await expect(card(page,'Baseline maintenance')).toContainText('not validated for people under 18');
+  const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth);expect(overflow).toBe(false);
+  await card(page,'Daily activity').getByLabel('Lifted today?').selectOption('no');await expect(card(page,'Daily activity').getByLabel('Average lifting intensity')).toBeDisabled();
+});

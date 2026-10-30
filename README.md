@@ -12,10 +12,10 @@ This README is the product manual and the handoff for a fresh AI development con
 | Site | [powerbuild-flexible-goals.vercel.app](https://powerbuild-flexible-goals.vercel.app) |
 | Hosting | Existing Vercel project `powerbuild-flexible-goals`, team/dashboard slug `power-build` |
 | Backend | Supabase project `zgbldcmahkokmkfqeljh`; Auth and the account-snapshot table/RPC described below |
-| Source reviewed through | [b7723919a1077d9f9e0b0a5da56534eaf0afeb8d](https://github.com/JaiBehl/Powerbuild/commit/b7723919a1077d9f9e0b0a5da56534eaf0afeb8d) |
-| Release work | [PR #23](https://github.com/JaiBehl/Powerbuild/pull/23), plus [PR #24](https://github.com/JaiBehl/Powerbuild/pull/24) for same-date sync races, following the original audit and PRs #1–#22 |
+| Source reviewed through | [PR #25 working branch](https://github.com/JaiBehl/Powerbuild/pull/25); final tested SHA recorded after its gate |
+| Release work | [PR #25](https://github.com/JaiBehl/Powerbuild/pull/25): research-informed RPE/1RM and maintenance models; follows reliability PRs #23–#24 and original PRs #1–#22 |
 | Date | October 30, 2026, America/Los_Angeles |
-| Validation | 62 unit/integration tests, 40 Chromium browser tests, production builds; [complete gate](https://github.com/JaiBehl/Powerbuild/actions/runs/41036125874) |
+| Validation | 79 unit/integration tests passed locally; 45 Chromium tests defined (full new gate pending). Strength stage passed [70 + 42 tests](https://github.com/JaiBehl/Powerbuild/actions/runs/41039066800) |
 
 The source baseline identifies code actually reviewed and tested. Documentation-only or merge commits may be newer. Fetch current `main`, inspect commits since that baseline, and check open PRs before changing anything. Current source governs implemented behavior; the latest explicit user instruction governs desired behavior.
 
@@ -84,9 +84,9 @@ Exact rep/effort prescriptions live in `src/data.js`; profiles can override temp
 - Each recorded nutrition date has its own plan snapshot: baseline/demographics, activity, calorie/macro overrides and goal values. Food/cardio writes also snapshot a plan. Defaults seed new dates; an explicit action copies the selected day's settings into defaults.
 - Settings labels distinguish new-date bodyweight defaults from an existing day's plan. Editing defaults does not rewrite a recorded day's activity, targets or fallback starting weight. Actual weigh-ins still update automatic weight selection for their dates.
 - Weight source is **Follow weigh-ins** or **Enter weight manually**. Automatic uses the latest weigh-in on/before that date, then the day's starting-weight fallback. Existing manual overrides remain manual until explicitly reconnected.
-- Baseline is the calibrated estimate or a custom number. Height stays feet/inches; sex selects the formula; age is editable. Age does not increment automatically.
-- Walking 0–15 miles and running 0–10 miles in 0.25 steps; running is labeled 5:00/mile. Lifted yes/no and 1–3 hours in 0.25 steps. Lifting duration disables when not lifted.
-- Custom cardio logs name, minutes and manually entered kcal for a selected date. Only entered kcal affects expenditure; duration is recorded, not an automatic calorie estimator. Avoid counting the same activity in sliders and cardio.
+- Baseline uses resting metabolism × an explicit daily living factor (default 1.2), or an existing custom baseline. Default RMR is ten Haaf for recreational athletes aged 18–35; general-adult Mifflin–St Jeor is selectable and is the fallback outside that range. Under-18 results are flagged as outside adult validation. Height stays feet/inches; age is editable and does not increment automatically. The earlier forced 2,300 reference calibration is removed; explicit custom numbers remain unchanged.
+- Walking 0–15 miles and running 0–10 miles in 0.25 steps; running is labeled 5:00/mile. Walking pace is 15–40 min/mile (default 22.5). Lifted yes/no and 1–3 hours in 0.25 steps. Session-average lifting intensity is 3.5/5/6 MET (default 3.5), with rest subtracted and weight scaling. Duration/intensity disable when not lifted. Set RPE is not a valid calorie conversion and is not used as one.
+- Custom cardio logs name, minutes and manually entered active/net kcal for a selected date. Only entered kcal affects expenditure; duration is recorded, not an automatic calorie estimator. Avoid counting the same activity in sliders, baseline factor and cardio. A known-total maintenance override in Daily calorie target replaces the entire baseline/activity sum; it does not add exercise again. This is separate from the existing custom baseline and custom calorie target.
 - Calculated or manual calories; calculated bodyweight-based macros or independently entered protein/carbs/fat. A zero manual calorie target remains zero. Macro calories may differ from the calorie goal and the UI explains the difference.
 - Individual foods: name, Breakfast/Lunch/Dinner/Snacks/Other, per-serving calories/protein/carbs/fat and serving amount. Blank calories compute from macros; explicit calories take precedence. Missing names, all-zero nutrition and negative/non-finite nutrients are rejected.
 - Serving buttons ¼, ½, 1, 2, 3; custom positive decimal up to 100. Type `0.5`, not `1/2`, in the numeric field. Nutrient multiplication rounds to two decimals.
@@ -114,14 +114,16 @@ These are implementation formulas, not measured energy expenditure or recommende
 | --- | --- |
 | Canonical units | Pounds; height inches; macro rates g/lb; food macros g; kcal; distance miles |
 | Conversion | `1 kg = 2.2046226218 lb`; `1 in = 2.54 cm` |
-| Mifflin relationship | `10 × kg + 6.25 × cm − 5 × age + sexAdjustment`; male 5, female −161 |
-| Calibrated baseline | `round(max(1200, 2300 + BMR(inputs) − BMR(reference)))` |
-| Reference | 180 lb, 71 in, male, age 18 → exactly 2,300 before activity |
-| Estimate input handling | Height clamped 48–96 in; age 13–100; custom baseline used directly |
-| Walk/run | `walkMiles × weightLb × 0.45`; `runMiles × weightLb × 0.72` |
-| Lifting | `lifted ? liftHours × 175 : 0`, not weight-scaled |
-| Cardio | Sum nonnegative entered calories for selected date |
-| Maintenance | Rounded baseline + walk + run + lifting + dated cardio |
+| ten Haaf RMR | `(49.940 × kg + 2459.053 × heightM − 34.014 × age + 799.257 × male + 122.502) / 4.184`; original kJ coefficients converted to kcal |
+| General-adult Mifflin RMR | `10 × kg + 6.25 × cm − 5 × age + sexAdjustment`; male 5, female −161 |
+| Estimated baseline | `round(RMR × dailyLivingFactor)`; factor default 1.2, range 1.1–1.5; explicit custom baseline bypasses it |
+| Estimate input handling | Height 48–96 in; age 13–100, under 18 flagged unsupported; ten Haaf restricted to 18–35 |
+| Walking, net | `(3.85 + 5.97 × speedMps² / heightM) × kg × 0.005 × walkingMinutes`; `speedMps = 1609.344 / (paceMinPerMile × 60)` |
+| Running, net | `runMiles × 1609.344 × kg × 0.001`; level ACSM horizontal cost |
+| Lifting, net | `lifted ? (MET − 1) × 3.5 × kg / 200 × hours × 60 : 0` |
+| Cardio | Sum entered active/net calories for selected date |
+| Estimated maintenance | `round(baseline + netWalk + netRun + netLift + activeCardio)` |
+| Known total maintenance | Explicit positive total replaces the entire estimate; invalid values show guidance and use the estimate until corrected |
 | Goal days | `max(1, rounded calendar-day difference)`; invalid/cleared deadline uses one day with guidance |
 | Calculated target | `round(maintenance + (targetLb − weightLb) × 3500 / days)` |
 | Weekly goal rate | `(targetLb − weightLb) × 7 / days`, converted for kg display |
@@ -130,13 +132,21 @@ These are implementation formulas, not measured energy expenditure or recommende
 | Macro calories | `round(4P + 4C + 9F)` |
 | Strength | Achieved single = actual load; prediction = `load / interpolated fraction of 1RM` at `reps + (10 − RPE)` (blank effort assumes zero reserve); RPE 7–10 and <=10 effective reps |
 
-Reference example: 180 lb, four walking miles, no running and 1.5 hours lifting → `2300 + 324 + 262.5`, rounded to **2,887 kcal maintenance**, before custom cardio. Goals do not change that maintenance. There are no former percentage deficit/surplus caps or old vanilla-app 1,200–6,000 target clamp. Impossible targets/expired dates show warnings. A zero-carb floor means macro calories can exceed an extreme low calorie target.
+Reference example: 180 lb, 71 in, male, age 18, athlete RMR, living factor 1.2, four walking miles at 22.5 min/mile, no running, 1.5 h typical lifting (3.5 MET) → RMR about 2,108; baseline 2,530 + walking 314.3 + lifting 321.5, rounded to **3,166 kcal maintenance**, before custom cardio. This is a starting model estimate, not measured personal expenditure. Goals do not change that maintenance. There are no former percentage deficit/surplus caps or old vanilla-app 1,200–6,000 target clamp. Impossible targets/expired dates show warnings. A zero-carb floor means macro calories can exceed an extreme low calorie target.
 
 ## Strength estimation evidence and limits
 
 Research checked October 30, 2026. [Nuzzo et al. (2024)](https://doi.org/10.1007/s40279-023-01937-7), Figs 2–4, pool 269 studies and show exercise-dependent rep/load relationships. `src/strengthEstimation.js` retains the published means in the relevant range and linearly interpolates load percentage; the 100%-at-one-rep boundary is definitional. Inverting population means and adding self-reported RIR are implementation approximations, **not an externally validated individual prediction model or a claim of universal superiority over Epley**. The leg-press curve has especially wide uncertainty. No fabricated individual confidence interval is shown.
 
-The [2025 cross-validation](https://pubmed.ncbi.nlm.nih.gov/39495260/) recommends modified Lombardi for bench/leg extension at 4–10 reps to failure in a small, young male sample tested at 80% 1RM. It is not sufficient to impose that equation on every exercise/person/load. [2025/2026 RIR review](https://doi.org/10.1080/10833196.2025.2564026) supports better RIR accuracy close to failure. RPE 7–10 and 10 effective reps are conservative product gates, not universally validated thresholds; hard sets of roughly 2–6 reps with consistent technique are preferable for tracking. Unknown effort is never silently recorded as RPE 10. All PRs, goals and charts share one estimator after alias resolution. Logged weights/reps/RPE and achieved records are not rewritten; historical predictions may change. A direct, well-standardized maximum remains more informative than a prediction.
+The [2025 cross-validation](https://pubmed.ncbi.nlm.nih.gov/39495260/) recommends modified Lombardi for bench/leg extension at 4–10 reps to failure in a small, young male sample tested at 80% 1RM. It is not sufficient to impose that equation on every exercise/person/load. [2025/2026 RIR review](https://doi.org/10.1080/10833196.2025.2564026) supports better RIR accuracy close to failure. RPE 7–10 and 10 effective reps are conservative product gates, not universally validated thresholds; hard sets of roughly 2–6 reps with consistent technique are preferable for tracking. Bodyweight/assisted movements (including ambiguous pull-up/pulldown labels) do not predict a max from added load alone; their achieved loads and rep records remain visible. Unknown effort is never silently recorded as RPE 10. All PRs, goals and charts share one estimator after alias resolution. Logged weights/reps/RPE and achieved records are not rewritten; historical predictions may change. A direct, well-standardized maximum remains more informative than a prediction.
+
+## Maintenance evidence and limits
+
+Research checked October 30, 2026. The [athlete RMR meta-analysis](https://doi.org/10.1007/s40279-023-01896-z) supports population-matched equations, with ten Haaf performing well in its available athlete data. The [original ten Haaf study](https://doi.org/10.1371/journal.pone.0108460) supplies the coefficients used here. [October 2026 elite-cyclist validation](https://pubmed.ncbi.nlm.nih.gov/42849011/) also found good ten Haaf agreement in that cohort, but its new cyclist-specific equation is not a powerbuilding equation. [2025 DLW work](https://doi.org/10.1038/s43016-024-01089-5) illustrates individual uncertainty and poor extrapolation to unusually active groups. Newer does not mean universally better.
+
+Walking uses [Ludlow and Weyand (2016)](https://pubmed.ncbi.nlm.nih.gov/26679617/) height/weight/speed net oxygen cost for level walking; running uses the established ACSM level-distance component. Both use an approximate 5 kcal/L oxygen conversion. Lifting uses [2024 Compendium](https://pacompendium.com/conditioning-exercise/) categories 02054, 02052 and 02050, subtracting rest. Intensity must describe the session average with rests, not a hard set. Hills, sprints, load carriage and individual economy are not measured. The living factor is an explicit assumption, not a validated personal TDEE measurement; exercise substitution/compensation and digestion vary. No universal compensation discount or fabricated confidence interval is applied.
+
+For individual calibration, compare complete intake logs and weight averages over several consistent weeks, or enter a known total maintenance. Missing meals are not treated as zero intake, and short-term water/glycogen changes cannot identify TDEE. The app does not auto-fit maintenance from incomplete food history. Indirect calorimetry measures RMR, not total daily maintenance; doubly labelled water measures free-living expenditure. Neither measurement is available from app inputs. The existing 3,500-kcal/lb goal/deadline arithmetic is preserved as a rough static planning rule, **not** a validated dynamic weight-change forecast; it remains uncapped with guidance. No claim of exact or universally optimal predictions is made.
 
 ## Development and repeatable tests
 
@@ -221,7 +231,7 @@ First-device migration: export backups on the device with existing data, sign in
 | `calorieSettings` | Defaults for baseline, demographics, weight mode, activity, macro rates and manual overrides |
 | `templates` | Workout → tuples `[name,setCount,repRange,effortTarget,kind?,templateId]` |
 
-Fresh defaults: start `2026-10-12`, 180 → 160 lb, weight deadline `2027-04-12`, strength deadline `2027-10-12`, lb, weekdays `[1,2,3,5,6]`, offset 0. Empty logs/goals/library; cloned program. Nutrition defaults: reference baseline 2,300; 71 in; male; age 18; automatic weight; four walking miles; zero running; lifted 1.5 h; protein 1 g/lb and fat 0.3 g/lb; calculated targets. Actual saved values take precedence.
+Fresh defaults: start `2026-10-12`, 180 → 160 lb, weight deadline `2027-04-12`, strength deadline `2027-10-12`, lb, weekdays `[1,2,3,5,6]`, offset 0. Empty logs/goals/library; cloned program. Nutrition defaults: ten Haaf athlete RMR; living factor 1.2; saved custom baseline field 2,300 (used only in custom mode); 71 in; male; age 18; automatic weight; four walking miles at 22.5 min/mile; zero running; lifted 1.5 h at 3.5 MET; calculated maintenance/targets; protein 1 g/lb and fat 0.3 g/lb. Actual saved values take precedence.
 
 | Storage key | Meaning |
 | --- | --- |
@@ -276,7 +286,8 @@ Explicit correction updates records owned by the same import ID. Optional remova
 | `src/exerciseCatalog.js`, `src/ExerciseAliases.jsx` | Canonical movement resolution, shared selectors/history and alias editor |
 | `src/trainingStats.js`, `src/PreviousPerformance.jsx`, `src/PersonalRecords.jsx` | Previous finished sets and actual/estimated/rep records |
 | `src/trends.js`, `src/WeeklyReview.jsx` | Daily-weight averages and weekly training/nutrition summary |
-| `src/CalorieTracker.jsx`, `src/nutrition.js` | Nutrition cards, daily plan migration, defaults and tested calculations |
+| `src/CalorieTracker.jsx`, `src/nutrition.js`, `src/maintenance.js` | Nutrition cards, daily snapshots/defaults, RMR/net-activity models and maintenance override |
+| `src/strengthEstimation.js` | Shared exercise-specific population tables, RPE/RIR adjustment, prediction gates and achievement distinction |
 | `src/FoodLog.jsx`, `src/SavedFoods.jsx`, `src/ServingPicker.jsx`, `src/foodLibrary.js` | Foods, reusable templates, portions, validation and totals |
 | `src/CardioLog.jsx` | Dated custom cardio CRUD |
 | `src/SettingsTab.jsx` | Defaults, units, schedule, optional goals and backup/recovery controls |
@@ -317,7 +328,7 @@ The original audit read all 34 files at `03d6258633b7376b184a3b7e86bdd201cf18c62
 | Remembered panels/mobile layout | [Passed](https://github.com/JaiBehl/Powerbuild/actions/runs/41032100842) |
 | Same-date concurrent workout protection | [Passed](https://github.com/JaiBehl/Powerbuild/actions/runs/41036125874) |
 
-Final source gate: **62 unit/integration + 40 browser tests, zero failures**, plus Vite builds and Vercel preview status. Source baseline and gate link are at the top. CI includes deletion/restore, quota failures, malformed imports, aliases, actual/estimated PRs, daily plan isolation, weight reconnect, old-session template safety, two-device/offline sync, signup/resend redirects, mobile width, exports and persistent panels. Source/static/protocol tests do not prove actual email delivery or every real-device account scenario.
+Current review: strength stage passed **70 unit/integration + 42 browser tests**. Maintenance stage: 79 unit/integration tests passed locally, with 45 browser tests awaiting the complete new CI gate. Previous release passed 62 + 40. Source baseline and gate link are at the top. CI includes deletion/restore, quota failures, malformed imports, aliases, actual/estimated PRs, daily plan isolation, weight reconnect, old-session template safety, two-device/offline sync, signup/resend redirects, mobile width, exports and persistent panels. Source/static/protocol tests do not prove actual email delivery or every real-device account scenario.
 
 GitHub `main` is the established Vercel production source; repo root, Vite, `npm run build`, `dist`. Production and preview are different environments. Check the exact GitHub Vercel commit status and successful main regression/production-smoke jobs before claiming a deployment is verified. Vercel dashboard API access was limited during this work, so CI/static verification is used instead of inventing dashboard configuration facts.
 
@@ -367,3 +378,4 @@ The README PR check flags application/configuration/test changes without a compa
 | [#22](https://github.com/JaiBehl/Powerbuild/pull/22) | Shared collapsible cards across all five tabs |
 | [#23](https://github.com/JaiBehl/Powerbuild/pull/23) | Reliability fixes, recovery, training insights, persistent panels, regression tests and production verification |
 | [#24](https://github.com/JaiBehl/Powerbuild/pull/24) | Match dated sync records before UUIDs; prevent hidden duplicate workouts during concurrent starts |
+| [#25](https://github.com/JaiBehl/Powerbuild/pull/25) | Research-informed exercise/RPE strength estimates and population-matched net-activity maintenance models |

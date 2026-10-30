@@ -21,6 +21,9 @@ export function estimateStrength(weight,reps,rpe='',exercise=''){
   const effort=missingRpe?null:numeric(rpe),model=strengthModel(exercise);
   // A single with unknown effort is an achievement, not a tested maximum.
   if(r===1&&(missingRpe||effort===10))return {value:w,kind:'achieved',model,repsToFailure:1,rpe:effort,missingRpe};
+  // Added load alone is not total resistance in these movements. Do not
+  // manufacture a max without body mass/assistance and movement mechanics.
+  if(/pull[ -]?up|chin[ -]?up|\bdips?\b|push[ -]?up|hanging|plank|assisted|body[ -]?weight/i.test(exercise))return null;
   // Conservative product gates, not universal biological cutoffs.
   if(r>10||(!missingRpe&&(!Number.isFinite(effort)||effort<7||effort>10)))return null;
   const repsToFailure=r+(missingRpe?0:10-effort);
