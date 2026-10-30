@@ -72,8 +72,8 @@ Exact rep/effort prescriptions live in `src/data.js`; profiles can override temp
 - Overview of finished sessions, completed sets, latest weight and target.
 - Optional strength goals for any exercise, with individual target weight/deadline; add/edit/remove in Settings. New profiles start with none. Eligible original-profile migrations retain the older 405/315/225-lb squat/touch-and-go bench/supported OHP goals; these are not universal defaults.
 - Set-based strength chart and separate raw-weight/seven-day-average chart. Independent 3M/6M/1Y/All controls, default 6M, measured back from the latest point in that series. Tooltips show full dates and units.
-- A completed single uses actual lifted weight. Integer sets of 2–15 reps use Epley; failed, non-finite, non-positive and partial-rep estimates are excluded. The chart takes the highest qualifying value per movement/date, including done sets in unfinished sessions.
-- Personal records separates achieved singles, estimated 1RM from 2–15 reps, and best load at each rep count. Compare all time through the selected date with the last 90 calendar days. Future sets are excluded and ties retain the first achievement date.
+- A completed single retains its achieved load. Predictions interpolate the Nuzzo 2024 population tables (flat barbell bench, leg press, or general). Recorded RPE 7–10 adds `10 − RPE` estimated reps in reserve, including half points; at most 10 effective reps qualify. Blank RPE is explicitly labelled as an assumption of failure. Easy/high-rep/invalid sets remain logged but do not generate predictions. The chart takes the highest qualifying value per movement/date, including done sets in unfinished sessions.
+- Personal records separates achieved singles, RPE-aware estimated 1RM (including submaximal singles), and best load at every rep count. Compare all time through the selected date with the last 90 calendar days. Future sets are excluded and ties retain the first achievement date.
 - Standard bench labels share a movement series; custom reversible aliases and same-name opt-outs are in Settings. Linking does not rewrite original logs. Charts, goals, previous-session comparisons and records use the same resolution.
 - Weekly review covers seven days ending on the selected date: finished workouts/sets/volume, average consumed calories/protein on food-log days, custom cardio, weight average and change versus the preceding week. Missing days are unknown, not zero. Multiple weigh-ins on one day are averaged before averaging days.
 - Workout and bodyweight history include every year, year/search filters and 30-record increments. Workout search includes date/type/exercises/notes; opening a workout shows its original date/notes.
@@ -128,9 +128,15 @@ These are implementation formulas, not measured energy expenditure or recommende
 | Protein/fat | `round(weightLb × configured gramsPerLb)` |
 | Carbs | `max(0, round((chosenTarget − 4P − 9F) / 4))` |
 | Macro calories | `round(4P + 4C + 9F)` |
-| Strength | Single = actual weight; 2–15 integer reps = `weight × (1 + reps / 30)` |
+| Strength | Achieved single = actual load; prediction = `load / interpolated fraction of 1RM` at `reps + (10 − RPE)` (blank effort assumes zero reserve); RPE 7–10 and <=10 effective reps |
 
 Reference example: 180 lb, four walking miles, no running and 1.5 hours lifting → `2300 + 324 + 262.5`, rounded to **2,887 kcal maintenance**, before custom cardio. Goals do not change that maintenance. There are no former percentage deficit/surplus caps or old vanilla-app 1,200–6,000 target clamp. Impossible targets/expired dates show warnings. A zero-carb floor means macro calories can exceed an extreme low calorie target.
+
+## Strength estimation evidence and limits
+
+Research checked October 30, 2026. [Nuzzo et al. (2024)](https://doi.org/10.1007/s40279-023-01937-7), Figs 2–4, pool 269 studies and show exercise-dependent rep/load relationships. `src/strengthEstimation.js` retains the published means in the relevant range and linearly interpolates load percentage; the 100%-at-one-rep boundary is definitional. Inverting population means and adding self-reported RIR are implementation approximations, **not an externally validated individual prediction model or a claim of universal superiority over Epley**. The leg-press curve has especially wide uncertainty. No fabricated individual confidence interval is shown.
+
+The [2025 cross-validation](https://pubmed.ncbi.nlm.nih.gov/39495260/) recommends modified Lombardi for bench/leg extension at 4–10 reps to failure in a small, young male sample tested at 80% 1RM. It is not sufficient to impose that equation on every exercise/person/load. [2025/2026 RIR review](https://doi.org/10.1080/10833196.2025.2564026) supports better RIR accuracy close to failure. RPE 7–10 and 10 effective reps are conservative product gates, not universally validated thresholds; hard sets of roughly 2–6 reps with consistent technique are preferable for tracking. Unknown effort is never silently recorded as RPE 10. All PRs, goals and charts share one estimator after alias resolution. Logged weights/reps/RPE and achieved records are not rewritten; historical predictions may change. A direct, well-standardized maximum remains more informative than a prediction.
 
 ## Development and repeatable tests
 
@@ -263,7 +269,7 @@ Explicit correction updates records owned by the same import ID. Optional remova
 | File | Responsibility |
 | --- | --- |
 | `index.html`, `src/main.jsx` | Entry; app state, normalization/migration, profiles, dates, exports/imports, undo and persistence orchestration |
-| `src/data.js`, `src/dates.js` | Default program/settings, session factory, single/Epley logic, strict dates and calendar arithmetic |
+| `src/data.js`, `src/dates.js` | Default program/settings, session factory, estimator compatibility export, strict dates and calendar arithmetic |
 | `src/TrainTab.jsx`, `src/workoutOperations.js` | Workout UI, explicit template edits and stable identity matching |
 | `src/ScheduleTab.jsx` | Weekly schedule and six-session preview |
 | `src/ProgressTab.jsx` | Goal summaries, charts and all-years histories |
