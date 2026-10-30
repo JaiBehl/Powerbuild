@@ -26,6 +26,7 @@ function normalizeDb(x={},options={}){
     sessions:Array.isArray(x.sessions)?x.sessions:[],
     weights:Array.isArray(x.weights)?x.weights:[],
     calories:Array.isArray(x.calories)?x.calories:[],
+    savedFoods:Array.isArray(x.savedFoods)?x.savedFoods:[],
     calorieSettings:{...calorieDefaults,...(x.calorieSettings||{})},
     templates:x.templates&&typeof x.templates==='object'&&!Array.isArray(x.templates)?x.templates:cloneTemplates(),
   };
@@ -98,7 +99,7 @@ function App(){
   const [showManual,setShowManual]=useState(false);
   const [manualType,setManualType]=useState('Push A');
   const [weightEntry,setWeightEntry]=useState('');
-  const [calorieEntry,setCalorieEntry]=useState({calories:'',protein:'',carbs:'',fat:''});
+  const [calorieEntry,setCalorieEntry]=useState({name:'',meal:'Breakfast',servings:'1',calories:'',protein:'',carbs:'',fat:''});
 
   function applyCloudSnapshot(snapshot){
     if(!snapshot?.profileState?.profiles?.length||!snapshot.profileData)throw Error('Invalid cloud data');
@@ -136,7 +137,7 @@ function App(){
     setShowManual(false);
     setManualType('Push A');
     setWeightEntry('');
-    setCalorieEntry({calories:'',protein:'',carbs:'',fat:''});
+    setCalorieEntry({name:'',meal:'Breakfast',servings:'1',calories:'',protein:'',carbs:'',fat:''});
     setImportError('');
     setHistoryImportStatus('');
   }
