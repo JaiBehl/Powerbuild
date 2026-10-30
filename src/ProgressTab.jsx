@@ -7,6 +7,23 @@ export default function ProgressTab({db,patch,date,setDate,setTab,weightEntry,se
   const units=unitName(db.settings.units);
   const goals=Array.isArray(db.strengthGoals)?db.strengthGoals:[];
   const [chartRange,setChartRange]=useState('6M');
+  const [workoutYear,setWorkoutYear]=useState('all');
+  const [workoutSearch,setWorkoutSearch]=useState('');
+  const [visibleWorkoutCount,setVisibleWorkoutCount]=useState(30);
+  // Include every dated session (completed and in-progress), not just the most
+  // recent 25 finished sessions. Imported Apple Notes workouts live here too.
+  const fullWorkoutHistory=useMemo(()=>[...db.sessions].sort((a,b)=>String(b.date).localeCompare(String(a.date))),[db.sessions]);
+  const workoutYears=useMemo(()=>[...new Set(fullWorkoutHistory.map(s=>String(s.date||'').slice(0,4)).filter(y=>/^\d{4}$/.test(y)))].sort((a,b)=>b.localeCompare(a)),[fullWorkoutHistory]);
+  const matchingWorkouts=useMemo(()=>{
+    const query=workoutSearch.trim().toLowerCase();
+    return fullWorkoutHistory.filter(s=>{
+      if(workoutYear!=='all'&&!String(s.date||'').startsWith(workoutYear+'-'))return false;
+      if(!query)return true;
+      return [s.date,s.type,s.notes,...(Array.isArray(s.exercises)?s.exercises.map(e=>e.name):[])].some(x=>String(x||'').toLowerCase().includes(query));
+    });
+  },[fullWorkoutHistory,workoutYear,workoutSearch]);
+  const visibleWorkouts=matchingWorkouts.slice(0,visibleWorkoutCount);
+  const resetWorkoutPage=()=>setVisibleWorkoutCount(30);
   // Keep complete ISO dates for hover details; shorten only the axis tick labels.
   const displayChartData=useMemo(()=>{
     const all=chartData.map(x=>({...x,value:toDisplayWeight(x.value,units,1)}));
@@ -66,6 +83,31 @@ export default function ProgressTab({db,patch,date,setDate,setTab,weightEntry,se
     </section>
 
     <section className="panel"><div className="between"><div><h2>Bodyweight log</h2><p className="muted">Use consistent morning weigh-ins; compare weekly averages.</p></div></div><div className="weightform"><input type="date" value={date} onChange={e=>setDate(e.target.value)}/><input type="number" step="0.1" min="0" placeholder={`Weight (${units})`} value={weightEntry} onChange={e=>setWeightEntry(e.target.value)}/><button className="primary" onClick={()=>{if(Number(weightEntry)>0){patch(p=>({...p,weights:[...p.weights.filter(w=>w.date!==date),{date,weight:fromDisplayWeight(weightEntry,units)}]}));setWeightEntry('')}}}><Plus size={16}/> Save weight</button></div>{db.weights.length>0&&<div className="weightlist">{[...db.weights].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,12).map(w=><div key={w.date}><span>{w.date}</span><b>{toDisplayWeight(w.weight,units,1)} {units}</b><button className="iconbtn subtle" onClick={()=>patch(p=>({...p,weights:p.weights.filter(x=>x.date!==w.date)}))}><Trash2 size={14}/></button></div>)}</div>}</section>
-    <section className="panel"><h2>Workout history</h2>{finished.length===0?<p className="empty">Finish a workout to see it here.</p>:<div className="history">{finished.slice(0,25).map(s=><button key={s.id} onClick={()=>{setDate(s.date);setTab('today')}}><div><strong>{s.type}</strong><small>{s.date}</small></div><span>{s.exercises.reduce((n,e)=>n+e.sets.filter(x=>x.done).length,0)} completed sets →</span></button>)}</div>}</section>
+    <section className="panel">
+      <div className="between"><div><h2>Workout history</h2><p className="muted">Browse every saved workout, including your imported sessions from earlier years.</p></div><span className="workout-history-total">{fullWorkoutHistory.length} total workouts</span></div>
+      {fullWorkoutHistory.length===0?<p className="empty">No workouts logged yet. Start a workout or import your historical records in Settings &amp; backup.</p>:<>
+        <div className="workout-history-filters">
+          <label>Year
+            <select aria-label="Filter workout history by year" value={workoutYear} onChange={e=>{setWorkoutYear(e.target.value);resetWorkoutPage()}}>
+              <option value="all">All years</option>
+              {workoutYears.map(y=><option key={y} value={y}>{y}</option>)}
+            </select>
+          </label>
+          <label>Search workouts
+            <input type="search" aria-label="Search workout history" placeholder="Exercise, date, or notes" value={workoutSearch} onChange={e=>{setWorkoutSearch(e.target.value);resetWorkoutPage()}}/>
+          </label>
+        </div>
+        {matchingWorkouts.length===0?<p className="empty">No workouts match this filter. Try another year or search.</p>:<>
+          <div className="workout-history-meta">Showing {visibleWorkouts.length} of {matchingWorkouts.length} matching workouts</div>
+          <div className="history workout-history-list">
+            {visibleWorkouts.map((s,i)=><button key={s.id||s.date+'-'+i} onClick={()=>{setDate(s.date);setTab('today')}} title="Open this workout and its saved notes">
+              <div><strong>{s.type||'Workout'}</strong><small>{s.date}</small></div>
+              <span className="workout-history-stats">{Array.isArray(s.exercises)?s.exercises.length:0} exercises · {Array.isArray(s.exercises)?s.exercises.reduce((n,e)=>n+(Array.isArray(e.sets)?e.sets.filter(x=>x.done).length:0),0):0} completed sets</span>
+            </button>)}
+          </div>
+          {visibleWorkoutCount<matchingWorkouts.length&&<div className="workout-history-more"><button className="secondary" onClick={()=>setVisibleWorkoutCount(n=>n+30)}>Show 30 more workouts</button></div>}
+        </>}
+      </>}
+    </section>
   </>;
 }
