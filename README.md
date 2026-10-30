@@ -60,6 +60,10 @@ Undo/recovery and storage-failure tests passed the full CI gate. Panel collapse 
 
 All five additions passed their individual full-suite gates. Added regressions for malformed backup fields, cleared/invalid deadlines, alias removal while selected, obsolete auth responses and the old build entry point. `build.mjs` now delegates to Vite rather than copying an incomplete site. `npm run test:all` runs tests, production build and browser regressions. CI keeps browser traces/screenshots for seven days. Final complete-suite verification precedes merging.
 
+### Production verification gate
+
+The final consistency pass passed: 58 unit/integration tests, 35 browser tests and production builds. Added a separately tested, read-only production smoke check after successful main-branch CI. It waits for Vercel rollout and checks the public HTML/bundle for the released capabilities without accessing any account or user records. Browser reports/traces are downloadable from the Actions run.
+
 ## Current handoff
 
 | Item | Audited state |
