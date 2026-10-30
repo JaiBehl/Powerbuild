@@ -1,6 +1,6 @@
 import React from 'react';
-import {Plus,Trash2} from 'lucide-react';
 import CardioLog from './CardioLog';
+import FoodLog from './FoodLog';
 import {displayMacroRate,fromDisplayWeight,storeMacroRate,toDisplayRate,toDisplayWeight,unitName} from './units';
 
 export const calorieDefaults={
@@ -16,6 +16,12 @@ export const calorieDefaults={
   liftHours:1.5,
   proteinPerLb:1,
   fatPerLb:.3,
+  calorieTargetMode:'calculated',
+  customCalorieTarget:null,
+  macroTargetMode:'calculated',
+  customProtein:null,
+  customCarbs:null,
+  customFat:null,
 };
 
 const LB_PER_KG=2.2046226218;
@@ -67,20 +73,37 @@ export default function CalorieTracker({db,patch,date,setDate,entry,setEntry}){
   const goalRate=goalDifference*7/days;
   const daysRemaining=Math.round((deadline-today)/86400000);
   const rawAdjustment=goalDifference*3500/days;
-  const maxCut=maintenance*.25,maxBulk=maintenance*.15;
-  const adjustment=Math.max(-maxCut,Math.min(maxBulk,rawAdjustment));
-  const target=Math.max(0,Math.round(maintenance+adjustment));
+  // The calculated daily goal reflects the requested weight and deadline
+  // without imposing arbitrary app surplus/deficit caps.
+  const calculatedTarget=Math.round(maintenance+rawAdjustment);
   const mode=Math.abs(goalDifference)<.1?'Maintain':goalDifference>0?'Bulk':'Cut';
-  const unrealistic=Math.abs(rawAdjustment-adjustment)>1;
-  const protein=Math.round(weight*cs.proteinPerLb),fat=Math.round(weight*cs.fatPerLb),carbs=Math.max(0,Math.round((target-protein*4-fat*9)/4));
-  const sums=logged.reduce((a,x)=>({calories:a.calories+Number(x.calories||0),protein:a.protein+Number(x.protein||0),carbs:a.carbs+Number(x.carbs||0),fat:a.fat+Number(x.fat||0)}),{calories:0,protein:0,carbs:0,fat:0});
-
-  const add=()=>{
-    if(Number(entry.calories)<=0)return;
-    updateDayRecord(day=>({...day,items:[...day.items,{...entry,id:Date.now()+Math.random()}]}));
-    setEntry({calories:'',protein:'',carbs:'',fat:''});
-  };
-  const remove=id=>updateDayRecord(day=>({...day,items:day.items.filter(i=>i.id!==id)}));
+  const calorieTargetMode=cs.calorieTargetMode==='custom'?'custom':'calculated';
+  const manualCalorieTarget=Number(cs.customCalorieTarget)>0?Number(cs.customCalorieTarget):Math.max(0,calculatedTarget);
+  const target=calorieTargetMode==='custom'?Math.round(manualCalorieTarget):calculatedTarget;
+  const calculatedProtein=Math.round(weight*cs.proteinPerLb);
+  const calculatedFat=Math.round(weight*cs.fatPerLb);
+  const calculatedCarbs=Math.max(0,Math.round((target-calculatedProtein*4-calculatedFat*9)/4));
+  const macroTargetMode=cs.macroTargetMode==='custom'?'custom':'calculated';
+  const protein=macroTargetMode==='custom'?Math.max(0,Number(cs.customProtein??calculatedProtein)):calculatedProtein;
+  const carbs=macroTargetMode==='custom'?Math.max(0,Number(cs.customCarbs??calculatedCarbs)):calculatedCarbs;
+  const fat=macroTargetMode==='custom'?Math.max(0,Number(cs.customFat??calculatedFat)):calculatedFat;
+  const macroCalories=Math.round(protein*4+carbs*4+fat*9);
+  const setCalorieTargetMode=(nextMode)=>patch(p=>({
+    ...p,calorieSettings:{
+      ...p.calorieSettings,
+      calorieTargetMode:nextMode,
+      customCalorieTarget:nextMode==='custom'&&!(Number(cs.customCalorieTarget)>0)?Math.max(0,calculatedTarget):cs.customCalorieTarget,
+    },
+  }));
+  const setMacroTargetMode=(nextMode)=>patch(p=>({
+    ...p,calorieSettings:{
+      ...p.calorieSettings,
+      macroTargetMode:nextMode,
+      customProtein:cs.customProtein??calculatedProtein,
+      customCarbs:cs.customCarbs??calculatedCarbs,
+      customFat:cs.customFat??calculatedFat,
+    },
+  }));
   const updateCardio=entries=>updateDayRecord(day=>({...day,cardio:entries}));
 
   const displayedGoal=toDisplayWeight(db.settings.targetWeight,units,1);
@@ -134,37 +157,54 @@ export default function CalorieTracker({db,patch,date,setDate,entry,setEntry}){
       <div className="summary">
         <div className="metric"><small>BASELINE</small><strong>{baseline.toLocaleString()} <span>kcal</span></strong></div>
         <div className="metric"><small>EST. MAINTENANCE</small><strong>{maintenance.toLocaleString()} <span>kcal</span></strong></div>
+        <div className="metric"><small>CALCULATED GOAL</small><strong>{calculatedTarget.toLocaleString()} <span>kcal</span></strong></div>
         <div className="metric"><small>DAILY CALORIE GOAL</small><strong>{target.toLocaleString()} <span>kcal</span></strong></div>
-        <div className="metric"><small>REQUIRED {mode==='Bulk'?'GAIN':mode==='Cut'?'LOSS':'CHANGE'}</small><strong>{Math.abs(toDisplayRate(goalRate,units,2)).toFixed(2)} <span>{rateUnit}</span></strong></div>
       </div>
-      <p className="muted note">Daily target uses your selected baseline, activity assumptions, custom cardio, and deadline. Estimated deficit is capped at 25% of maintenance and surplus at 15%. Recalibrate with weight trends.</p>
-      {daysRemaining<=0&&<p className="error">Your deadline has passed or is today. Choose a future date for a meaningful target.</p>}
-      {unrealistic&&daysRemaining>0&&<p className="error">Your requested rate exceeds the app's planning limits. The displayed calorie target uses a moderated rate; extend your deadline or adjust the goal.</p>}
+      <p className="muted note">Maintenance is calculated from your baseline and recorded activity regardless of your weight goal. The goal-based calculation is <b>{Math.abs(toDisplayRate(goalRate,units,2)).toFixed(2)} {rateUnit}</b> {mode==='Bulk'?'gain':mode==='Cut'?'loss':'change'} per week using the remaining days. No arbitrary calorie adjustment cap is applied. These values are estimates, not safe-intake recommendations.</p>
+      <div className="formgrid">
+        <label>Daily calorie goal source
+          <select value={calorieTargetMode} onChange={e=>setCalorieTargetMode(e.target.value)}>
+            <option value="calculated">Calculate from weight goal + deadline</option>
+            <option value="custom">Set my own daily calorie goal</option>
+          </select>
+        </label>
+        {calorieTargetMode==='custom'&&<label>My daily calorie goal (kcal)
+          <input type="number" min="0" step="1" value={manualCalorieTarget} onChange={e=>update('customCalorieTarget',Math.max(0,Number(e.target.value)||0))}/>
+        </label>}
+      </div>
+      {daysRemaining<=0&&<p className="error">The selected deadline has passed or is today. The calculation uses a one-day fallback; choose a future date for a meaningful goal.</p>}
+      {calculatedTarget<=0&&<p className="error">The mathematical calorie target for this goal is {calculatedTarget.toLocaleString()} kcal/day, which is not a viable food intake. Set a realistic deadline or choose your own daily target.</p>}
+      {calculatedTarget>maintenance*1.5&&<p className="muted note">This goal implies a large surplus. Consider checking your rate of weight change over time rather than treating the calculated result as a required intake.</p>}
     </section>
 
     <section className="panel">
       <h2>Macro targets</h2>
-      <div className="summary">
-        <div className="metric"><small>PROTEIN</small><strong>{protein}<span> g</span></strong></div>
-        <div className="metric"><small>CARBS</small><strong>{carbs}<span> g</span></strong></div>
-        <div className="metric"><small>FAT</small><strong>{fat}<span> g</span></strong></div>
-      </div>
+      <p className="muted">Use calculated targets based on your weight and calorie goal, or set protein, carbs, and fat yourself. Your manual targets are saved to your Powerbuild profile.</p>
       <div className="formgrid">
+        <label>Macro target source
+          <select value={macroTargetMode} onChange={e=>setMacroTargetMode(e.target.value)}>
+            <option value="calculated">Automatically calculate macros</option>
+            <option value="custom">Set protein, carbs and fat manually</option>
+          </select>
+        </label>
+      </div>
+      <div className="summary">
+        <div className="metric"><small>PROTEIN GOAL</small><strong>{Math.round(protein)}<span> g</span></strong></div>
+        <div className="metric"><small>CARB GOAL</small><strong>{Math.round(carbs)}<span> g</span></strong></div>
+        <div className="metric"><small>FAT GOAL</small><strong>{Math.round(fat)}<span> g</span></strong></div>
+        <div className="metric"><small>MACRO CALORIES</small><strong>{macroCalories.toLocaleString()}<span> kcal</span></strong></div>
+      </div>
+      {macroTargetMode==='calculated'?<div className="formgrid">
         <label>Protein (g/{units})<input type="number" min=".2" max="4" step=".05" value={proteinRate} onChange={e=>update('proteinPerLb',storeMacroRate(e.target.value,units))}/></label>
         <label>Fat (g/{units})<input type="number" min=".1" max="2" step=".05" value={fatRate} onChange={e=>update('fatPerLb',storeMacroRate(e.target.value,units))}/></label>
-      </div>
+      </div>:<div className="formgrid">
+        {[['customProtein','Protein (g)',protein],['customCarbs','Carbs (g)',carbs],['customFat','Fat (g)',fat]].map(([key,label,value])=><label key={key}>{label}
+          <input type="number" min="0" step="1" value={value} onChange={e=>update(key,Math.max(0,Number(e.target.value)||0))}/>
+        </label>)}
+      </div>}
+      <p className="muted note">The macros above total about {macroCalories.toLocaleString()} kcal. {Math.abs(macroCalories-target)>25?'They differ from your calorie goal; adjust them independently if you want the numbers to match.':'They are close to your calorie goal.'} Food entries below count toward both calories and macro totals.</p>
     </section>
 
-    <section className="panel">
-      <div className="between"><h2>Food log</h2><input aria-label="Food log date" type="date" value={date} onChange={e=>setDate(e.target.value)}/></div>
-      <div className="summary">
-        <div className="metric"><small>CALORIES LOGGED</small><strong>{Math.round(sums.calories)}</strong></div>
-        <div className="metric"><small>REMAINING</small><strong>{Math.round(target-sums.calories)}</strong></div>
-        <div className="metric"><small>PROTEIN LOGGED</small><strong>{Math.round(sums.protein)}<span> g</span></strong></div>
-      </div>
-      <div className="formgrid">{[['calories','Calories'],['protein','Protein (g)'],['carbs','Carbs (g)'],['fat','Fat (g)']].map(([key,label])=><label key={key}>{label}<input type="number" min="0" value={entry[key]} onChange={e=>setEntry(p=>({...p,[key]:e.target.value}))}/></label>)}</div>
-      <button className="primary" onClick={add}><Plus size={16}/> Add food entry</button>
-      <div className="weightlist">{logged.map(item=><div key={item.id}><span>{item.calories} kcal · P {item.protein||0} / C {item.carbs||0} / F {item.fat||0}</span><button className="iconbtn subtle" onClick={()=>remove(item.id)}><Trash2 size={14}/></button></div>)}</div>
-    </section>
+    <FoodLog date={date} setDate={setDate} items={logged} updateDayRecord={updateDayRecord} entry={entry} setEntry={setEntry} target={target} macros={{protein,carbs,fat}}/>
   </>;
 }
