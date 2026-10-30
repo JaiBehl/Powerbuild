@@ -30,7 +30,7 @@ export default function ProgressTab({db,patch,date,setDate,setTab,weightEntry,se
   const [visibleBodyweightCount,setVisibleBodyweightCount]=useState(30);
   const allBodyweightLogs=useMemo(()=>db.weights
     .map((entry,sourceIndex)=>({...entry,sourceIndex}))
-    .filter(entry=>/^\\d{4}-\\d{2}-\\d{2}$/.test(String(entry.date||''))&&Number.isFinite(Number(entry.weight))&&Number(entry.weight)>0)
+    .filter(entry=>/^\d{4}-\d{2}-\d{2}$/.test(String(entry.date||''))&&Number.isFinite(Number(entry.weight))&&Number(entry.weight)>0)
     .sort((a,b)=>b.date.localeCompare(a.date)||b.sourceIndex-a.sourceIndex),[db.weights]);
   const bodyweightYears=useMemo(()=>[...new Set(allBodyweightLogs.map(w=>w.date.slice(0,4)))].sort((a,b)=>b.localeCompare(a)),[allBodyweightLogs]);
   const matchingBodyweightLogs=useMemo(()=>{
@@ -114,6 +114,30 @@ export default function ProgressTab({db,patch,date,setDate,setTab,weightEntry,se
     </section>
 
     <section className="panel">
+      <div className="between trend-heading">
+        <div><h2>Bodyweight trend</h2><p className="muted">Your recorded scale weight over time. Hover to see the full date and exact weight.</p></div>
+        <span className="workout-history-total">{allBodyweightLogs.length} weigh-ins</span>
+      </div>
+      <div className="trend-controls">
+        <div className="trend-range" role="group" aria-label="Bodyweight chart date range">
+          {['3M','6M','1Y','All'].map(range=><button key={range} type="button" aria-pressed={bodyweightRange===range} className={bodyweightRange===range?'selected':''} onClick={()=>setBodyweightRange(range)}>{range}</button>)}
+        </div>
+        <span className="trend-caption">{bodyweightChartData.length} recorded {bodyweightChartData.length===1?'date':'dates'} · {units}</span>
+      </div>
+      {bodyweightChartData.length?<div className="chart trend-chart">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={bodyweightChartData} margin={{top:14,right:18,bottom:8,left:0}}>
+            <CartesianGrid vertical={false} stroke="#2a3b52" strokeDasharray="3 7"/>
+            <XAxis dataKey="date" tickFormatter={iso=>formatAxisDate(iso,bodyweightRange)} interval="preserveStartEnd" minTickGap={42} tickMargin={12} tick={{fill:'#94aac6',fontSize:11}} axisLine={false} tickLine={false}/>
+            <YAxis domain={['auto','auto']} tickCount={5} width={48} tickFormatter={v=>Number(v).toFixed(1)} tick={{fill:'#94aac6',fontSize:11}} axisLine={false} tickLine={false}/>
+            <Tooltip labelFormatter={formatTooltipDate} formatter={v=>[Number(v).toLocaleString('en-US',{minimumFractionDigits:1,maximumFractionDigits:1})+' '+units,'Bodyweight']} contentStyle={{background:'#17283f',border:'1px solid #416086',borderRadius:12,color:'#eaf0fc',boxShadow:'0 10px 25px #080e1a80'}} labelStyle={{color:'#eaf0fc',fontWeight:700,marginBottom:5}} itemStyle={{color:'#9fc1ff'}} cursor={{stroke:'#5778a4',strokeDasharray:'4 4'}}/>
+            <Line type="linear" dataKey="value" stroke="#84b2ff" strokeWidth={2.5} dot={bodyweightChartData.length===1?{r:4}:false} activeDot={{r:5,stroke:'#dceaff',strokeWidth:2,fill:'#639dff'}} isAnimationActive={false} name="Bodyweight"/>
+          </LineChart>
+        </ResponsiveContainer>
+      </div>:<p className="empty">Log a weigh-in to see your bodyweight trend.</p>}
+    </section>
+
+    <section className="panel">
       <div className="between">
         <div><h2>Bodyweight log</h2><p className="muted">Browse all your weigh-ins across every year of training.</p></div>
         <span className="workout-history-total">{allBodyweightLogs.length} total weigh-ins</span>
@@ -158,30 +182,6 @@ export default function ProgressTab({db,patch,date,setDate,setTab,weightEntry,se
           </div>}
         </>}
       </>}
-    </section>
-
-    <section className="panel">
-      <div className="between trend-heading">
-        <div><h2>Bodyweight trend</h2><p className="muted">Your recorded scale weight over time. Hover to see the full date and exact weight.</p></div>
-        <span className="workout-history-total">{allBodyweightLogs.length} weigh-ins</span>
-      </div>
-      <div className="trend-controls">
-        <div className="trend-range" role="group" aria-label="Bodyweight chart date range">
-          {['3M','6M','1Y','All'].map(range=><button key={range} type="button" aria-pressed={bodyweightRange===range} className={bodyweightRange===range?'selected':''} onClick={()=>setBodyweightRange(range)}>{range}</button>)}
-        </div>
-        <span className="trend-caption">{bodyweightChartData.length} recorded {bodyweightChartData.length===1?'date':'dates'} · {units}</span>
-      </div>
-      {bodyweightChartData.length?<div className="chart trend-chart">
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={bodyweightChartData} margin={{top:14,right:18,bottom:8,left:0}}>
-            <CartesianGrid vertical={false} stroke="#2a3b52" strokeDasharray="3 7"/>
-            <XAxis dataKey="date" tickFormatter={iso=>formatAxisDate(iso,bodyweightRange)} interval="preserveStartEnd" minTickGap={42} tickMargin={12} tick={{fill:'#94aac6',fontSize:11}} axisLine={false} tickLine={false}/>
-            <YAxis domain={['auto','auto']} tickCount={5} width={48} tickFormatter={v=>Number(v).toFixed(1)} tick={{fill:'#94aac6',fontSize:11}} axisLine={false} tickLine={false}/>
-            <Tooltip labelFormatter={formatTooltipDate} formatter={v=>[Number(v).toLocaleString('en-US',{minimumFractionDigits:1,maximumFractionDigits:1})+' '+units,'Bodyweight']} contentStyle={{background:'#17283f',border:'1px solid #416086',borderRadius:12,color:'#eaf0fc',boxShadow:'0 10px 25px #080e1a80'}} labelStyle={{color:'#eaf0fc',fontWeight:700,marginBottom:5}} itemStyle={{color:'#9fc1ff'}} cursor={{stroke:'#5778a4',strokeDasharray:'4 4'}}/>
-            <Line type="linear" dataKey="value" stroke="#84b2ff" strokeWidth={2.5} dot={bodyweightChartData.length===1?{r:4}:false} activeDot={{r:5,stroke:'#dceaff',strokeWidth:2,fill:'#639dff'}} isAnimationActive={false} name="Bodyweight"/>
-          </LineChart>
-        </ResponsiveContainer>
-      </div>:<p className="empty">Log a weigh-in to see your bodyweight trend.</p>}
     </section>
 
     <section className="panel">
