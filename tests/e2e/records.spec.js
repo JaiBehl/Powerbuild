@@ -6,7 +6,7 @@ test('absolute PRs display logged, interpolated and unavailable bodyweights in l
  await openTab(page,'Progress');let records=card(page,'Personal records');await records.getByLabel('Records through date',{exact:true}).fill(DAY);
  const singles=records.getByRole('row').filter({hasText:'Achieved single'});await expect(singles).toContainText('225 lb');await expect(singles).toContainText('BW 200 lb · logged 2026-01-01');
  await expect(records.getByRole('row').filter({hasText:'Estimated 1RM (RPE-aware)'})).toContainText('Est. BW 185 lb · interpolated 2026-10-01 → 2026-10-11');
- await expect(records.getByRole('row').filter({hasText:/^12/})).toContainText('BW unavailable');
+ await expect(records.getByRole('row').filter({has:page.getByRole('rowheader',{name:'12',exact:true})})).toContainText('BW unavailable');
  await openTab(page,'Settings & backup');await page.getByLabel('Weight unit').selectOption('kg');await openTab(page,'Progress');records=card(page,'Personal records');
  await expect(records.getByRole('row').filter({hasText:'Achieved single'})).toContainText('BW 90.7 kg');
  await expect(records.getByRole('row').filter({hasText:'Estimated 1RM (RPE-aware)'})).toContainText('Est. BW 83.9 kg');

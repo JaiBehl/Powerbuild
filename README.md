@@ -332,6 +332,7 @@ The original audit read all 34 files at `03d6258633b7376b184a3b7e86bdd201cf18c62
 | Exercise-specific RPE-aware strength estimates | [Passed](https://github.com/JaiBehl/Powerbuild/actions/runs/41039066800) |
 | Population-matched RMR and net-activity maintenance | [Passed](https://github.com/JaiBehl/Powerbuild/actions/runs/41040088508) |
 | Final calculation wording and all regressions | [Passed](https://github.com/JaiBehl/Powerbuild/actions/runs/41040442897) |
+| Historical bodyweight context for absolute PRs | 86 unit/integration tests and production build pass; browser gate in PR #26 |
 
 Final source gate: **79 unit/integration + 45 browser tests, zero failures**, plus production builds. The strength stage passed 70 + 42 before maintenance implementation began. The final gate covers sex/age/height/mass inputs, athlete-age fallback, RPE/RIR and invalid effort, actual singles, unsupported bodyweight movements, kg invariance, walking pace/lifting intensity, total-maintenance override without double counting, dated settings, backups and phone layout. Previous release passed 62 + 40. Source baseline and gate link are at the top. CI includes deletion/restore, quota failures, malformed imports, aliases, actual/estimated PRs, daily plan isolation, weight reconnect, old-session template safety, two-device/offline sync, signup/resend redirects, mobile width, exports and persistent panels. Source/static/protocol tests do not prove actual email delivery or every real-device account scenario.
 
