@@ -4,6 +4,10 @@ Powerbuild is a local-first fitness web app for workout/bodyweight logging, a ro
 
 This is the project manual and the context handoff for a new AI conversation. Read it before editing, then inspect the current source. Live user data and credentials are deliberately excluded.
 
+## Reliability update in progress
+
+Development branch: `fix/verified-reliability-and-features`. Changes are being implemented and validated sequentially. Node 24, pinned direct dependencies, `npm test` (Node regression tests) and `npm run test:e2e` (Playwright Chromium) are now configured. GitHub Actions runs both suites and the production build on each branch push/PR. The historical audit below describes the pre-update baseline; each completed phase is recorded here and its affected contract will be revised before release.
+
 ## Current handoff
 
 | Item | Audited state |
