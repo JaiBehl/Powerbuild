@@ -1,3 +1,4 @@
+import {normalizeTemplates} from './workoutOperations';
 import React,{useEffect,useMemo,useState} from 'react';
 import {createRoot} from 'react-dom/client';
 import {Dumbbell,CalendarDays,ChartNoAxesCombined,Settings as SettingsIcon,Target,Flame} from 'lucide-react';
@@ -28,7 +29,7 @@ function normalizeDb(x={},options={}){
     calories:Array.isArray(x.calories)?x.calories:[],
     savedFoods:Array.isArray(x.savedFoods)?x.savedFoods:[],
     calorieSettings:{...calorieDefaults,...(x.calorieSettings||{})},
-    templates:x.templates&&typeof x.templates==='object'&&!Array.isArray(x.templates)?x.templates:cloneTemplates(),
+    templates:normalizeTemplates(x.templates&&typeof x.templates==='object'&&!Array.isArray(x.templates)?x.templates:cloneTemplates()),
   };
 }
 

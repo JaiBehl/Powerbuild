@@ -8,6 +8,10 @@ This is the project manual and the context handoff for a new AI conversation. Re
 
 Development branch: `fix/verified-reliability-and-features`. Changes are being implemented and validated sequentially. Node 24, pinned direct dependencies, `npm test` (Node regression tests) and `npm run test:e2e` (Playwright Chromium) are now configured. GitHub Actions runs both suites and the production build on each branch push/PR. The historical audit below describes the pre-update baseline; each completed phase is recorded here and its affected contract will be revised before release.
 
+### Phase 1 — safe session/template editing
+
+Exercise changes now default to this session only. An explicit checkbox also applies them to future workouts. Stable template IDs survive rename/reordering; older sessions resolve only through a unique name and ambiguous links are rejected. Unit and browser regressions cover old reordered sessions, session-only deletion, persistent data, explicit future edits and immutable originals. A committed package lock now enables `npm ci` in CI. Full-suite validation is required before phase 2.
+
 ## Current handoff
 
 | Item | Audited state |

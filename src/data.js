@@ -1,3 +1,4 @@
+import {normalizeTemplates} from './workoutOperations.js';
 export const cycle=['Push A','Pull A','Legs A','Push B','Pull B','Legs B'];
 
 export const workouts={
@@ -96,8 +97,9 @@ export function createSession(type,date,templates=workouts){
     type,
     notes:'',
     finished:false,
-    exercises:(templates[type]||workouts[type]).map((e,i)=>({
-      id:i,
+    exercises:(normalizeTemplates(templates)[type]||normalizeTemplates(workouts)[type]).map((e,i)=>({
+      id:globalThis.crypto?.randomUUID?.()||'exercise-'+Date.now()+'-'+i,
+      templateId:e[5],
       name:e[0],
       range:e[2],
       target:e[3],

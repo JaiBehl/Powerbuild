@@ -20,9 +20,7 @@ jobs:
       - uses: actions/setup-node@v7.1.0
         with:
           node-version: '24'
-      - run: npm install
-      - name: Capture dependency lock for reproducible installs
-        run: node -e "console.log('LOCKFILE_START'+JSON.stringify(require('./package-lock.json'))+'LOCKFILE_END')"
+      - run: npm ci
       - run: npm test
       - run: npm run build
       - run: npx playwright install --with-deps chromium
