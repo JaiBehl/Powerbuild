@@ -9,6 +9,7 @@ const tables={
   legPress:[[1,100],[7.04,95],[8.69,90],[10.69,85]],
 };
 const numeric=value=>typeof value==='number'||(typeof value==='string'&&value.trim()!=='')?Number(value):NaN;
+export const usesBodyweightResistance=(exercise='')=>/pull[ -]?up|chin[ -]?up|\bdips?\b|push[ -]?up|hanging|plank|assisted|body[ -]?weight/i.test(exercise);
 export function strengthModel(exercise=''){
   const name=String(exercise).trim().toLowerCase().replace(/\s+/g,' ');
   if(['bench','bench press','barbell bench press','touch-and-go bench press'].includes(name))return 'bench';
@@ -23,7 +24,7 @@ export function estimateStrength(weight,reps,rpe='',exercise=''){
   if(r===1&&(missingRpe||effort===10))return {value:w,kind:'achieved',model,repsToFailure:1,rpe:effort,missingRpe};
   // Added load alone is not total resistance in these movements. Do not
   // manufacture a max without body mass/assistance and movement mechanics.
-  if(/pull[ -]?up|chin[ -]?up|\bdips?\b|push[ -]?up|hanging|plank|assisted|body[ -]?weight/i.test(exercise))return null;
+  if(usesBodyweightResistance(exercise))return null;
   // Conservative product gates, not universal biological cutoffs.
   if(r>10||(!missingRpe&&(!Number.isFinite(effort)||effort<7||effort>10)))return null;
   const repsToFailure=r+(missingRpe?0:10-effort);

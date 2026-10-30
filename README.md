@@ -12,10 +12,10 @@ This README is the product manual and the handoff for a fresh AI development con
 | Site | [powerbuild-flexible-goals.vercel.app](https://powerbuild-flexible-goals.vercel.app) |
 | Hosting | Existing Vercel project `powerbuild-flexible-goals`, team/dashboard slug `power-build` |
 | Backend | Supabase project `zgbldcmahkokmkfqeljh`; Auth and the account-snapshot table/RPC described below |
-| Source reviewed through | [8df9bd6e4615e0c4cd19a83429f84c634068880d](https://github.com/JaiBehl/Powerbuild/commit/8df9bd6e4615e0c4cd19a83429f84c634068880d) |
-| Release work | [PR #25](https://github.com/JaiBehl/Powerbuild/pull/25): research-informed RPE/1RM and maintenance models; follows reliability PRs #23–#24 and original PRs #1–#22 |
+| Source reviewed through | [2887c02113273adb3b53fbf8795952c5b575c553](https://github.com/JaiBehl/Powerbuild/commit/2887c02113273adb3b53fbf8795952c5b575c553) |
+| Release work | [PR #26](https://github.com/JaiBehl/Powerbuild/pull/26): historical bodyweight context and independent relative-strength PRs; follows calculation PR #25, reliability PRs #23–#24 and original PRs #1–#22 |
 | Date | October 30, 2026, America/Los_Angeles |
-| Validation | 79 unit/integration + 45 Chromium browser tests, zero failures; production builds; [complete source gate](https://github.com/JaiBehl/Powerbuild/actions/runs/41040442897) |
+| Validation | 93 unit/integration + 51 Chromium browser tests, zero failures; production builds; [complete source gate](https://github.com/JaiBehl/Powerbuild/actions/runs/41063323398) |
 
 The source baseline identifies code actually reviewed and tested. Documentation-only or merge commits may be newer. Fetch current `main`, inspect commits since that baseline, and check open PRs before changing anything. Current source governs implemented behavior; the latest explicit user instruction governs desired behavior.
 
@@ -74,6 +74,8 @@ Exact rep/effort prescriptions live in `src/data.js`; profiles can override temp
 - Set-based strength chart and separate raw-weight/seven-day-average chart. Independent 3M/6M/1Y/All controls, default 6M, measured back from the latest point in that series. Tooltips show full dates and units.
 - A completed single retains its achieved load. Predictions interpolate the Nuzzo 2024 population tables (flat barbell bench, leg press, or general). Recorded RPE 7–10 adds `10 − RPE` estimated reps in reserve, including half points; at most 10 effective reps qualify. Blank RPE is explicitly labelled as an assumption of failure. Easy/high-rep/invalid sets remain logged but do not generate predictions. The chart takes the highest qualifying value per movement/date, including done sets in unfinished sessions.
 - Personal records separates achieved singles, RPE-aware estimated 1RM (including submaximal singles), and best load at every rep count. Compare all time through the selected date with the last 90 calendar days. Future sets are excluded and ties retain the first achievement date.
+- Each absolute PR shows bodyweight for its own achievement date. Use the mean of valid same-day weigh-ins; otherwise linearly interpolate between the surrounding weigh-ins when each is within 30 calendar days, or use the nearest within 30 days. Derived bodyweights are labelled **Est. BW** with source dates/method. Only measurements through the selected records date are considered. Missing/stale measurements show **BW unavailable**; current/default/calorie weights are never substituted. Editing a weigh-in recalculates context without changing any lift, and kg display converts both loads and bodyweights from stored pounds.
+- The independently collapsible **Relative strength records** panel ranks every qualifying set by unrounded `lift / bodyweight`, separately for achieved singles, RPE-aware estimated 1RMs and each rep count. It selects its own best sets, rather than dividing the absolute PR by bodyweight. All-time and last-90-day comparisons share the movement/date controls with absolute records and the chart; ratios display to three decimals and are unit-invariant. Missing/stale bodyweights are excluded; estimated bodyweights retain their provenance. Bodyweight/assisted movements are excluded because added load/assistance is not total resistance. Compare the same movement and equipment; this simple ratio is not an allometric or competition score. Ratios/context are derived at render time, never persisted over historical logs.
 - Standard bench labels share a movement series; custom reversible aliases and same-name opt-outs are in Settings. Linking does not rewrite original logs. Charts, goals, previous-session comparisons and records use the same resolution.
 - Weekly review covers seven days ending on the selected date: finished workouts/sets/volume, average consumed calories/protein on food-log days, custom cardio, weight average and change versus the preceding week. Missing days are unknown, not zero. Multiple weigh-ins on one day are averaged before averaging days.
 - Workout and bodyweight history include every year, year/search filters and 30-record increments. Workout search includes date/type/exercises/notes; opening a workout shows its original date/notes.
@@ -131,6 +133,7 @@ These are implementation formulas, not measured energy expenditure or recommende
 | Carbs | `max(0, round((chosenTarget − 4P − 9F) / 4))` |
 | Macro calories | `round(4P + 4C + 9F)` |
 | Strength | Achieved single = actual load; prediction = `load / interpolated fraction of 1RM` at `reps + (10 − RPE)` (blank effort assumes zero reserve); RPE 7–10 and <=10 effective reps |
+| Relative strength PR | Achieved single, qualifying estimated 1RM, or rep-specific load divided by historical bodyweight in the same unit; maximize each category separately before display rounding |
 
 Reference example: 180 lb, 71 in, male, age 18, athlete RMR, living factor 1.2, four walking miles at 22.5 min/mile, no running, 1.5 h typical lifting (3.5 MET) → RMR about 2,108; baseline 2,530 + walking 314.3 + lifting 321.5, rounded to **3,166 kcal maintenance**, before custom cardio. This is a starting model estimate, not measured personal expenditure. Goals do not change that maintenance. There are no former percentage deficit/surplus caps or old vanilla-app 1,200–6,000 target clamp. Impossible targets/expired dates show warnings. A zero-carb floor means macro calories can exceed an extreme low calorie target.
 
@@ -176,7 +179,7 @@ npm run test:all
 | `node build.mjs` | Compatibility alias to the active Vite build; no longer an incomplete file copier |
 | `node scripts/production-smoke.mjs` | Read-only public HTML/bundle release check, with rollout retries |
 
-GitHub Actions runs regression tests/builds on PRs and pushes to `main`. Successful main CI then runs the production smoke check. Reports, failure screenshots and traces are retained for seven days as `browser-regression-results` artifacts. The smoke check verifies public bundle capabilities including RPE-aware records and the resting-metabolism formula control; combine it with Vercel's exact-commit status when checking a deployment.
+GitHub Actions runs regression tests/builds on PRs and pushes to `main`. Successful main CI then runs the production smoke check. Reports, failure screenshots and traces are retained for seven days as `browser-regression-results` artifacts. The smoke check verifies public bundle capabilities including relative strength records, historical bodyweight estimate labels, RPE-aware records and the resting-metabolism formula control; combine it with Vercel's exact-commit status when checking a deployment.
 
 Browser tests use a synthetic Supabase host through the Playwright web-server environment. They exercise the real frontend/client against an isolated protocol backend, not the production database. Tests cover two devices, revision races, conflicts, offline/reload/retry, sign-out/stale responses, confirmation redirects, UI/data flows, backups and phone-width layout. Actual inbox delivery and the user's real Mac/iPhone account session are not exercised by CI.
 
@@ -284,7 +287,8 @@ Explicit correction updates records owned by the same import ID. Optional remova
 | `src/ScheduleTab.jsx` | Weekly schedule and six-session preview |
 | `src/ProgressTab.jsx` | Goal summaries, charts and all-years histories |
 | `src/exerciseCatalog.js`, `src/ExerciseAliases.jsx` | Canonical movement resolution, shared selectors/history and alias editor |
-| `src/trainingStats.js`, `src/PreviousPerformance.jsx`, `src/PersonalRecords.jsx` | Previous finished sets and actual/estimated/rep records |
+| `src/trainingStats.js`, `src/PreviousPerformance.jsx`, `src/PersonalRecords.jsx` | Previous finished sets, absolute/relative single/estimated/rep records and historical bodyweight context |
+| `src/recordBodyweight.js` | Cached historical bodyweight matching, same-day averages, bounded interpolation/nearest estimates and source provenance |
 | `src/trends.js`, `src/WeeklyReview.jsx` | Daily-weight averages and weekly training/nutrition summary |
 | `src/CalorieTracker.jsx`, `src/nutrition.js`, `src/maintenance.js` | Nutrition cards, daily snapshots/defaults, RMR/net-activity models and maintenance override |
 | `src/strengthEstimation.js` | Shared exercise-specific population tables, RPE/RIR adjustment, prediction gates and achievement distinction |
@@ -330,8 +334,12 @@ The original audit read all 34 files at `03d6258633b7376b184a3b7e86bdd201cf18c62
 | Exercise-specific RPE-aware strength estimates | [Passed](https://github.com/JaiBehl/Powerbuild/actions/runs/41039066800) |
 | Population-matched RMR and net-activity maintenance | [Passed](https://github.com/JaiBehl/Powerbuild/actions/runs/41040088508) |
 | Final calculation wording and all regressions | [Passed](https://github.com/JaiBehl/Powerbuild/actions/runs/41040442897) |
+| Historical bodyweight context for absolute PRs | 86 unit/integration + 47 browser tests and production build [passed](https://github.com/JaiBehl/Powerbuild/actions/runs/41062546553) before relative rankings began |
+| Independent relative-strength records | 93 unit/integration + 51 browser tests and production build [passed](https://github.com/JaiBehl/Powerbuild/actions/runs/41063323398) |
 
-Final source gate: **79 unit/integration + 45 browser tests, zero failures**, plus production builds. The strength stage passed 70 + 42 before maintenance implementation began. The final gate covers sex/age/height/mass inputs, athlete-age fallback, RPE/RIR and invalid effort, actual singles, unsupported bodyweight movements, kg invariance, walking pace/lifting intensity, total-maintenance override without double counting, dated settings, backups and phone layout. Previous release passed 62 + 40. Source baseline and gate link are at the top. CI includes deletion/restore, quota failures, malformed imports, aliases, actual/estimated PRs, daily plan isolation, weight reconnect, old-session template safety, two-device/offline sync, signup/resend redirects, mobile width, exports and persistent panels. Source/static/protocol tests do not prove actual email delivery or every real-device account scenario.
+Current source gate: **93 unit/integration + 51 browser tests, zero failures**, plus production builds. The bodyweight stage passed 86 + 47 before relative rankings began. New coverage verifies same-day means, interpolation/calendar spacing, nearest/stale/missing weigh-ins, date cutoffs, independent relative winners, RPE estimates, full-precision ties, lb/kg invariance, weigh-in corrections, movement/date selectors, remembered collapse, unsupported assisted movements, phone width and production release markers. Historical context and ratios are derived without changing stored logs or backup formats. Local unit/build checks passed; browser execution ran in GitHub Actions because the workspace could not launch its browser.
+
+The calculation release passed **79 + 45**; its strength stage passed 70 + 42 before maintenance implementation began. The suite also covers sex/age/height/mass inputs, athlete-age fallback, RPE/RIR and invalid effort, actual singles, unsupported bodyweight movements, kg invariance, walking pace/lifting intensity, total-maintenance override without double counting, dated settings, backups and phone layout. Previous release passed 62 + 40. Source baseline and gate link are at the top. CI includes deletion/restore, quota failures, malformed imports, aliases, actual/estimated PRs, daily plan isolation, weight reconnect, old-session template safety, two-device/offline sync, signup/resend redirects, mobile width, exports and persistent panels. Source/static/protocol tests do not prove actual email delivery or every real-device account scenario.
 
 GitHub `main` is the established Vercel production source; repo root, Vite, `npm run build`, `dist`. Production and preview are different environments. Check the exact GitHub Vercel commit status and successful main regression/production-smoke jobs before claiming a deployment is verified. Vercel dashboard API access was limited during this work, so CI/static verification is used instead of inventing dashboard configuration facts.
 
@@ -340,6 +348,7 @@ Live backend ownership/RPC metadata was inspected; private payloads and producti
 ## Remaining boundaries
 
 - One session per date; saving a weigh-in replaces that date's prior measurements.
+- Historical PR bodyweights are approximations when a same-day measurement is missing. Without a weigh-in within 30 days, a lift remains an absolute record but cannot enter relative rankings.
 - Recovery versions and panel preferences are device-local; downloaded backups are needed after clearing browser data. Same-field cloud conflicts still need an explicit choice.
 - Historical activity before date snapshots existed is unknown. Legacy vanilla workout migration and raw Notes conversion are not implemented here.
 - No native app, PWA/offline asset cache, automatic training progression engine, barcode/external food database, direct Notes/Canvas integration or password-reset UI.
@@ -382,3 +391,4 @@ The README PR check flags application/configuration/test changes without a compa
 | [#23](https://github.com/JaiBehl/Powerbuild/pull/23) | Reliability fixes, recovery, training insights, persistent panels, regression tests and production verification |
 | [#24](https://github.com/JaiBehl/Powerbuild/pull/24) | Match dated sync records before UUIDs; prevent hidden duplicate workouts during concurrent starts |
 | [#25](https://github.com/JaiBehl/Powerbuild/pull/25) | Research-informed exercise/RPE strength estimates and population-matched net-activity maintenance models |
+| [#26](https://github.com/JaiBehl/Powerbuild/pull/26) | Historical bodyweights on absolute PRs and independently selected relative-strength records, with estimate provenance and regression coverage |
