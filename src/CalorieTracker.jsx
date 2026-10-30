@@ -68,7 +68,7 @@ export default function CalorieTracker({db,patch,date,setDate,entry,setEntry}){
       <div className="formgrid">
         <label>Baseline source<select value={baselineMode} onChange={e=>update('baselineMode',e.target.value)}><option value="estimate">Use app estimate</option><option value="custom">Use my own baseline</option></select></label>
         {baselineMode==='custom'&&<label>Custom baseline (kcal)<input type="number" min="800" max="7000" step="10" value={customBaseline} onChange={e=>update('customBaseline',Number(e.target.value))}/></label>}
-        <label>Weight source<select value={cs.weightMode} onChange={e=>patch(p=>updateDayPlan(p,date,{calorieSettings:{weightMode:e.target.value,bodyWeight:cs.bodyWeight??weight}}))}><option value="auto">Follow weigh-ins</option><option value="manual">Enter weight manually</option></select></label>
+        <label>Weight source<select aria-label="Weight source" value={cs.weightMode} onChange={e=>patch(p=>updateDayPlan(p,date,{calorieSettings:{weightMode:e.target.value,bodyWeight:cs.bodyWeight??weight}}))}><option value="auto">Follow weigh-ins</option><option value="manual">Enter weight manually</option></select></label>
         <label>Weight ({units})<input type="number" min="20" max="700" step="0.1" disabled={cs.weightMode==='auto'} value={displayedWeight} onChange={e=>update('bodyWeight',fromDisplayWeight(e.target.value,units))}/></label>
         <label>Sex<select value={sex} onChange={e=>update('sex',e.target.value)}><option value="male">Male</option><option value="female">Female</option></select></label>
         <label>Age<input type="number" min="13" max="100" step="1" value={age} onChange={e=>update('age',Number(e.target.value))}/></label>
