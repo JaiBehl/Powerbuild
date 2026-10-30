@@ -45,3 +45,12 @@
 .workout-history-stats{font-size:12px;color:#b7c9de;text-align:right}
 .workout-history-more{display:flex;justify-content:center;padding:20px 0 0}
 @media(max-width:620px){.workout-history-filters{grid-template-columns:1fr}.workout-history-stats{font-size:11px}.workout-history-list button{padding:12px 10px}.workout-history-total{font-size:11px}}
+
+
+/* Bodyweight history uses the same all-years browsing style as workout history. */
+.bodyweight-history-list{margin-top:0}
+.bodyweight-history-list>div{display:grid;grid-template-columns:minmax(0,1fr) minmax(90px,auto) 32px;align-items:center;gap:18px;min-height:50px}
+.bodyweight-history-list b{font-size:13px;font-variant-numeric:tabular-nums;text-align:right}
+.bodyweight-history-list span{font-size:13px;color:#c4d3e9;font-variant-numeric:tabular-nums}
+.bodyweight-history-list button:focus-visible{outline:2px solid #8db7ff;outline-offset:2px}
+@media(max-width:620px){.bodyweight-history-list>div{grid-template-columns:minmax(0,1fr) auto 30px;gap:10px}.bodyweight-history-list span,.bodyweight-history-list b{font-size:12px}}
