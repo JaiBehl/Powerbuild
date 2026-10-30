@@ -31,7 +31,7 @@ test('JSON backup and converted sets CSV contain active profile data',async({pag
 test('PR panel separates achieved singles, estimates and recent performance',async({page})=>{
  const session=(date,weight,reps)=>{const s=makeSession('Push A',date);s.exercises[0].sets[0]={weight,reps,done:true};return s;};
  await seed(page,makeDb({sessions:[session('2026-01-01',225,1),session('2026-10-29',200,5),session('2026-10-30',215,1)]}));await openTab(page,'Progress');
- const records=card(page,'Personal records');await records.getByLabel('Records through date',{exact:true}).fill(DAY);
+ const records=card(page,'Absolute strength records');await records.getByLabel('Records through date',{exact:true}).fill(DAY);
  const single=records.getByRole('row').filter({hasText:'Achieved single'});await expect(single).toContainText('225 lb');await expect(single).toContainText('215 lb');
  await expect(records.getByRole('row').filter({hasText:'Estimated 1RM (RPE-aware)'})).toContainText('227.5 lb');
  await expect(records).toContainText('Best load at each rep count');
