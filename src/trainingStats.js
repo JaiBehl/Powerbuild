@@ -1,4 +1,4 @@
-import {estimateStrength} from './strengthEstimation.js';
+import {estimateStrength,usesBodyweightResistance} from './strengthEstimation.js';
 import {addCalendarDays} from './dates.js';
 import {resolveExerciseName} from './exerciseCatalog.js';
 import {createBodyweightResolver} from './recordBodyweight.js';
@@ -13,15 +13,32 @@ export function previousPerformance(db,name,date){
 }
 
 const better=(current,candidate)=>!current||candidate.value>current.value||(candidate.value===current.value&&candidate.date<current.date)?candidate:current;
+function relativeRecord(record){
+ const value=record.value/record.bodyweight?.value;
+ return Number.isFinite(value)&&value>0?{...record,value,load:record.value}:null;
+}
 function records(sets,name){
  let single=null,estimated=null;const repPRs={};
+ const relative={single:null,estimated:null,repPRs:{},count:0,missingBodyweight:0,supported:!usesBodyweightResistance(name)};
  for(const set of sets){
-  if(set.reps===1)single=better(single,{value:set.weight,date:set.date,bodyweight:set.bodyweight});
+  const loaded={value:set.weight,date:set.date,bodyweight:set.bodyweight};
+  if(set.reps===1)single=better(single,loaded);
   const prediction=estimateStrength(set.weight,set.reps,set.rpe,name);
-  if(prediction?.kind==='estimated')estimated=better(estimated,{...prediction,date:set.date,reps:set.reps,weight:set.weight,bodyweight:set.bodyweight});
-  repPRs[set.reps]=better(repPRs[set.reps],{value:set.weight,date:set.date,bodyweight:set.bodyweight});
+  const predicted=prediction?.kind==='estimated'?{...prediction,date:set.date,reps:set.reps,weight:set.weight,bodyweight:set.bodyweight}:null;
+  if(predicted)estimated=better(estimated,predicted);
+  repPRs[set.reps]=better(repPRs[set.reps],loaded);
+  if(!relative.supported)continue;
+  if(!set.bodyweight){relative.missingBodyweight++;continue;}
+  const relativeLoad=relativeRecord(loaded);
+  if(relativeLoad){
+   relative.count++;
+   if(set.reps===1)relative.single=better(relative.single,relativeLoad);
+   relative.repPRs[set.reps]=better(relative.repPRs[set.reps],relativeLoad);
+  }
+  const relativeEstimate=predicted&&relativeRecord(predicted);
+  if(relativeEstimate)relative.estimated=better(relative.estimated,relativeEstimate);
  }
- return {single,estimated,repPRs,count:sets.length};
+ return {single,estimated,repPRs,count:sets.length,relative};
 }
 export function personalRecords(db,name,asOf){
  const canonical=resolveExerciseName(name,db.exerciseAliases),sets=[],bodyweightFor=createBodyweightResolver(db.weights,asOf);
