@@ -306,3 +306,29 @@
   .calorie-section-collapsed{padding:13px 14px}
   .calorie-section-stat{font-size:11px}
 }
+
+
+/* Shared minimize headers on Train, Schedule, Progress, Settings and Calories.
+   The existing CalorieSection component owns the control and persistent metadata. */
+.train-exercise-section .exhead{
+  padding:4px 0 12px;
+  border-bottom:1px solid #2b3b50;
+  margin-bottom:4px;
+}
+.train-exercise-section .exhead>.muted{font-size:12px}
+.train-exercise-section .settable{margin:4px -10px -5px}
+.train-exercise-section .setrow{padding-left:10px;padding-right:10px}
+.train-exercise-section .setrow.headings{border-top:0}
+.train-empty-section .heroicon{margin:4px 0 12px;color:#85acff}
+.train-empty-section .calorie-section-content>.textbtn{margin-left:8px}
+.train-exercise-section .calorie-section-heading h2{font-size:18px}
+.trend-lift-selector{display:flex;justify-content:flex-end;margin-bottom:12px}
+.trend-lift-selector select{width:min(350px,100%)}
+.schedule-nav{margin-bottom:16px;gap:12px}
+.schedule-nav>.muted{font-variant-numeric:tabular-nums}
+.calorie-section.warning .calorie-section-content>.danger{margin-top:10px}
+@media(max-width:700px){
+  .trend-lift-selector select{width:100%}
+  .schedule-nav{align-items:flex-start}
+  .train-exercise-section .settable{margin-left:-6px;margin-right:-6px}
+}
