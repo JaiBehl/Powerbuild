@@ -4,10 +4,6 @@ Powerbuild is a local-first powerbuilding web app: workout/set logging, a rollin
 
 This README is the product manual and the handoff for a fresh AI development conversation. Read it with `AGENTS.md`, then inspect current source. Live user logs, private Notes exports and credentials are not included.
 
-## Same-date sync follow-up
-
-A final review found a race when devices independently create workouts on the same date with different UUIDs. Calendar records now match by unique date before ID; incompatible same-date additions require a choice rather than creating a hidden second workout. Added pure merge and two-device browser regressions. This follow-up is tracked separately from PR #23; final source/count evidence will be refreshed after its full gate.
-
 ## Current release and continuation
 
 | Item | Current context |
@@ -16,10 +12,10 @@ A final review found a race when devices independently create workouts on the sa
 | Site | [powerbuild-flexible-goals.vercel.app](https://powerbuild-flexible-goals.vercel.app) |
 | Hosting | Existing Vercel project `powerbuild-flexible-goals`, team/dashboard slug `power-build` |
 | Backend | Supabase project `zgbldcmahkokmkfqeljh`; Auth and the account-snapshot table/RPC described below |
-| Source reviewed through | [3d87e6767deb127c1de65b314b0e44edc6381777](https://github.com/JaiBehl/Powerbuild/commit/3d87e6767deb127c1de65b314b0e44edc6381777) |
-| Release work | [PR #23](https://github.com/JaiBehl/Powerbuild/pull/23), following the original audit and PRs #1–#22 |
+| Source reviewed through | [b7723919a1077d9f9e0b0a5da56534eaf0afeb8d](https://github.com/JaiBehl/Powerbuild/commit/b7723919a1077d9f9e0b0a5da56534eaf0afeb8d) |
+| Release work | [PR #23](https://github.com/JaiBehl/Powerbuild/pull/23), plus [PR #24](https://github.com/JaiBehl/Powerbuild/pull/24) for same-date sync races, following the original audit and PRs #1–#22 |
 | Date | October 30, 2026, America/Los_Angeles |
-| Validation | 61 unit/integration tests, 39 Chromium browser tests, production builds; [complete gate](https://github.com/JaiBehl/Powerbuild/actions/runs/41034735919) |
+| Validation | 62 unit/integration tests, 40 Chromium browser tests, production builds; [complete gate](https://github.com/JaiBehl/Powerbuild/actions/runs/41036125874) |
 
 The source baseline identifies code actually reviewed and tested. Documentation-only or merge commits may be newer. Fetch current `main`, inspect commits since that baseline, and check open PRs before changing anything. Current source governs implemented behavior; the latest explicit user instruction governs desired behavior.
 
@@ -193,7 +189,7 @@ First-device migration: export backups on the device with existing data, sign in
 
 - Snapshot shape is `{ profileState, profileData }`: metadata/profile list/active selection plus every profile database. Login and profile selection are different concepts.
 - Local changes debounce 900 ms before revision-checked RPC saves. Poll newer remote revisions every 12 seconds and when the tab becomes visible; this is polling, not Realtime.
-- Three-way merge compares the last known common snapshot, this device and cloud. Independent edits combine; record arrays merge by unique ID or date when safe. Deletions are respected. Same-value conflicts or opaque concurrent template/set-array changes require explicit choice.
+- Three-way merge compares the last known common snapshot, this device and cloud. Independent edits combine; record arrays match unique dates first, then IDs when safe. Incompatible independent starts on the same workout date require a choice, preserving the one-session-per-date model. Deletions are respected. Same-value conflicts or opaque concurrent template/set-array changes require explicit choice.
 - Without a common base, divergent copies require a choice. Choosing one version saves recovery copies first. Download both versions or restore an account copy from the sidebar; all-profile file import accepts those downloads.
 - Retry rechecks remote state/revision before saving; offline edits stay local and survive reload. Background updates preserve current UI. Obsolete session responses cannot reactivate sync or replace later local edits.
 - Applying all-profile data attempts rollback if a storage write fails and retains recovery copies. No server-side revision archive is maintained.
@@ -313,8 +309,9 @@ The original audit read all 34 files at `03d6258633b7376b184a3b7e86bdd201cf18c62
 | Weekly review/weight averages | [Passed](https://github.com/JaiBehl/Powerbuild/actions/runs/41030953470) |
 | Undo/recoverable backups | [Passed](https://github.com/JaiBehl/Powerbuild/actions/runs/41031701772) |
 | Remembered panels/mobile layout | [Passed](https://github.com/JaiBehl/Powerbuild/actions/runs/41032100842) |
+| Same-date concurrent workout protection | [Passed](https://github.com/JaiBehl/Powerbuild/actions/runs/41036125874) |
 
-Final source gate: **61 unit/integration + 39 browser tests, zero failures**, plus Vite builds and Vercel preview status. Source baseline and gate link are at the top. CI includes deletion/restore, quota failures, malformed imports, aliases, actual/estimated PRs, daily plan isolation, weight reconnect, old-session template safety, two-device/offline sync, signup/resend redirects, mobile width, exports and persistent panels. Source/static/protocol tests do not prove actual email delivery or every real-device account scenario.
+Final source gate: **62 unit/integration + 40 browser tests, zero failures**, plus Vite builds and Vercel preview status. Source baseline and gate link are at the top. CI includes deletion/restore, quota failures, malformed imports, aliases, actual/estimated PRs, daily plan isolation, weight reconnect, old-session template safety, two-device/offline sync, signup/resend redirects, mobile width, exports and persistent panels. Source/static/protocol tests do not prove actual email delivery or every real-device account scenario.
 
 GitHub `main` is the established Vercel production source; repo root, Vite, `npm run build`, `dist`. Production and preview are different environments. Check the exact GitHub Vercel commit status and successful main regression/production-smoke jobs before claiming a deployment is verified. Vercel dashboard API access was limited during this work, so CI/static verification is used instead of inventing dashboard configuration facts.
 
@@ -363,3 +360,4 @@ The README PR check flags application/configuration/test changes without a compa
 | [#21](https://github.com/JaiBehl/Powerbuild/pull/21) | Separate collapsible nutrition panels |
 | [#22](https://github.com/JaiBehl/Powerbuild/pull/22) | Shared collapsible cards across all five tabs |
 | [#23](https://github.com/JaiBehl/Powerbuild/pull/23) | Reliability fixes, recovery, training insights, persistent panels, regression tests and production verification |
+| [#24](https://github.com/JaiBehl/Powerbuild/pull/24) | Match dated sync records before UUIDs; prevent hidden duplicate workouts during concurrent starts |
