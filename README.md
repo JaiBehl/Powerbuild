@@ -36,6 +36,10 @@ Phase 5 passed the full CI gate. Historical JSON now previews changes before app
 
 All six bug fixes passed their full CI gates. Sync now three-way merges non-conflicting changes against the last known snapshot, respects deletions and retains explicit choices for same-value conflicts. It saves account recovery copies before replacing/combining versions, supports downloads and account recovery restore, ignores responses from obsolete sessions, rechecks revisions on retry and preserves current UI during background updates. Protocol browser tests use an isolated synthetic Supabase backend for two devices, revision races, offline/reload/retry, sign-out and confirmation redirects; live private account data is not used. Existing ownership RLS/RPC contract is unchanged.
 
+### Addition 1 — previous-session comparisons
+
+Cloud phase 7 passed the complete CI gate, including two-device/retry/confirmation simulations. Train now shows completed sets from the latest earlier finished session for that movement, resolved through aliases and converted to current units. Current inputs are not overwritten. Added focused tests and broad browser regressions for goal CRUD, kg storage/display, food/cardio coexistence and active-profile JSON/CSV exports.
+
 ## Current handoff
 
 | Item | Audited state |

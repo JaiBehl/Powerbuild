@@ -332,3 +332,8 @@
   .schedule-nav{align-items:flex-start}
   .train-exercise-section .settable{margin-left:-6px;margin-right:-6px}
 }
+
+.previous-performance{margin:6px 0 14px;padding:11px 13px;background:#112033;border-left:3px solid #537fba;border-radius:6px}
+.previous-performance small{display:block;color:#89a9d1;font-size:10px;letter-spacing:.06em}
+.previous-performance span{display:block;margin-top:5px;color:#aebfd6;font-size:12px}
+.previous-performance p{font-size:13px;line-height:1.6;margin:6px 0 0}
