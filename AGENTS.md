@@ -1,34 +1,34 @@
 # Powerbuild development instructions
 
-## Start from current context
+## Current context and scope
 
-- Read `README.md` before planning/editing. It contains product decisions, implementation/data contracts, audit findings and continuation instructions.
-- Inspect the current branch/source. Compare newer runtime commits with the README baseline. Current code can be newer than the README or a past chat.
-- Active app: React/Vite under `src/`, entered through `index.html`. Build with `npm run build`. Root `app-*.js`, `styles.css` and `build.mjs` are inactive legacy files.
-- Honor the latest explicit user instructions and requested scope. Audit findings are not authorization to implement every suggestion or change a saved plan.
+- Read README.md before editing. Fetch current source/open PRs and compare with its reviewed baseline; code or user instructions can be newer than past chats.
+- Active app is React/Vite under src/, entered through index.html. npm run build is the production build; build.mjs delegates to Vite. Root app-*.js and root styles.css are inactive legacy files.
+- Preserve requested scope and the restored dark UI, sticky sidebar, compact saved foods and shared collapsible cards. Minimized headers retain descriptions/counts; hidden content stays mounted.
+- Work sequentially: finish one fix/feature, add a regression, verify the full suite, then proceed. Audit observations are not blanket permission for unrelated redesigns.
 
-## Required companion documentation
+## Data contracts
 
-- Update `README.md` in the same commit/PR as changes affecting behavior, UI, calculations, persistence, dependencies, deployment or developer workflow.
-- Update relevant features, source map, formulas, schemas, compatibility/migrations, setup and known issues. Remove superseded claims and record actual validation.
-- Refresh source baseline/date for runtime changes to identify code actually reviewed; docs-only edits may retain the application baseline. Never invent a SHA, test or deployment result.
-- A fresh chat using the README must identify the active app, capabilities, data contracts, important limits and next verification steps.
-- Distinguish requested/proposed, implemented, built, deployed and end-to-end verified. Use the PR checklist. The README check enforces a companion edit, not accuracy.
+- Canonical weights stay pounds; convert at boundaries. Food templates store one serving; consumed logs retain independent snapshots/totals.
+- Activity/targets/goal fallback are date snapshots; defaults seed new dates. Manual calorie weights remain explicit until automatic weigh-ins are selected.
+- Exercise edits are session-only by default. Future-template permission is explicit and resets per session; match stable IDs or a unique legacy name, never position.
+- Supported seated OHP uses upright back support; legacy bench is touch-and-go. Keep distinct variations separate unless explicitly linked. Never impose old/default goals on saved profiles.
+- Preserve local profiles, supported backups, import provenance and repeat-safe merge. Correction/removal requires preview, explicit choice and a saved recovery copy.
+- Cloud stores all profiles in one account snapshot. Three-way merge only non-conflicting edits; retain choices/recovery for real conflicts. Guard obsolete auth responses and ownership RLS.
+- Before destructive changes, save recovery or abort with a useful error. Do not run destructive tests on real user history, auth accounts or cloud payloads.
 
-## Preserve behavior and data
+## Verification
 
-- Keep the restored dark React UI, sticky sidebar, compact saved foods and requested scope of visual edits.
-- Use shared `CalorieSection` panels. Minimized headers retain toggle/title/description/value; hide mounted content to preserve drafts.
-- Keep maintenance goal-independent, uncapped deadline arithmetic, editable calories/macros and existing impossible-target warnings.
-- Store canonical weights in pounds and convert at boundaries. Saved foods use per-serving values; consumed logs retain independent snapshots/totals.
-- Keep isolated profiles, active-profile backups/resets, repeat-safe history merge and supported old backups. Cloud stores all profiles in one account snapshot without automatic conflict merging.
-- Supported seated OHP uses upright back support; legacy bench goal is touch-and-go. Do not silently impose past/default goals on saved profiles.
-- Repository is public: never commit private Notes/history/backups, emails, tokens, service-role keys or credentials. Use synthetic examples and public placeholders.
+- Node 22+; .nvmrc/CI use Node 24. Use npm ci and commit dependency locks when intentionally changing packages.
+- Install Chromium with npx playwright install --with-deps chromium. npm run test:all runs unit/integration tests, Vite build and Playwright browser regressions.
+- Add tests for the concrete failure/new behavior, with synthetic records. Keep all prior tests passing. Test relevant desktop/mobile flows and data round trips.
+- Auth/sync tests use the isolated synthetic backend; distinguish these from actual inbox delivery or real-device account verification.
+- GitHub Actions runs PR/main regressions, retains reports/traces, and performs read-only production smoke checks after main CI. Preview success, merge and production readiness are separate evidence.
+- Preserve existing GitHub-to-Vercel hosting. Do not claim deployment or testing without checking the relevant commit/results.
 
-## Verification and delivery
+## Required documentation and privacy
 
-- Use Node 22+ for current fresh dependency resolution; inspect current engines and lockfile state.
-- For runtime changes run `npm run build` and focused checks. No established application test/lint/typecheck command exists in the audited baseline; state actual results/limits.
-- Check changed UI at relevant desktop/mobile sizes. For auth/sync changes check redirects, ownership, two-device edits/conflicts and offline recovery using disposable data.
-- Do not erase/reset/replace or experiment on real user history to test a change.
-- Merge, preview and production readiness are separate evidence. Preserve established GitHub-to-Vercel hosting and verify live claims.
+- Update README.md in the same commit/PR for changes to behavior, UI, calculations, schemas/migrations, dependencies, testing or deployment. Update current contracts and remove stale claims, not just append conflicting notes.
+- Refresh reviewed baseline/date for runtime changes; docs-only commits can retain the application baseline. Record actual checks and material limits. A fresh chat using the README should identify current capabilities and next steps.
+- Use the PR checklist. The README companion check detects a missing edit, not factual accuracy; do not bypass maintenance for direct pushes.
+- This repository is public. Never commit real Notes exports, workouts/food backups, account emails, auth tokens, secret/service-role keys or private history. Use synthetic examples and public configuration placeholders.

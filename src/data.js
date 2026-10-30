@@ -1,3 +1,5 @@
+import {isISODate} from './dates.js';
+import {normalizeTemplates} from './workoutOperations.js';
 export const cycle=['Push A','Pull A','Legs A','Push B','Pull B','Legs B'];
 
 export const workouts={
@@ -75,18 +77,12 @@ export const isoToday=()=>{
 };
 
 export function scheduledWorkout(date,settings){
-  const start=new Date(settings.startDate+'T12:00:00'),end=new Date(date+'T12:00:00');
-  const diff=Math.round((end-start)/86400000);
-  if(diff<0)return null;
-  let n=0;
-  for(let i=0;i<=diff;i++){
-    const day=new Date(start.getTime()+i*86400000).getDay();
-    const mon=(day+6)%7+1;
-    if(settings.schedule.includes(mon))n++;
-  }
-  const d=new Date(date+'T12:00:00');
-  if(!settings.schedule.includes(((d.getDay()+6)%7)+1))return null;
-  return cycle[((n-1+(settings.cycleOffset||0))%6+6)%6];
+ if(!isISODate(date)||!isISODate(settings.startDate))return null;
+ const start=new Date(settings.startDate+'T12:00:00Z'),end=new Date(date+'T12:00:00Z'),diff=Math.round((end-start)/86400000);
+ if(diff<0)return null;let count=0;const schedule=settings.schedule||[];
+ for(let i=0;i<=diff;i++){const day=new Date(start.getTime()+i*86400000).getUTCDay();if(schedule.includes(((day+6)%7)+1))count++;}
+ if(!schedule.includes(((end.getUTCDay()+6)%7)+1))return null;
+ return cycle[((count-1+(settings.cycleOffset||0))%6+6)%6];
 }
 
 export function createSession(type,date,templates=workouts){
@@ -96,8 +92,9 @@ export function createSession(type,date,templates=workouts){
     type,
     notes:'',
     finished:false,
-    exercises:(templates[type]||workouts[type]).map((e,i)=>({
-      id:i,
+    exercises:(normalizeTemplates(templates)[type]||normalizeTemplates(workouts)[type]).map((e,i)=>({
+      id:globalThis.crypto?.randomUUID?.()||'exercise-'+Date.now()+'-'+i,
+      templateId:e[5],
       name:e[0],
       range:e[2],
       target:e[3],
@@ -109,5 +106,5 @@ export function createSession(type,date,templates=workouts){
 
 export function e1rm(w,r){
   const a=Number(w),b=Number(r);
-  return a>0&&b>0&&b<=15?a*(1+b/30):null;
+  return Number.isFinite(a)&&a>0&&Number.isInteger(b)&&b>0&&b<=15?(b===1?a:a*(1+b/30)):null;
 }

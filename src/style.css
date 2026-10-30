@@ -332,3 +332,20 @@
   .schedule-nav{align-items:flex-start}
   .train-exercise-section .settable{margin-left:-6px;margin-right:-6px}
 }
+
+.previous-performance{margin:6px 0 14px;padding:11px 13px;background:#112033;border-left:3px solid #537fba;border-radius:6px}
+.previous-performance small{display:block;color:#89a9d1;font-size:10px;letter-spacing:.06em}
+.previous-performance span{display:block;margin-top:5px;color:#aebfd6;font-size:12px}
+.previous-performance p{font-size:13px;line-height:1.6;margin:6px 0 0}
+
+.records-scroll{overflow-x:auto;margin:14px 0 20px}
+.records-table{width:100%;border-collapse:collapse;font-size:13px;text-align:left}
+.records-table th,.records-table td{padding:11px 12px;border-bottom:1px solid #30435d;line-height:1.6;vertical-align:top}
+.records-table th{color:#c1d4ed}.records-table td{color:#a9bfdc}
+@media(max-width:520px){.records-table th,.records-table td{padding:8px 6px;font-size:11px}}
+
+.recovery-banner{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:13px;margin:0 0 18px;border:1px solid #4c6d96;border-radius:10px;background:#1a304b;font-size:13px}
+.recovery-banner.warning{border-color:#aa6e6e;background:#412932}
+.recovery-list{display:grid;gap:10px;margin:14px 0}
+.recovery-item{display:grid;gap:9px;padding:12px;background:#1a2e47;border:1px solid #334c6d;border-radius:9px;font-size:12px}
+.cloud-recovery-list{max-height:240px;overflow:auto}

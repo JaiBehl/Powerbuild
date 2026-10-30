@@ -1,4 +1,12 @@
-import React,{useEffect,useMemo,useState} from 'react';
+import {validCloudSnapshot} from './syncMerge';
+import {PanelScopeContext} from './panelScope';
+import {saveRecoveryPoint,listRecoveryPoints} from './recovery';
+import {validateProfileDb,removesData} from './backupSafety';
+import {isISODate,addCalendarDays,startOfWeek} from './dates';
+import {buildStrengthHistory,resolveExerciseName,selectedExerciseName} from './exerciseCatalog';
+import {normalizeDayPlans,normalizeCalorieSettings} from './nutrition';
+import {normalizeTemplates} from './workoutOperations';
+import React,{useEffect,useMemo,useRef,useState} from 'react';
 import {createRoot} from 'react-dom/client';
 import {Dumbbell,CalendarDays,ChartNoAxesCombined,Settings as SettingsIcon,Target,Flame} from 'lucide-react';
 import {workouts,initialSettings,legacyStrengthGoals,isoToday,scheduledWorkout,createSession,e1rm} from './data';
@@ -10,7 +18,7 @@ import CalorieTracker,{calorieDefaults} from './CalorieTracker';
 import ProfileSwitcher from './ProfileSwitcher';
 import {useCloudSync,CloudPanel} from './cloudSync';
 import {validateHistoricalImport,mergeHistoricalImport} from './historicalImport';
-import {ensureProfiles,loadProfileDb,removeProfileDb,saveProfileDb,saveProfileMeta} from './profiles';
+import {ensureProfiles,loadProfileDb,removeProfileDb,saveProfileDb,saveProfileMeta,saveWorkspaceSnapshot} from './profiles';
 import {toDisplayWeight,unitName} from './units';
 import './style.css';
 
@@ -20,16 +28,17 @@ const cloneTemplates=()=>JSON.parse(JSON.stringify(workouts));
 function normalizeDb(x={},options={}){
   const incomingSettings={...initialSettings,...(x.settings||{})};
   const hasExplicitGoals=Array.isArray(x.strengthGoals);
-  return {
+  return normalizeDayPlans({
     settings:incomingSettings,
     strengthGoals:hasExplicitGoals?x.strengthGoals:(options.migrateLegacyGoals?legacyStrengthGoals(incomingSettings.strengthDeadline):[]),
     sessions:Array.isArray(x.sessions)?x.sessions:[],
     weights:Array.isArray(x.weights)?x.weights:[],
     calories:Array.isArray(x.calories)?x.calories:[],
     savedFoods:Array.isArray(x.savedFoods)?x.savedFoods:[],
-    calorieSettings:{...calorieDefaults,...(x.calorieSettings||{})},
-    templates:x.templates&&typeof x.templates==='object'&&!Array.isArray(x.templates)?x.templates:cloneTemplates(),
-  };
+    exerciseAliases:x.exerciseAliases&&typeof x.exerciseAliases==='object'&&!Array.isArray(x.exerciseAliases)?x.exerciseAliases:{},
+    calorieSettings:normalizeCalorieSettings(x.calorieSettings||{}),
+    templates:normalizeTemplates(x.templates&&typeof x.templates==='object'&&!Array.isArray(x.templates)?x.templates:cloneTemplates()),
+  });
 }
 
 const freshDb=()=>normalizeDb({strengthGoals:[]});
@@ -90,10 +99,14 @@ const initialProfileState=ensureProfiles(loadLegacy,freshDb);
 function App(){
   const [profileState,setProfileState]=useState(()=>initialProfileState);
   const [db,setDb]=useState(()=>normalizeDb(loadProfileDb(initialProfileState.activeProfileId,freshDb),{migrateLegacyGoals:initialProfileState.activeProfileId==='primary'}));
+  const dbRef=useRef(db);dbRef.current=db;
+  const [storageError,setStorageError]=useState('');
+  const [undoPoint,setUndoPoint]=useState(null);
   const [tab,setTab]=useState('today');
-  const [date,setDate]=useState(isoToday());
+  const [date,setDateState]=useState(isoToday());
+  const setDate=value=>{if(isISODate(value))setDateState(value);};
   const [viewWeek,setViewWeek]=useState(0);
-  const [chartLift,setChartLift]=useState('Barbell bench press');
+  const [selectedChartLift,setChartLift]=useState('Touch-and-go bench press');
   const [importError,setImportError]=useState('');
   const [historyImportStatus,setHistoryImportStatus]=useState('');
   const [showManual,setShowManual]=useState(false);
@@ -101,36 +114,51 @@ function App(){
   const [weightEntry,setWeightEntry]=useState('');
   const [calorieEntry,setCalorieEntry]=useState({name:'',meal:'Breakfast',servings:'1',calories:'',protein:'',carbs:'',fat:''});
 
-  function applyCloudSnapshot(snapshot){
+  function applyCloudSnapshot(snapshot,options={}){
     if(!snapshot?.profileState?.profiles?.length||!snapshot.profileData)throw Error('Invalid cloud data');
     const meta=snapshot.profileState;
     const active=meta.profiles.some(p=>p.id===meta.activeProfileId)?meta.activeProfileId:meta.profiles[0].id;
-    meta.profiles.forEach(p=>{
-      if(snapshot.profileData[p.id])saveProfileDb(p.id,normalizeDb(snapshot.profileData[p.id]));
-    });
-    const nextMeta={...meta,activeProfileId:active};
-    saveProfileMeta(nextMeta);
-    setProfileState(nextMeta);
-    setDb(normalizeDb(snapshot.profileData[active]||freshDb()));
-    resetProfileUi();
+    const nextMeta={...meta,activeProfileId:active},data=Object.fromEntries(meta.profiles.map(p=>[p.id,normalizeDb(snapshot.profileData[p.id]||freshDb())]));
+    saveWorkspaceSnapshot(nextMeta,data);
+    setProfileState(nextMeta);dbRef.current=data[active];setDb(data[active]);setUndoPoint(null);
+    if(!options.preserveUi)resetProfileUi();
   }
 
   const cloud=useCloudSync({db,profileState,applySnapshot:applyCloudSnapshot});
 
-  useEffect(()=>{saveProfileDb(profileState.activeProfileId,db)},[db,profileState.activeProfileId]);
-  useEffect(()=>{saveProfileMeta(profileState)},[profileState]);
-
+  useEffect(()=>{try{saveProfileDb(profileState.activeProfileId,db);saveProfileMeta(profileState);setStorageError('');}catch(e){setStorageError('Changes could not be saved on this device. Keep this page open and export a backup. '+e.message);}},[db,profileState]);
   const activeProfile=profileState.profiles.find(p=>p.id===profileState.activeProfileId)||profileState.profiles[0];
-  const patch=(f)=>setDb(p=>typeof f==='function'?f(p):{...p,...f});
+  const patch=(change,options={})=>{
+    try{
+      const before=dbRef.current;let next=typeof change==='function'?change(before):{...before,...change};
+      if(options.validate)next=normalizeDb(validateProfileDb(next));
+      if(options.checkpoint||removesData(before,next)){
+        const point=saveRecoveryPoint('profile:'+profileState.activeProfileId,options.checkpoint||'Before removing profile data',before);
+        setUndoPoint({id:point.id,profileId:profileState.activeProfileId,expected:JSON.stringify(next)});
+      }else if(JSON.stringify(before)!==JSON.stringify(next))setUndoPoint(null);
+      dbRef.current=next;setDb(next);return true;
+    }catch(e){setStorageError(e.message);return false;}
+  };
+  const workspaceSnapshot=()=>({profileState,profileData:Object.fromEntries(profileState.profiles.map(p=>[p.id,p.id===profileState.activeProfileId?dbRef.current:loadProfileDb(p.id,freshDb)]))});
+  const restoreWorkspace=point=>{if(!validCloudSnapshot(point?.data))throw Error('Invalid all-profile backup. Existing profiles were left unchanged.');Object.values(point.data.profileData).forEach(validateProfileDb);saveRecoveryPoint('workspace','Before all-profile restore',workspaceSnapshot());applyCloudSnapshot(point.data);};
+  const undo=()=>{
+    try{
+      if(!undoPoint||undoPoint.profileId!==profileState.activeProfileId||JSON.stringify(dbRef.current)!==undoPoint.expected){setUndoPoint(null);return;}
+      const point=listRecoveryPoints('profile:'+profileState.activeProfileId).find(p=>p.id===undoPoint.id);
+      if(!point)throw Error('Recovery copy is no longer available.');
+      const next=normalizeDb(validateProfileDb(point.data));saveRecoveryPoint('profile:'+profileState.activeProfileId,'Before undo',dbRef.current);dbRef.current=next;setDb(next);setUndoPoint(null);
+    }catch(e){setStorageError(e.message);}
+  };
   const patchSettings=(obj)=>patch(p=>({...p,settings:{...p.settings,...obj}}));
   const scheduled=scheduledWorkout(date,db.settings);
   const session=db.sessions.find(s=>s.date===date);
   const updateSession=(fn)=>{if(!session)return;patch(p=>({...p,sessions:p.sessions.map(s=>s.id===session.id?fn(s):s)}))};
   const start=(type)=>{const s=createSession(type,date,db.templates||workouts);patch(p=>({...p,sessions:[...p.sessions.filter(x=>x.date!==date),s]}));setShowManual(false)};
-  const changeDate=(days)=>{const d=new Date(date+'T12:00:00');d.setDate(d.getDate()+days);setDate(d.toISOString().slice(0,10))};
-  const weekDates=Array.from({length:7},(_,i)=>{const d=new Date(isoToday()+'T12:00:00');d.setDate(d.getDate()-((d.getDay()+6)%7)+7*viewWeek+i);return d.toISOString().slice(0,10)});
+  const changeDate=days=>setDate(addCalendarDays(date,days));
+  const weekDates=Array.from({length:7},(_,i)=>addCalendarDays(startOfWeek(isoToday()),7*viewWeek+i));
 
   function resetProfileUi(){
+    setUndoPoint(null);
     setTab('today');
     setDate(isoToday());
     setViewWeek(0);
@@ -144,7 +172,7 @@ function App(){
 
   function switchProfile(id){
     if(id===profileState.activeProfileId||!profileState.profiles.some(p=>p.id===id))return;
-    saveProfileDb(profileState.activeProfileId,db);
+    try{saveProfileDb(profileState.activeProfileId,db);}catch(e){setStorageError('Could not switch profiles: '+e.message);return;}
     const next=normalizeDb(loadProfileDb(id,freshDb),{migrateLegacyGoals:id==='primary'});
     setDb(next);
     setProfileState(p=>({...p,activeProfileId:id}));
@@ -158,10 +186,10 @@ function App(){
       alert('A profile with that name already exists.');
       return false;
     }
-    saveProfileDb(profileState.activeProfileId,db);
+    try{saveProfileDb(profileState.activeProfileId,db);}catch(e){setStorageError(e.message);return false;}
     const id=(globalThis.crypto?.randomUUID?.()||`profile-${Date.now()}-${Math.random().toString(36).slice(2,8)}`);
     const next=freshDb();
-    saveProfileDb(id,next);
+    try{saveProfileDb(id,next);}catch(e){setStorageError(e.message);return false;}
     setProfileState(p=>({profiles:[...p.profiles,{id,name:clean,createdAt:new Date().toISOString()}],activeProfileId:id}));
     setDb(next);
     resetProfileUi();
@@ -187,21 +215,13 @@ function App(){
     const profile=profileState.profiles.find(p=>p.id===id);
     if(!profile)return;
     if(!confirm(`Delete ${profile.name} and all of its local Powerbuild data? This cannot be undone without that profile's backup.`))return;
-    removeProfileDb(id);
+    try{saveRecoveryPoint('workspace','Before deleting '+profile.name,workspaceSnapshot());removeProfileDb(id);}catch(e){setStorageError(e.message);return;}
     setProfileState(p=>({...p,profiles:p.profiles.filter(x=>x.id!==id)}));
   }
 
-  const history=useMemo(()=>{
-    const m={};
-    db.sessions.forEach(s=>s.exercises.forEach(e=>e.sets.forEach(v=>{
-      if(v.done&&Number(v.weight)>0&&Number(v.reps)>0){
-        const val=e1rm(v.weight,v.reps);
-        if(val){m[e.name]??={};m[e.name][s.date]=Math.max(m[e.name][s.date]||0,val)}
-      }
-    })));
-    return m;
-  },[db.sessions]);
-  const chartData=Object.entries(history[chartLift]||{}).sort(([a],[b])=>a.localeCompare(b)).map(([d,value])=>({date:d,value}));
+  const chartLift=selectedExerciseName(selectedChartLift,db);
+  const history=useMemo(()=>buildStrengthHistory(db.sessions,db.exerciseAliases),[db.sessions,db.exerciseAliases]);
+  const chartData=Object.entries(history[resolveExerciseName(chartLift,db.exerciseAliases)]||{}).sort(([a],[b])=>a.localeCompare(b)).map(([d,value])=>({date:d,value}));
   const finished=db.sessions.filter(s=>s.finished).sort((a,b)=>b.date.localeCompare(a.date));
   const latestWeight=[...db.weights].sort((a,b)=>b.date.localeCompare(a.date))[0];
 
@@ -216,10 +236,10 @@ function App(){
   async function importJson(ev){
     try{
       const file=ev.target.files?.[0];if(!file)return;
-      const x=JSON.parse(await file.text());
-      if(!Array.isArray(x.sessions)||!Array.isArray(x.weights)||!x.settings)throw Error('Not a valid Powerbuild backup');
+      if(file.size>5000000)throw Error('Backup exceeds the 5 MB import limit.');
+      const x=validateProfileDb(JSON.parse(await file.text()));
       if(!confirm(`Replace ${activeProfile?.name||'this profile'}'s current data with this backup? Export its existing data first if you want to keep it.`))return;
-      setDb(normalizeDb(x));
+      if(!patch(()=>normalizeDb(x),{checkpoint:'Before profile backup import'}))throw Error('Import blocked because a recovery copy could not be saved.');
       setImportError('');
     }catch(e){setImportError(e.message)}
     ev.target.value='';
@@ -249,7 +269,7 @@ function App(){
 
   const headings={
     today:['Workout logger','Log every set, track overload, and protect recovery.'],
-    calendar:['Rolling PPL schedule','Five training days. Six sessions in continuous rotation.'],
+    calendar:['Rolling PPL schedule',`${db.settings.schedule.length} training days. Six sessions in continuous rotation.`],
     progress:['Strength & progress','See trends instead of guessing from individual sessions.'],
     calories:['Calorie & macro tracker','Calculate your daily targets and log nutrition.'],
     settings:['Preferences & backups','Your plan, goals, and local data.'],
@@ -257,7 +277,7 @@ function App(){
   const [title,subtitle]=headings[tab];
   const unit=unitName(db.settings.units);
 
-  return <div className="app">
+  return <PanelScopeContext.Provider value={[profileState.activeProfileId,tab]}><div className="app">
     <aside className="sidebar">
       <div className="brand"><div className="brand-icon"><Dumbbell size={24}/></div><div><strong>POWERBUILD</strong><small>STRENGTH × PHYSIQUE</small></div></div>
       <nav>{[['today',Dumbbell,'Train'],['calendar',CalendarDays,'Schedule'],['progress',ChartNoAxesCombined,'Progress'],['calories',Flame,'Calorie tracker'],['settings',SettingsIcon,'Settings & backup']].map(([id,Icon,label])=><button key={id} className={tab===id?'active':''} onClick={()=>setTab(id)}><Icon size={19}/>{label}</button>)}</nav>
@@ -266,15 +286,17 @@ function App(){
       <div className="side-foot">Data is saved on this device first. Sign in to sync across devices. Keep a backup.</div>
     </aside>
     <main>
+      {storageError&&<div className="recovery-banner warning" role="alert"><span>{storageError}</span><button className="secondary" onClick={exportJson}>Export current profile</button></div>}
+      {undoPoint&&<div className="recovery-banner" role="status"><span>A recovery copy was saved before this change.</span><button className="secondary" onClick={undo}>Undo last change</button><button className="textbtn" onClick={()=>setUndoPoint(null)}>Dismiss</button></div>}
       <header><div><p className="eyebrow">POWERBUILD TRACKER</p><h1>{title}</h1><p className="muted">{subtitle}</p></div><span className="goalpill"><Target size={15}/> {toDisplayWeight(db.settings.targetWeight,db.settings.units,1)} {unit} · {db.settings.weightDeadline}</span></header>
       {tab==='today'&&<TrainTab {...{db,patch,date,setDate,scheduled,session,updateSession,start,showManual,setShowManual,manualType,setManualType,changeDate}}/>}
       {tab==='calendar'&&<ScheduleTab {...{db,setTab,setDate,viewWeek,setViewWeek,weekDates}}/>}
       {tab==='progress'&&<ProgressTab {...{db,patch,date,setDate,setTab,weightEntry,setWeightEntry,history,chartLift,setChartLift,chartData,finished,latestWeight}}/>}
       {tab==='calories'&&<CalorieTracker {...{db,patch,date,setDate,entry:calorieEntry,setEntry:setCalorieEntry}}/>}
-      {tab==='settings'&&<SettingsTab {...{db,patch,patchSettings,exportJson,exportCsv,importJson,importError,cloneTemplates,importHistoricalJson,historyImportStatus}} profileName={activeProfile?.name||'My profile'} cloudEnabled={!!cloud.user&&['synced','saving'].includes(cloud.status)}/>} 
+      {tab==='settings'&&<SettingsTab {...{db,patch,patchSettings,exportJson,exportCsv,importJson,importError,cloneTemplates,importHistoricalJson,historyImportStatus}} onExportWorkspace={()=>download('powerbuild-all-profiles-backup.json',JSON.stringify(workspaceSnapshot(),null,2),'application/json')} onRestoreWorkspace={restoreWorkspace} profileId={profileState.activeProfileId} profileName={activeProfile?.name||'My profile'} cloudEnabled={!!cloud.user&&['synced','saving'].includes(cloud.status)}/>} 
       <footer>Powerbuild Tracker · Local-first workout log · Estimates are not medical or coaching guarantees.</footer>
     </main>
-  </div>;
+  </div></PanelScopeContext.Provider>;
 }
 
 createRoot(document.getElementById('root')).render(<App/>);

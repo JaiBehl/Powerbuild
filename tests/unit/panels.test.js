@@ -1,0 +1,5 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {panelKey,readPanelCollapsed,savePanelCollapsed} from '../../src/panelState.js';
+const memory=()=>{const values=new Map();return {getItem:k=>values.get(k)||null,setItem:(k,v)=>values.set(k,v)};};
+test('panel preferences persist independently by profile, tab and section',()=>{const storage=memory(),key=panelKey(['a','progress'],'Workout history');savePanelCollapsed(key,true,storage);assert.equal(readPanelCollapsed(key,false,storage),true);assert.equal(readPanelCollapsed(panelKey(['b','progress'],'Workout history'),false,storage),false);assert.equal(readPanelCollapsed(panelKey(['a','train'],'Workout history'),false,storage),false);});
+test('malformed or unavailable preference storage falls back without breaking controls',()=>{const storage={getItem:()=>'{bad',setItem:()=>{throw Error('quota');}};assert.equal(readPanelCollapsed('key',false,storage),false);assert.equal(savePanelCollapsed('key',true,storage),false);});

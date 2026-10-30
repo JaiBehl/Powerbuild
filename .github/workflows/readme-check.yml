@@ -27,13 +27,13 @@ jobs:
 
           def needs_readme(path):
               return (
-                  path.startswith(("src/", "supabase/", "scripts/", ".github/workflows/"))
+                  path.startswith(("src/", "supabase/", "scripts/", "tests/", ".github/workflows/"))
                   or path in {
                       "package.json", "package-lock.json", "npm-shrinkwrap.json",
                       "yarn.lock", "pnpm-lock.yaml", "bun.lock", "bun.lockb",
                       "index.html", "build.mjs", ".env.example", "AGENTS.md",
                       "CLOUD_SYNC_SETUP.md", ".nvmrc", ".node-version", ".npmrc",
-                      "Dockerfile", "Procfile",
+                      "Dockerfile", "Procfile", ".gitignore", ".github/pull_request_template.md",
                   }
                   or ("/" not in path and path.endswith((".js", ".jsx", ".ts", ".tsx", ".css", ".html")))
                   or ("/" not in path and path.startswith(("vite.config.", "vercel.", "tsconfig")))
