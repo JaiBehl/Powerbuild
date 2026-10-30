@@ -103,3 +103,47 @@
 .food-edit-box .actions{margin-top:10px}
 @media(max-width:700px){.food-entry-fields{grid-template-columns:repeat(2,minmax(0,1fr))}.food-entry-name{grid-column:span 2}.food-summary .metric strong{font-size:19px}}
 @media(max-width:450px){.food-add-box{padding:13px}.food-entry-fields{grid-template-columns:1fr}.food-entry-name{grid-column:auto}.food-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.food-item{align-items:flex-start}.food-item-copy small{font-size:11px}}
+
+
+/* Per-serving food logging: quick fractions, multiples and custom values */
+.serving-picker{display:flex;align-items:end;gap:12px;flex-wrap:wrap;margin:12px 0 16px}
+.serving-picker>label{display:grid;gap:7px;color:#b7c7dc;font-size:12px;min-width:95px}
+.serving-picker>label input{width:100px;max-width:100%;min-width:0;padding:8px 10px}
+.serving-presets{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.serving-presets button{border:1px solid #405777;border-radius:7px;background:#20364f;color:#c1d3ec;padding:8px 10px;font-size:12px;font-weight:650;min-width:42px}
+.serving-presets button.is-selected{color:#fff;background:#315d99;border-color:#689bea}
+.serving-presets button:hover{background:#335377}
+.serving-presets button:focus-visible{outline:2px solid #8db7ff;outline-offset:2px}
+.food-success{color:#86ddbd;font-size:12px;line-height:1.5;margin:10px 0 0}
+.food-item-actions button:hover{color:#e7f2ff;background:#2b4769}
+
+/* Dedicated Saved Foods card below Today's entries, independent of food log */
+.saved-foods-panel{position:relative}
+.saved-foods-collapse{
+  position:absolute;top:17px;left:14px;display:flex;align-items:center;justify-content:center;
+  width:28px;height:28px;background:#243a56;color:#dceaff;border:1px solid #46617f;
+  border-radius:7px;padding:0
+}
+.saved-foods-collapse:hover{background:#345b86;border-color:#82ade2}
+.saved-foods-collapse:focus-visible{outline:2px solid #8db7ff;outline-offset:3px}
+.saved-foods-heading{padding-left:38px;gap:12px;min-height:36px;align-items:flex-start}
+.saved-foods-heading h2{display:flex;align-items:center;gap:8px}
+.saved-foods-heading p{max-width:680px}
+.saved-foods-panel.is-collapsed .saved-foods-heading h2{margin-bottom:0}
+.saved-foods-panel.is-collapsed .saved-foods-heading{align-items:center}
+.saved-foods-search{display:grid;gap:8px;color:#b7c7dc;font-size:12px;max-width:420px;margin:15px 0}
+.saved-foods-search input{width:100%}
+.saved-foods-list{display:grid;gap:12px;margin-top:16px}
+.saved-food-item{border:1px solid #344a67;border-radius:11px;background:#192b42;padding:14px}
+.saved-food-description strong{font-size:14px;overflow-wrap:anywhere}
+.saved-food-description small{display:block;margin:6px 0 12px;font-size:12px;color:#acc1dc;line-height:1.5}
+.saved-food-description .between{flex-wrap:nowrap}
+.saved-food-add-row{display:flex;gap:14px;align-items:end;flex-wrap:wrap;padding-top:11px;border-top:1px solid #2f435b}
+.saved-food-add-row>.serving-picker{margin:0;flex:1;min-width:220px}
+.saved-food-add-row>label{display:grid;gap:7px;font-size:12px;color:#b7c7dc;min-width:128px}
+.saved-food-add-row>label select{min-width:120px;padding:8px 10px}
+.saved-food-add-button{white-space:nowrap}
+.saved-food-edit{width:100%}
+.saved-food-edit .actions{margin-top:8px}
+@media(max-width:650px){.saved-foods-heading{padding-left:35px}.saved-foods-add-row{gap:10px}.saved-food-add-row>.serving-picker{min-width:100%;flex-basis:100%}.saved-food-add-row>.saved-food-add-button{flex:1}.serving-picker{gap:10px}.serving-presets button{padding:8px 9px}}
+@media(max-width:450px){.saved-foods-collapse{left:11px;top:13px}.saved-foods-heading{padding-left:32px}.saved-foods-panel{padding:14px}.saved-food-add-row>label{flex:1}.saved-foods-heading .workout-history-total{font-size:10px}}
