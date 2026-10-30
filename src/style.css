@@ -75,3 +75,31 @@
 .progress-collapsible.is-collapsed>.between{margin:0}
 .progress-collapsible.is-collapsed>.between h2{margin-bottom:0}
 @media(max-width:520px){.progress-collapsible>.between{padding-left:32px}.progress-collapse-toggle{left:12px;top:14px}}
+
+
+/* Food-by-food nutrition tracker */
+.food-log-panel .food-summary{grid-template-columns:repeat(auto-fit,minmax(145px,1fr));margin-top:18px}
+.food-summary .metric strong{font-size:21px}
+.food-summary .metric small:last-child:not(:first-child){margin:7px 0 0;letter-spacing:0;text-transform:none;font-size:11px}
+.food-add-box{margin:20px 0 24px;padding:18px;background:#17283e;border:1px solid #344961;border-radius:12px}
+.food-add-box h3{margin:0}
+.food-entry-fields{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:15px 0}
+.food-entry-fields label{min-width:0}
+.food-entry-fields input,.food-entry-fields select{width:100%;min-width:0}
+.food-entry-name{grid-column:span 2}
+.food-hint{max-width:650px}
+.food-history{border-top:1px solid #33475e;padding-top:20px}
+.food-history>.between{margin-bottom:16px}
+.food-history>.between h3{margin:0}
+.food-meal-group{margin:18px 0}
+.food-meal-heading{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:8px;padding:0 2px;color:#bed4f4;font-size:13px}
+.food-meal-heading span{color:#99aeca}
+.food-item{display:flex;justify-content:space-between;align-items:center;gap:12px;background:#1b2b41;border:1px solid #2a3d54;border-radius:9px;padding:12px;margin:7px 0}
+.food-item-copy{display:flex;flex-direction:column;gap:5px;min-width:0}
+.food-item-copy strong{font-size:13px;overflow-wrap:anywhere}
+.food-item-copy small{font-size:12px;line-height:1.5;color:#aec1da}
+.food-item-actions{display:flex;align-items:center;gap:2px;flex-shrink:0}
+.food-edit-box{width:100%}
+.food-edit-box .actions{margin-top:10px}
+@media(max-width:700px){.food-entry-fields{grid-template-columns:repeat(2,minmax(0,1fr))}.food-entry-name{grid-column:span 2}.food-summary .metric strong{font-size:19px}}
+@media(max-width:450px){.food-add-box{padding:13px}.food-entry-fields{grid-template-columns:1fr}.food-entry-name{grid-column:auto}.food-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.food-item{align-items:flex-start}.food-item-copy small{font-size:11px}}
