@@ -15,6 +15,12 @@ test('equations preserve their sex terms and restrict the athlete age domain',()
   close(restingMetabolism(180,71,25,'male','mifflin').rmr-restingMetabolism(180,71,25,'female','mifflin').rmr,166);
   assert.equal(restingMetabolism(180,71,36,'male').method,'mifflin');
   assert.equal(restingMetabolism(180,71,17,'male').adult,false);
+  for(const equation of ['tenHaaf','mifflin']){
+    const reference=restingMetabolism(180,71,25,'male',equation).rmr;
+    assert.ok(restingMetabolism(180,72,25,'male',equation).rmr>reference);
+    assert.ok(restingMetabolism(185,71,25,'male',equation).rmr>reference);
+    assert.ok(restingMetabolism(180,71,26,'male',equation).rmr<reference);
+  }
 });
 test('zero activity adds no calories and manual baselines remain independent of formulas',()=>{
   const settings={baselineMode:'custom',customBaseline:2300,milesWalked:0,milesRun:0,lifted:false,liftHours:3,liftMet:6};
