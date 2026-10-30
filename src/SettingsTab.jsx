@@ -5,7 +5,7 @@ import {calorieDefaults} from './CalorieTracker';
 import {fromDisplayWeight,toDisplayWeight,unitName} from './units';
 import './ui-polish.css';
 
-export default function SettingsTab({db,patch,patchSettings,exportJson,exportCsv,importJson,importError,cloneTemplates,profileName='My profile'}){
+export default function SettingsTab({db,patch,patchSettings,exportJson,exportCsv,importJson,importError,cloneTemplates,profileName='My profile',cloudEnabled=false}){
   const units=unitName(db.settings.units);
   const [newExercise,setNewExercise]=useState('');
   const [newTarget,setNewTarget]=useState('');
@@ -66,7 +66,7 @@ export default function SettingsTab({db,patch,patchSettings,exportJson,exportCsv
       <button className="secondary" onClick={addGoal}><Plus size={16}/> Add strength goal</button>
     </section>
 
-    <section className="panel"><h2>Backups & exports</h2><p className="muted">These actions only affect <b>{profileName}</b>. Its logs are saved automatically in this browser and are not synchronized between devices. Export a JSON backup periodically, especially before clearing browser data.</p><div className="actions"><button className="primary" onClick={exportJson}><Download size={17}/> Export profile backup</button><button className="secondary" onClick={exportCsv}><Download size={17}/> Export sets CSV</button><label className="secondary upload"><Upload size={17}/> Import into this profile<input type="file" accept=".json,application/json" onChange={importJson} hidden/></label></div>{importError&&<p className="error">{importError}</p>}</section>
+    <section className="panel"><h2>Backups & exports</h2><p className="muted">These actions only affect <b>{profileName}</b>. Its logs are saved automatically on this device. {cloudEnabled?'Cloud sync is connected.':'Sign in to cloud sync to share data across devices.'} Export a JSON backup periodically, especially before clearing browser data.</p><div className="actions"><button className="primary" onClick={exportJson}><Download size={17}/> Export profile backup</button><button className="secondary" onClick={exportCsv}><Download size={17}/> Export sets CSV</button><label className="secondary upload"><Upload size={17}/> Import into this profile<input type="file" accept=".json,application/json" onChange={importJson} hidden/></label></div>{importError&&<p className="error">{importError}</p>}</section>
     <section className="panel warning"><div className="between"><div><h3>Reset {profileName}</h3><p className="muted">Clears only this profile's workout logs, weight entries, nutrition, strength goals, custom exercises, and settings. Other profiles are untouched.</p></div><button className="danger" onClick={()=>{if(confirm(`Erase all data in ${profileName}? Other profiles will not be affected.`))patch({settings:{...initialSettings},strengthGoals:[],sessions:[],weights:[],calories:[],calorieSettings:{...calorieDefaults},templates:cloneTemplates()})}}><RotateCcw size={16}/> Reset profile</button></div></section>
   </>;
 }

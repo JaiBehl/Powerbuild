@@ -8,6 +8,7 @@ import ProgressTab from './ProgressTab';
 import SettingsTab from './SettingsTab';
 import CalorieTracker,{calorieDefaults} from './CalorieTracker';
 import ProfileSwitcher from './ProfileSwitcher';
+import {useCloudSync,CloudPanel} from './cloudSync';
 import {ensureProfiles,loadProfileDb,removeProfileDb,saveProfileDb,saveProfileMeta} from './profiles';
 import {toDisplayWeight,unitName} from './units';
 import './style.css';
@@ -96,6 +97,22 @@ function App(){
   const [manualType,setManualType]=useState('Push A');
   const [weightEntry,setWeightEntry]=useState('');
   const [calorieEntry,setCalorieEntry]=useState({calories:'',protein:'',carbs:'',fat:''});
+
+  function applyCloudSnapshot(snapshot){
+    if(!snapshot?.profileState?.profiles?.length||!snapshot.profileData)throw Error('Invalid cloud data');
+    const meta=snapshot.profileState;
+    const active=meta.profiles.some(p=>p.id===meta.activeProfileId)?meta.activeProfileId:meta.profiles[0].id;
+    meta.profiles.forEach(p=>{
+      if(snapshot.profileData[p.id])saveProfileDb(p.id,normalizeDb(snapshot.profileData[p.id]));
+    });
+    const nextMeta={...meta,activeProfileId:active};
+    saveProfileMeta(nextMeta);
+    setProfileState(nextMeta);
+    setDb(normalizeDb(snapshot.profileData[active]||freshDb()));
+    resetProfileUi();
+  }
+
+  const cloud=useCloudSync({db,profileState,applySnapshot:applyCloudSnapshot});
 
   useEffect(()=>{saveProfileDb(profileState.activeProfileId,db)},[db,profileState.activeProfileId]);
   useEffect(()=>{saveProfileMeta(profileState)},[profileState]);
@@ -219,7 +236,8 @@ function App(){
       <div className="brand"><div className="brand-icon"><Dumbbell size={24}/></div><div><strong>POWERBUILD</strong><small>STRENGTH × PHYSIQUE</small></div></div>
       <nav>{[['today',Dumbbell,'Train'],['calendar',CalendarDays,'Schedule'],['progress',ChartNoAxesCombined,'Progress'],['calories',Flame,'Calorie tracker'],['settings',SettingsIcon,'Settings & backup']].map(([id,Icon,label])=><button key={id} className={tab===id?'active':''} onClick={()=>setTab(id)}><Icon size={19}/>{label}</button>)}</nav>
       <ProfileSwitcher profiles={profileState.profiles} activeId={profileState.activeProfileId} onSwitch={switchProfile} onCreate={createProfile} onRename={renameProfile} onDelete={deleteProfile}/>
-      <div className="side-foot">Profiles and training data stay in this browser. Export backups regularly.</div>
+      <CloudPanel cloud={cloud}/>
+      <div className="side-foot">Data is saved on this device first. Sign in to sync across devices. Keep a backup.</div>
     </aside>
     <main>
       <header><div><p className="eyebrow">POWERBUILD TRACKER</p><h1>{title}</h1><p className="muted">{subtitle}</p></div><span className="goalpill"><Target size={15}/> {toDisplayWeight(db.settings.targetWeight,db.settings.units,1)} {unit} · {db.settings.weightDeadline}</span></header>
@@ -227,7 +245,7 @@ function App(){
       {tab==='calendar'&&<ScheduleTab {...{db,setTab,setDate,viewWeek,setViewWeek,weekDates}}/>}
       {tab==='progress'&&<ProgressTab {...{db,patch,date,setDate,setTab,weightEntry,setWeightEntry,history,chartLift,setChartLift,chartData,finished,latestWeight}}/>}
       {tab==='calories'&&<CalorieTracker {...{db,patch,date,setDate,entry:calorieEntry,setEntry:setCalorieEntry}}/>}
-      {tab==='settings'&&<SettingsTab {...{db,patch,patchSettings,exportJson,exportCsv,importJson,importError,cloneTemplates}} profileName={activeProfile?.name||'My profile'}/>} 
+      {tab==='settings'&&<SettingsTab {...{db,patch,patchSettings,exportJson,exportCsv,importJson,importError,cloneTemplates}} profileName={activeProfile?.name||'My profile'} cloudEnabled={!!cloud.user&&['synced','saving'].includes(cloud.status)}/>} 
       <footer>Powerbuild Tracker · Local-first workout log · Estimates are not medical or coaching guarantees.</footer>
     </main>
   </div>;
