@@ -3,14 +3,15 @@ import CardioLog from './CardioLog';
 import FoodLog from './FoodLog';
 import SavedFoods from './SavedFoods';
 import CalorieSection from './CalorieSection';
+import {isoToday} from './data';
 import {displayMacroRate,fromDisplayWeight,storeMacroRate,toDisplayRate,toDisplayWeight,unitName} from './units';
 
 export {calorieDefaults} from './nutrition';
-import {calculateNutrition,updateDayPlan,updateDayRecord as updateNutritionDay} from './nutrition';
+import {calculateNutrition,normalizeCalorieSettings,setNutritionWeightMode,updateDayPlan,updateDayRecord as updateNutritionDay} from './nutrition';
 
 export default function CalorieTracker({db,patch,date,setDate,entry,setEntry}){
   const units=unitName(db.settings.units);
-  const {cs,stored,goal,weight,heightIn,age,sex,estimatedBaseline,customBaseline,baselineMode,baseline,heightFeet,heightRemainder,cardioExtra,walkExtra,runExtra,liftExtra,maintenance,days,daysRemaining,validDeadline,goalDifference,goalRate,calculatedTarget,mode,calorieTargetMode,manualCalorieTarget,target,calculatedProtein,calculatedFat,calculatedCarbs,macroTargetMode,protein,carbs,fat,macroCalories,rmr,rmrMethod,adult,baselineFactor,walkPace,liftMet,estimatedMaintenance,maintenanceMode,customMaintenance,maintenanceOverrideValid}=calculateNutrition(db,date);
+  const {cs,stored,goal,weight,weightSource,weightDate,heightIn,age,sex,estimatedBaseline,customBaseline,baselineMode,baseline,heightFeet,heightRemainder,cardioExtra,walkExtra,runExtra,liftExtra,maintenance,days,daysRemaining,validDeadline,goalDifference,goalRate,calculatedTarget,mode,calorieTargetMode,manualCalorieTarget,target,calculatedProtein,calculatedFat,calculatedCarbs,macroTargetMode,protein,carbs,fat,macroCalories,rmr,rmrMethod,adult,baselineFactor,walkPace,liftMet,estimatedMaintenance,maintenanceMode,customMaintenance,maintenanceOverrideValid}=calculateNutrition(db,date);
   const update=(key,value)=>patch(p=>updateDayPlan(p,date,{calorieSettings:{[key]:value}}));
   const changeGoal=(key,value)=>patch(p=>updateDayPlan({...p,settings:{...p.settings,[key]:value}},date,{goal:{[key]:value}}));
   const record=db.calories.find(x=>x.date===date);
@@ -31,6 +32,7 @@ export default function CalorieTracker({db,patch,date,setDate,entry,setEntry}){
   const fatRate=displayMacroRate(cs.fatPerLb,units,2);
 
   return <>
+    <div className="food-log-date-row"><label>Calculator date<input aria-label="Calculator date" type="date" value={date} onChange={e=>setDate(e.target.value)}/></label><button className="secondary" onClick={()=>setDate(isoToday())}>Today</button></div>
     <p className="muted">Activity and target edits are saved for the selected date. New dates start with your defaults.</p>
     <button className="secondary" onClick={()=>patch(p=>({...p,calorieSettings:{...cs}}))}>Use this day's settings for new dates</button>
     <CalorieSection
@@ -67,7 +69,7 @@ export default function CalorieTracker({db,patch,date,setDate,entry,setEntry}){
         <label>Baseline source<select value={baselineMode} onChange={e=>update('baselineMode',e.target.value)}><option value="estimate">Use app estimate</option><option value="custom">Use my own baseline</option></select></label>
         {baselineMode==='estimate'&&<><label>Resting metabolism formula<select value={cs.rmrEquation} onChange={e=>update('rmrEquation',e.target.value)}><option value="tenHaaf">Recreational athlete, age 18–35 (ten Haaf)</option><option value="mifflin">General adult (Mifflin–St Jeor)</option></select></label><label>Unlogged daily living factor<input type="number" min="1.1" max="1.5" step="0.05" value={baselineFactor} onChange={e=>update('baselineFactor',Number(e.target.value))}/></label></>}
         {baselineMode==='custom'&&<label>Custom baseline (kcal)<input type="number" min="800" max="7000" step="10" value={customBaseline} onChange={e=>update('customBaseline',Number(e.target.value))}/></label>}
-        <label>Weight source<select aria-label="Weight source" value={cs.weightMode} onChange={e=>patch(p=>updateDayPlan(p,date,{calorieSettings:{weightMode:e.target.value,bodyWeight:cs.bodyWeight??weight}}))}><option value="auto">Follow weigh-ins</option><option value="manual">Enter weight manually</option></select></label>
+        <label>Weight source<select aria-label="Weight source" value={cs.weightMode} onChange={e=>patch(p=>setNutritionWeightMode(p,date,e.target.value))}><option value="auto">Follow weigh-ins</option><option value="manual">Enter weight manually</option></select></label>
         <label>Weight ({units})<input type="number" min="20" max="700" step="0.1" disabled={cs.weightMode==='auto'} value={displayedWeight} onChange={e=>update('bodyWeight',fromDisplayWeight(e.target.value,units))}/></label>
         <label>Sex<select value={sex} onChange={e=>update('sex',e.target.value)}><option value="male">Male</option><option value="female">Female</option></select></label>
         <label>Age<input type="number" min="13" max="100" step="1" value={age} onChange={e=>update('age',Number(e.target.value))}/></label>
@@ -77,7 +79,8 @@ export default function CalorieTracker({db,patch,date,setDate,entry,setEntry}){
       {cs.rmrEquation==='tenHaaf'&&(age<18||age>35)&&<p className="muted note">The athlete equation was developed for ages 18–35. Mifflin–St Jeor is used outside that range.</p>}
       {!adult&&<p className="error">These are adult equations and are not validated for people under 18.</p>}
       <p className="muted">Keep the daily living factor near 1.2 when walking and exercise are logged below. Do not also include those activities in this factor or a custom baseline. These are starting estimates; no equation measures your personal maintenance.</p>
-      <p className="muted">{cs.weightMode==='auto'?'Following the most recent weigh-in on or before this date. New weigh-ins update the calculation automatically.':'Using a manual weight for this date. Choose Follow weigh-ins to reconnect Progress entries.'}</p>
+      <p className="muted" aria-live="polite">{weightSource==='weigh-in'?'Weigh-in used: '+displayedWeight+' '+units+' from '+weightDate+'. New weigh-ins on or before the calculator date update the estimate automatically.':weightSource==='manual'?'Using a manual weight for '+date+'. Choose Follow weigh-ins to reconnect Progress entries.':'No weigh-in on or before '+date+'. Using the starting-weight fallback: '+displayedWeight+' '+units+'.'}</p>
+      {(cs.weightMode==='manual'||normalizeCalorieSettings(db.calorieSettings).weightMode!=='auto')&&<button className="secondary" onClick={()=>patch(p=>setNutritionWeightMode(p,date,'auto'))}>Follow weigh-ins for this and new dates</button>}
       {baselineMode==='custom'&&<p className="muted note">Custom baseline mode uses your entered number before net activity. Keep logged activity out of this number. A known total maintenance overrides both baseline and activity.</p>}
     </CalorieSection>
 

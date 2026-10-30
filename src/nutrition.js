@@ -31,8 +31,9 @@ export function normalizeCalorieSettings(value={}){
  return {...calorieDefaults,...value,weightMode:value.weightMode==='auto'||value.weightMode==='manual'?value.weightMode:Number(value.bodyWeight)>0?'manual':'auto'};
 }
 export function resolveDayPlan(db,date){
- const saved=db.calories?.find(x=>x.date===date)?.plan;
- return {calorieSettings:normalizeCalorieSettings(saved?.calorieSettings?{...db.calorieSettings,...saved.calorieSettings,weightMode:saved.calorieSettings.weightMode}:db.calorieSettings),goal:{startWeight:db.settings.startWeight,targetWeight:db.settings.targetWeight,weightDeadline:db.settings.weightDeadline,...saved?.goal}};
+ const saved=db.calories?.find(x=>x.date===date)?.plan,defaults=normalizeCalorieSettings(db.calorieSettings),savedSettings=saved?.calorieSettings;
+ const weightMode=savedSettings?.weightMode==='auto'||savedSettings?.weightMode==='manual'?savedSettings.weightMode:defaults.weightMode;
+ return {calorieSettings:normalizeCalorieSettings({...defaults,...savedSettings,weightMode}),goal:{startWeight:db.settings.startWeight,targetWeight:db.settings.targetWeight,weightDeadline:db.settings.weightDeadline,...saved?.goal}};
 }
 export function updateDayRecord(db,date,fn){
  const current=db.calories.find(x=>x.date===date)||{date,items:[],cardio:[]};
@@ -45,10 +46,24 @@ export function updateDayPlan(db,date,changes){
 export function normalizeDayPlans(db){
  return {...db,calories:db.calories.map(day=>({...day,plan:structuredClone(resolveDayPlan(db,day.date))}))};
 }
+const positiveWeight=value=>(typeof value==='number'||typeof value==='string'&&value.trim()!=='')&&Number.isFinite(Number(value))&&Number(value)>0;
+export function resolveNutritionWeight(db,date,cs,goal){
+ let latest=null;
+ for(const entry of db.weights||[])if(entry&&isISODate(entry.date)&&entry.date<=date&&positiveWeight(entry.weight)&&(!latest||entry.date>=latest.date))latest={date:entry.date,weight:Number(entry.weight)};
+ if(cs.weightMode==='manual'&&positiveWeight(cs.bodyWeight))return {weight:Number(cs.bodyWeight),weightSource:'manual',weightDate:null};
+ if(latest)return {weight:latest.weight,weightSource:'weigh-in',weightDate:latest.date};
+ return {weight:positiveWeight(goal.startWeight)?Number(goal.startWeight):180,weightSource:'fallback',weightDate:null};
+}
+export function setNutritionWeightMode(db,date,weightMode){
+ if(weightMode!=='auto'&&weightMode!=='manual')throw Error('Choose a valid bodyweight source.');
+ const bodyWeight=weightMode==='manual'?calculateNutrition(db,date).weight:null;
+ const next=updateDayPlan(db,date,{calorieSettings:{weightMode,bodyWeight}});
+ // Reconnecting is persistent for new dates, without rewriting saved days.
+ return weightMode==='auto'?{...next,calorieSettings:{...normalizeCalorieSettings(db.calorieSettings),weightMode:'auto',bodyWeight:null}}:next;
+}
 export function calculateNutrition(db,date){
  const {calorieSettings:cs,goal}=resolveDayPlan(db,date),stored=cs;
- const scaleWeight=[...db.weights].filter(w=>w.date<=date).sort((a,b)=>b.date.localeCompare(a.date))[0]?.weight||goal.startWeight||180;
- const weight=cs.weightMode==='manual'&&Number(cs.bodyWeight)>0?Number(cs.bodyWeight):Number(scaleWeight);
+ const {weight,weightSource,weightDate}=resolveNutritionWeight(db,date,cs,goal);
  const heightIn=Math.max(48,Math.min(96,Number(cs.heightIn)||71)),age=Math.max(13,Math.min(100,Number(cs.age)||18)),sex=cs.sex==='female'?'female':'male';
  const heightFeet=Math.floor(heightIn/12),heightRemainder=Math.round(heightIn%12);
  const record=db.calories.find(x=>x.date===date),cardioExtra=(record?.cardio||[]).reduce((sum,x)=>sum+Math.max(0,Number(x.calories)||0),0);
@@ -63,5 +78,5 @@ export function calculateNutrition(db,date){
  const macroTargetMode=cs.macroTargetMode==='custom'?'custom':'calculated';
  const protein=macroTargetMode==='custom'?Math.max(0,Number(cs.customProtein??calculatedProtein)):calculatedProtein,carbs=macroTargetMode==='custom'?Math.max(0,Number(cs.customCarbs??calculatedCarbs)):calculatedCarbs,fat=macroTargetMode==='custom'?Math.max(0,Number(cs.customFat??calculatedFat)):calculatedFat;
  const macroCalories=Math.round(protein*4+carbs*4+fat*9);
- return {...expenditure,cs,stored,goal,weight,heightIn,age,sex,estimatedBaseline,customBaseline,baselineMode,baseline,heightFeet,heightRemainder,cardioExtra,walkExtra,runExtra,liftExtra,maintenance,days,daysRemaining,validDeadline,goalDifference,goalRate,calculatedTarget,mode,calorieTargetMode,manualCalorieTarget,target,calculatedProtein,calculatedFat,calculatedCarbs,macroTargetMode,protein,carbs,fat,macroCalories};
+ return {...expenditure,cs,stored,goal,weight,weightSource,weightDate,heightIn,age,sex,estimatedBaseline,customBaseline,baselineMode,baseline,heightFeet,heightRemainder,cardioExtra,walkExtra,runExtra,liftExtra,maintenance,days,daysRemaining,validDeadline,goalDifference,goalRate,calculatedTarget,mode,calorieTargetMode,manualCalorieTarget,target,calculatedProtein,calculatedFat,calculatedCarbs,macroTargetMode,protein,carbs,fat,macroCalories};
 }

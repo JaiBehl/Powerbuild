@@ -10,7 +10,7 @@
 ## Data contracts
 
 - Canonical weights stay pounds; convert at boundaries. Food templates store one serving; consumed logs retain independent snapshots/totals.
-- Activity/targets/goal fallback are date snapshots; defaults seed new dates. Manual calorie weights remain explicit until automatic weigh-ins are selected.
+- Activity/targets/goal fallback are date snapshots; defaults seed new dates. Manual calorie weights remain explicit until automatic weigh-ins are selected. Reconnecting automatic weight updates the selected date and new-date defaults, without rewriting other saved manual dates; incomplete plans inherit the profile mode. Show the calculator date and actual weight source/date, and exclude future/invalid weigh-ins.
 - Exercise edits are session-only by default. Future-template permission is explicit and resets per session; match stable IDs or a unique legacy name, never position.
 - Supported seated OHP uses upright back support; legacy bench is touch-and-go. Keep distinct variations separate unless explicitly linked. Never impose old/default goals on saved profiles.
 - PR bodyweights are derived from dated weigh-ins: same-day means, then interpolation/nearest within 30 days per side. Label estimates with sources; never substitute current/default weight. Rank relative records independently by unrounded load/bodyweight, retain achievement dates and exclude unavailable bodyweights or unsupported bodyweight/assisted resistance. Do not persist derived estimates over logs.
