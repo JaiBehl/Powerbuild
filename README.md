@@ -72,6 +72,10 @@ Production-check unit tests and the full regression gate passed. Recorded nutrit
 
 Default-plan consistency passed the full gate. Recovery now exports/imports all-profile backup JSON, including the account-copy format downloaded during sync conflicts. Restore validates every listed profile and saves the current workspace first. Browser tests verify a complete export → reset → file restore round trip and rejection of an invalid account file without replacing existing profiles.
 
+### Per-session template permission
+
+Portable all-profile backup recovery passed the full gate. The explicit future-template checkbox now resets when switching workouts, so permission from one session is not carried into an old or different session. A browser regression covers that transition.
+
 ## Current handoff
 
 | Item | Audited state |

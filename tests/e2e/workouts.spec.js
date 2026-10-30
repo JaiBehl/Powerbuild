@@ -26,3 +26,7 @@ test('ambiguous template edits show an error without crashing or changing data',
  await expect(page.getByRole('alert')).toContainText('not uniquely linked');
  expect((await readDb(page)).templates['Push A'][0][0]).toBe('Barbell bench press');
 });
+
+test('permission to edit future templates resets when switching workouts',async({page})=>{
+ await seed(page,makeDb({sessions:[makeSession(),makeSession('Push B','2026-10-31')]}));await page.getByLabel('Workout date').fill(DAY);await page.getByLabel('Apply exercise changes to future sessions',{exact:true}).check();await page.getByLabel('Workout date').fill('2026-10-31');await expect(page.getByLabel('Apply exercise changes to future sessions',{exact:true})).not.toBeChecked();
+});

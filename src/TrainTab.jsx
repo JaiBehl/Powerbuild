@@ -1,6 +1,6 @@
 import PreviousPerformance from './PreviousPerformance';
 import {addSessionExercise,editSessionExercise,removeSessionExercise} from './workoutOperations';
-import React,{useState} from 'react';
+import React,{useState,useEffect} from 'react';
 import {Dumbbell,Plus,Trash2,Check,ChevronLeft,ChevronRight,Pencil} from 'lucide-react';
 import {cycle,workouts,isoToday} from './data';
 import {fromDisplayWeight,toDisplayWeight,unitName} from './units';
@@ -10,6 +10,7 @@ export default function TrainTab({db,patch,date,setDate,scheduled,session,update
   const [newExerciseName,setNewExerciseName]=useState('');
   const [updateFuture,setUpdateFuture]=useState(false);
   const [exerciseError,setExerciseError]=useState('');
+  useEffect(()=>{setUpdateFuture(false);setExerciseError('');},[session?.id]);
   const units=unitName(db.settings.units);
   const allSets=session?.exercises.flatMap(e=>e.sets)||[];
   const completed=allSets.filter(x=>x.done).length;
