@@ -1,3 +1,4 @@
+import HistoricalImportPanel from './HistoricalImportPanel';
 import ExerciseAliases from './ExerciseAliases';
 import React,{useMemo,useState} from 'react';
 import {Download,Upload,RotateCcw,Plus,Trash2} from 'lucide-react';
@@ -7,7 +8,7 @@ import {fromDisplayWeight,toDisplayWeight,unitName} from './units';
 import CalorieSection from './CalorieSection';
 import './ui-polish.css';
 
-export default function SettingsTab({db,patch,patchSettings,exportJson,exportCsv,importJson,importError,cloneTemplates,importHistoricalJson,historyImportStatus,profileName='My profile',cloudEnabled=false}){
+export default function SettingsTab({db,patch,patchSettings,exportJson,exportCsv,importJson,importError,cloneTemplates,importHistoricalJson,historyImportStatus,profileName='My profile',profileId='primary',cloudEnabled=false}){
   const units=unitName(db.settings.units);
   const [newExercise,setNewExercise]=useState('');
   const [newTarget,setNewTarget]=useState('');
@@ -67,12 +68,7 @@ export default function SettingsTab({db,patch,patchSettings,exportJson,exportCsv
     </CalorieSection>
 
     <ExerciseAliases db={db} patch={patch}/>
-    <CalorieSection title="Import Apple Notes workout history" description="Merge historical workouts and bodyweight records without replacing current logs." summary={db.sessions.length+' workouts saved'}>
-      <p className="muted">Merge the historical workout JSON generated from your Apple Notes export into <b>{profileName}</b>. This <b>adds</b> dated exercises, sets, original notes, and bodyweight measurements without deleting workouts, calorie logs, or settings already saved in this profile. Matching workout dates are merged; existing exercise names and same-day bodyweight values take precedence.</p>
-      <p className="muted">First export a backup below. For cross-device syncing, sign in under Cloud Sync and confirm it is connected before importing.</p>
-      <div className="actions"><label className="primary upload"><Upload size={17}/> Merge historical workouts<input type="file" accept=".json,application/json" onChange={importHistoricalJson} hidden/></label></div>
-      {historyImportStatus&&<p className={historyImportStatus.startsWith('Import failed')?'error':'muted note'} role="status">{historyImportStatus}</p>}
-    </CalorieSection>
+    <HistoricalImportPanel db={db} patch={patch} profileId={profileId} profileName={profileName}/>
     <CalorieSection title="Backups & exports" description="Export workouts and profile backups, or import data into the selected profile." summary={profileName+' · '+db.sessions.length+' workouts'}><p className="muted">These actions only affect <b>{profileName}</b>. Its logs are saved automatically on this device. {cloudEnabled?'Cloud sync is connected.':'Sign in to cloud sync to share data across devices.'} Export a JSON backup periodically, especially before clearing browser data.</p><div className="actions"><button className="primary" onClick={exportJson}><Download size={17}/> Export profile backup</button><button className="secondary" onClick={exportCsv}><Download size={17}/> Export sets CSV</button><label className="secondary upload"><Upload size={17}/> Import into this profile<input type="file" accept=".json,application/json" onChange={importJson} hidden/></label></div>{importError&&<p className="error">{importError}</p>}</CalorieSection>
     <CalorieSection title="Reset profile" description={"Permanently erase workouts, nutrition, goals and settings for "+profileName+" only."} summary={profileName} className="warning">
       <p className="muted">Clears only this profile's workout logs, weight entries, nutrition, strength goals, custom exercises, and settings. Other profiles are untouched. Back up your profile first.</p>

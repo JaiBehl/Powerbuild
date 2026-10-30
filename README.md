@@ -28,6 +28,10 @@ Phase 3 passed the full CI gate. Standard barbell/touch-and-go bench labels now 
 
 Phase 4 passed the full CI gate. `e1rm(weight, 1)` now returns actual load; integer sets of 2–15 reps still use Epley, and non-finite loads/partial reps are excluded. Chart copy distinguishes logged singles from estimates. Unit/browser regressions verify 225 × 1 remains 225 rather than 232.5 and that aliases/goals still agree.
 
+### Phase 6 — historical correction and safe preview
+
+Phase 5 passed the full CI gate. Historical JSON now previews changes before applying. Default merge still keeps existing data; explicit correction updates owned records, can remove missing records from that batch, and requires a separate opt-in for older marked sessions. Manual/unrelated records remain protected by default. Missing IDs are generated deterministically, real dates/finite sets are validated, and fractional reps floor. A device recovery snapshot is required before applying; storage failure blocks replacement. Legacy missing weigh-ins without provenance remain retained. Tests cover preview, corrections, cleanup, ownership, idempotence, validation and recovery.
+
 ## Current handoff
 
 | Item | Audited state |
