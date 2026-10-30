@@ -1,3 +1,4 @@
+import {buildStrengthHistory,resolveExerciseName} from './exerciseCatalog';
 import {normalizeDayPlans,normalizeCalorieSettings} from './nutrition';
 import {normalizeTemplates} from './workoutOperations';
 import React,{useEffect,useMemo,useState} from 'react';
@@ -29,6 +30,7 @@ function normalizeDb(x={},options={}){
     weights:Array.isArray(x.weights)?x.weights:[],
     calories:Array.isArray(x.calories)?x.calories:[],
     savedFoods:Array.isArray(x.savedFoods)?x.savedFoods:[],
+    exerciseAliases:x.exerciseAliases&&typeof x.exerciseAliases==='object'&&!Array.isArray(x.exerciseAliases)?x.exerciseAliases:{},
     calorieSettings:normalizeCalorieSettings(x.calorieSettings||{}),
     templates:normalizeTemplates(x.templates&&typeof x.templates==='object'&&!Array.isArray(x.templates)?x.templates:cloneTemplates()),
   });
@@ -95,7 +97,7 @@ function App(){
   const [tab,setTab]=useState('today');
   const [date,setDate]=useState(isoToday());
   const [viewWeek,setViewWeek]=useState(0);
-  const [chartLift,setChartLift]=useState('Barbell bench press');
+  const [chartLift,setChartLift]=useState('Touch-and-go bench press');
   const [importError,setImportError]=useState('');
   const [historyImportStatus,setHistoryImportStatus]=useState('');
   const [showManual,setShowManual]=useState(false);
@@ -193,17 +195,8 @@ function App(){
     setProfileState(p=>({...p,profiles:p.profiles.filter(x=>x.id!==id)}));
   }
 
-  const history=useMemo(()=>{
-    const m={};
-    db.sessions.forEach(s=>s.exercises.forEach(e=>e.sets.forEach(v=>{
-      if(v.done&&Number(v.weight)>0&&Number(v.reps)>0){
-        const val=e1rm(v.weight,v.reps);
-        if(val){m[e.name]??={};m[e.name][s.date]=Math.max(m[e.name][s.date]||0,val)}
-      }
-    })));
-    return m;
-  },[db.sessions]);
-  const chartData=Object.entries(history[chartLift]||{}).sort(([a],[b])=>a.localeCompare(b)).map(([d,value])=>({date:d,value}));
+  const history=useMemo(()=>buildStrengthHistory(db.sessions,db.exerciseAliases),[db.sessions,db.exerciseAliases]);
+  const chartData=Object.entries(history[resolveExerciseName(chartLift,db.exerciseAliases)]||{}).sort(([a],[b])=>a.localeCompare(b)).map(([d,value])=>({date:d,value}));
   const finished=db.sessions.filter(s=>s.finished).sort((a,b)=>b.date.localeCompare(a.date));
   const latestWeight=[...db.weights].sort((a,b)=>b.date.localeCompare(a.date))[0];
 

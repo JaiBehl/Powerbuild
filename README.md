@@ -20,6 +20,10 @@ Phase 1 passed the complete CI gate. Activity, baseline inputs, manual targets/m
 
 Phase 2 passed the full CI gate. Baseline maintenance now has Follow weigh-ins / Enter weight manually modes. Automatic mode uses only weigh-ins dated on/before the selected date and ignores retained manual values; legacy explicit manual weights remain manual until changed. Unit and browser tests cover reconnecting Progress weigh-ins and preserving legacy overrides.
 
+### Phase 4 — exercise identity and aliases
+
+Phase 3 passed the full CI gate. Standard barbell/touch-and-go bench labels now share one chart and goal series; paused/incline/standing variations remain distinct. Settings provides explicit reversible custom links and same-name opt-outs. Resolution does not rewrite original workout text. Alias maps are profile data included in backups/sync. Unit/browser tests cover shared history, goal values, variant separation, persisted links and cycle rejection.
+
 ## Current handoff
 
 | Item | Audited state |

@@ -1,7 +1,7 @@
 name: Application regression tests
 on:
   push:
-    branches: [main, 'fix/verified-reliability-and-features']
+    branches: [main]
   pull_request:
     branches: [main]
 permissions:
@@ -20,6 +20,7 @@ jobs:
       - uses: actions/setup-node@v7.1.0
         with:
           node-version: '24'
+          cache: npm
       - run: npm ci
       - run: npm test
       - run: npm run build

@@ -1,3 +1,4 @@
+import {exerciseChoices,resolveExerciseName} from './exerciseCatalog';
 import React,{useMemo,useState} from 'react';
 import {LineChart,Line,XAxis,YAxis,Tooltip,ResponsiveContainer,CartesianGrid} from 'recharts';
 import {Plus,Trash2} from 'lucide-react';
@@ -75,7 +76,7 @@ export default function ProgressTab({db,patch,date,setDate,setTab,weightEntry,se
     return Number.isNaN(date.getTime())?String(iso):date.toLocaleDateString('en-US',range==='All'?{month:'short',year:'2-digit'}:{month:'short',day:'numeric'});
   };
   const latestFor=(exercise)=>{
-    const entries=Object.entries(history[exercise]||{}).sort(([a],[b])=>b.localeCompare(a));
+    const entries=Object.entries(history[resolveExerciseName(exercise,db.exerciseAliases)]||{}).sort(([a],[b])=>b.localeCompare(a));
     return entries[0]?.[1]||null;
   };
 
@@ -95,7 +96,7 @@ export default function ProgressTab({db,patch,date,setDate,setTab,weightEntry,se
 
     <CalorieSection title="Estimated 1RM trend" description="Estimated strength from logged sets of 1–15 reps. Hover for exact dates and values." summary={displayChartData.length+' logged dates'}>
 
-      <div className="trend-lift-selector"><select value={chartLift} aria-label="Select exercise to chart" onChange={e=>setChartLift(e.target.value)}>{[...new Set(['Barbell bench press','Barbell back squat','Supported seated barbell OHP',...Object.keys(history)])].map(n=><option key={n}>{n}</option>)}</select></div>
+      <div className="trend-lift-selector"><select value={chartLift} aria-label="Select exercise to chart" onChange={e=>setChartLift(e.target.value)}>{exerciseChoices(['Barbell bench press','Barbell back squat','Supported seated barbell OHP',...Object.keys(history)],db.exerciseAliases).map(n=><option key={n}>{n}</option>)}</select></div>
 
       <div className="trend-controls">
         <div className="trend-range" role="group" aria-label="Chart date range">
