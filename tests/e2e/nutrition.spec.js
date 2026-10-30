@@ -31,3 +31,9 @@ test('clearing a goal deadline leaves maintenance available and displays guidanc
  await seed(page);await openTab(page,'Calorie tracker');await card(page,'Bodyweight goal').getByLabel('Goal deadline',{exact:true}).fill('');
  await expect(card(page,'Daily calorie target')).toContainText('Choose a valid goal deadline');await expect(card(page,'Daily calorie target')).toContainText('2,887');await expect(page.getByRole('heading',{level:1})).toBeVisible();
 });
+
+test('changing starting defaults does not rewrite an already recorded date',async({page})=>{
+ await seed(page);await openTab(page,'Calorie tracker');await card(page,'Food & meal log').getByLabel('Food log date',{exact:true}).fill('2026-10-29');const slider=card(page,'Daily activity').getByLabel('Miles walked');await slider.focus();await slider.press('ArrowRight');
+ await openTab(page,'Settings & backup');await page.getByLabel('Default starting weight (lb)',{exact:true}).fill('200');await openTab(page,'Calorie tracker');await expect(card(page,'Baseline maintenance').getByLabel('Weight (lb)',{exact:true})).toHaveValue('180');
+ await card(page,'Food & meal log').getByLabel('Food log date',{exact:true}).fill('2026-10-30');await expect(card(page,'Baseline maintenance').getByLabel('Weight (lb)',{exact:true})).toHaveValue('200');
+});

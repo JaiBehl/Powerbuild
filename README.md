@@ -64,6 +64,10 @@ All five additions passed their individual full-suite gates. Added regressions f
 
 The final consistency pass passed: 58 unit/integration tests, 35 browser tests and production builds. Added a separately tested, read-only production smoke check after successful main-branch CI. It waits for Vercel rollout and checks the public HTML/bundle for the released capabilities without accessing any account or user records. Browser reports/traces are downloadable from the Actions run.
 
+### Default-plan consistency
+
+Production-check unit tests and the full regression gate passed. Recorded nutrition plans now retain their fallback starting weight when profile defaults change. Settings labels distinguish new-date defaults from a recorded day's goal, and regressions verify old versus new date behavior. Existing real weigh-ins still update automatic weight selection for their dates.
+
 ## Current handoff
 
 | Item | Audited state |

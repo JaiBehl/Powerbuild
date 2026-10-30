@@ -12,3 +12,5 @@ test('automatic weight follows dated weigh-ins and ignores a retained manual num
 test('legacy manual weight is preserved but can explicitly reconnect to weigh-ins',()=>{let db=makeDb({weights:[{date:'2026-10-30',weight:185}],calorieSettings:{bodyWeight:200}});assert.equal(calculateNutrition(db,'2026-10-30').weight,200);db=updateDayPlan(db,'2026-10-30',{calorieSettings:{weightMode:'auto'}});assert.equal(calculateNutrition(db,'2026-10-30').weight,185);});
 
 test('a cleared or invalid deadline cannot break maintenance or produce NaN',()=>{for(const deadline of ['',null,'bad','2026-02-30']){const db=makeDb({settings:{...makeDb().settings,weightDeadline:deadline}}),n=calculateNutrition(db,'2026-10-30');assert.equal(n.maintenance,2887);assert.equal(Number.isFinite(n.target),true);assert.equal(n.validDeadline,false);}});
+
+test('saved dates retain their fallback starting weight when defaults change',()=>{let db=updateDayPlan(makeDb(),'2026-10-29',{calorieSettings:{lifted:false}});db.settings.startWeight=200;assert.equal(calculateNutrition(db,'2026-10-29').weight,180);assert.equal(calculateNutrition(db,'2026-10-30').weight,200);});

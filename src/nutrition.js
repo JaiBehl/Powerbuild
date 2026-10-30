@@ -25,7 +25,7 @@ export function normalizeCalorieSettings(value={}){
 }
 export function resolveDayPlan(db,date){
  const saved=db.calories?.find(x=>x.date===date)?.plan;
- return {calorieSettings:normalizeCalorieSettings(saved?.calorieSettings?{...db.calorieSettings,...saved.calorieSettings,weightMode:saved.calorieSettings.weightMode}:db.calorieSettings),goal:{targetWeight:db.settings.targetWeight,weightDeadline:db.settings.weightDeadline,...saved?.goal}};
+ return {calorieSettings:normalizeCalorieSettings(saved?.calorieSettings?{...db.calorieSettings,...saved.calorieSettings,weightMode:saved.calorieSettings.weightMode}:db.calorieSettings),goal:{startWeight:db.settings.startWeight,targetWeight:db.settings.targetWeight,weightDeadline:db.settings.weightDeadline,...saved?.goal}};
 }
 export function updateDayRecord(db,date,fn){
  const current=db.calories.find(x=>x.date===date)||{date,items:[],cardio:[]};
@@ -36,14 +36,14 @@ export function updateDayPlan(db,date,changes){
  return updateDayRecord(db,date,day=>({...day,plan:{...day.plan,calorieSettings:{...day.plan.calorieSettings,...changes.calorieSettings},goal:{...day.plan.goal,...changes.goal}}}));
 }
 export function normalizeDayPlans(db){
- return {...db,calories:db.calories.map(day=>day.plan?day:{...day,plan:structuredClone(resolveDayPlan(db,day.date))})};
+ return {...db,calories:db.calories.map(day=>({...day,plan:structuredClone(resolveDayPlan(db,day.date))}))};
 }
 const kgPerLb=1/2.2046226218;
 const bmr=(w,h,a,s)=>10*w*kgPerLb+6.25*h*2.54-5*a+(s==='female'?-161:5);
 const referenceBmr=bmr(180,71,18,'male');
 export function calculateNutrition(db,date){
  const {calorieSettings:cs,goal}=resolveDayPlan(db,date),stored=cs;
- const scaleWeight=[...db.weights].filter(w=>w.date<=date).sort((a,b)=>b.date.localeCompare(a.date))[0]?.weight||db.settings.startWeight||180;
+ const scaleWeight=[...db.weights].filter(w=>w.date<=date).sort((a,b)=>b.date.localeCompare(a.date))[0]?.weight||goal.startWeight||180;
  const weight=cs.weightMode==='manual'&&Number(cs.bodyWeight)>0?Number(cs.bodyWeight):Number(scaleWeight);
  const heightIn=Math.max(48,Math.min(96,Number(cs.heightIn)||71)),age=Math.max(13,Math.min(100,Number(cs.age)||18)),sex=cs.sex==='female'?'female':'male';
  const estimatedBaseline=Math.round(Math.max(1200,2300+bmr(weight,heightIn,age,sex)-referenceBmr));

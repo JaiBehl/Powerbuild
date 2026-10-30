@@ -41,11 +41,12 @@ export default function SettingsTab({db,patch,patchSettings,exportJson,exportCsv
       <div className="formgrid">
         <label>Weight unit<select value={units} onChange={e=>patchSettings({units:e.target.value})}><option value="lb">Pounds (lb)</option><option value="kg">Kilograms (kg)</option></select></label>
         <label>Rotation start date<input type="date" value={db.settings.startDate} onChange={e=>patchSettings({startDate:e.target.value})}/></label>
-        <label>Starting weight ({units})<input type="number" step={units==='kg'?'0.1':'0.5'} value={toDisplayWeight(db.settings.startWeight,units,1)} onChange={e=>patchSettings({startWeight:fromDisplayWeight(e.target.value,units)})}/></label>
-        <label>Target weight ({units})<input type="number" step={units==='kg'?'0.1':'0.5'} value={toDisplayWeight(db.settings.targetWeight,units,1)} onChange={e=>patchSettings({targetWeight:fromDisplayWeight(e.target.value,units)})}/></label>
-        <label>Weight goal deadline<input type="date" value={db.settings.weightDeadline} onChange={e=>patchSettings({weightDeadline:e.target.value})}/></label>
+        <label>Default starting weight ({units})<input type="number" step={units==='kg'?'0.1':'0.5'} value={toDisplayWeight(db.settings.startWeight,units,1)} onChange={e=>patchSettings({startWeight:fromDisplayWeight(e.target.value,units)})}/></label>
+        <label>Default target weight ({units})<input type="number" step={units==='kg'?'0.1':'0.5'} value={toDisplayWeight(db.settings.targetWeight,units,1)} onChange={e=>patchSettings({targetWeight:fromDisplayWeight(e.target.value,units)})}/></label>
+        <label>Default weight goal deadline<input type="date" value={db.settings.weightDeadline} onChange={e=>patchSettings({weightDeadline:e.target.value})}/></label>
         <label>Cycle offset (0–5)<select value={db.settings.cycleOffset||0} onChange={e=>patchSettings({cycleOffset:Number(e.target.value)})}>{cycle.map((x,i)=><option value={i} key={i}>{i} — start with {x}</option>)}</select></label>
       </div>
+      <p className="muted">Bodyweight settings here are defaults for new nutrition dates. To change a recorded day's goal, open that date in Calorie tracker.</p>
       <h3>Training weekdays</h3>
       <p className="muted">Default: Monday, Tuesday, Wednesday, Friday, Saturday. Changing weekdays changes the scheduled rotation.</p>
       <div className="weekpick">{['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map((x,i)=><label key={x}><input type="checkbox" checked={db.settings.schedule.includes(i+1)} onChange={e=>patchSettings({schedule:e.target.checked?[...db.settings.schedule,i+1].sort():db.settings.schedule.filter(n=>n!==i+1)})}/>{x}</label>)}</div>
