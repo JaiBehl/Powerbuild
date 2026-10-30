@@ -3,6 +3,7 @@ export const calorieDefaults={
   customBaseline:2300,
   heightIn:71,
   bodyWeight:null,
+  weightMode:'auto',
   sex:'male',
   age:18,
   milesWalked:4,
@@ -18,9 +19,12 @@ export const calorieDefaults={
   customCarbs:null,
   customFat:null,
 };
+export function normalizeCalorieSettings(value={}){
+ return {...calorieDefaults,...value,weightMode:value.weightMode==='auto'||value.weightMode==='manual'?value.weightMode:Number(value.bodyWeight)>0?'manual':'auto'};
+}
 export function resolveDayPlan(db,date){
  const saved=db.calories?.find(x=>x.date===date)?.plan;
- return {calorieSettings:{...calorieDefaults,...db.calorieSettings,...saved?.calorieSettings},goal:{targetWeight:db.settings.targetWeight,weightDeadline:db.settings.weightDeadline,...saved?.goal}};
+ return {calorieSettings:normalizeCalorieSettings(saved?.calorieSettings?{...db.calorieSettings,...saved.calorieSettings,weightMode:saved.calorieSettings.weightMode}:db.calorieSettings),goal:{targetWeight:db.settings.targetWeight,weightDeadline:db.settings.weightDeadline,...saved?.goal}};
 }
 export function updateDayRecord(db,date,fn){
  const current=db.calories.find(x=>x.date===date)||{date,items:[],cardio:[]};
@@ -39,7 +43,7 @@ const referenceBmr=bmr(180,71,18,'male');
 export function calculateNutrition(db,date){
  const {calorieSettings:cs,goal}=resolveDayPlan(db,date),stored=cs;
  const scaleWeight=[...db.weights].filter(w=>w.date<=date).sort((a,b)=>b.date.localeCompare(a.date))[0]?.weight||db.settings.startWeight||180;
- const weight=Number(cs.bodyWeight)>0?Number(cs.bodyWeight):Number(scaleWeight);
+ const weight=cs.weightMode==='manual'&&Number(cs.bodyWeight)>0?Number(cs.bodyWeight):Number(scaleWeight);
  const heightIn=Math.max(48,Math.min(96,Number(cs.heightIn)||71)),age=Math.max(13,Math.min(100,Number(cs.age)||18)),sex=cs.sex==='female'?'female':'male';
  const estimatedBaseline=Math.round(Math.max(1200,2300+bmr(weight,heightIn,age,sex)-referenceBmr));
  const customBaseline=Number(cs.customBaseline??cs.baseMaintenance??2300)||2300,baselineMode=cs.baselineMode==='custom'?'custom':'estimate',baseline=baselineMode==='custom'?customBaseline:estimatedBaseline;

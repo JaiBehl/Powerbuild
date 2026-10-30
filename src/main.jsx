@@ -1,4 +1,4 @@
-import {normalizeDayPlans} from './nutrition';
+import {normalizeDayPlans,normalizeCalorieSettings} from './nutrition';
 import {normalizeTemplates} from './workoutOperations';
 import React,{useEffect,useMemo,useState} from 'react';
 import {createRoot} from 'react-dom/client';
@@ -29,7 +29,7 @@ function normalizeDb(x={},options={}){
     weights:Array.isArray(x.weights)?x.weights:[],
     calories:Array.isArray(x.calories)?x.calories:[],
     savedFoods:Array.isArray(x.savedFoods)?x.savedFoods:[],
-    calorieSettings:{...calorieDefaults,...(x.calorieSettings||{})},
+    calorieSettings:normalizeCalorieSettings(x.calorieSettings||{}),
     templates:normalizeTemplates(x.templates&&typeof x.templates==='object'&&!Array.isArray(x.templates)?x.templates:cloneTemplates()),
   });
 }

@@ -16,6 +16,10 @@ Exercise changes now default to this session only. An explicit checkbox also app
 
 Phase 1 passed the complete CI gate. Activity, baseline inputs, manual targets/macros and goal settings now snapshot into each nutrition date record as `plan: {calorieSettings, goal}`; food/cardio writes also snapshot the plan. Existing records migrate without losing items/cardio. Edits affect the selected date; an explicit action copies settings into defaults for new dates. Core calorie math moved to tested `src/nutrition.js`; zero manual calorie targets now remain zero. Unit/browser tests cover dated isolation, reload, older-record migration, goal-independent maintenance, uncapped math and food/cardio coexistence.
 
+### Phase 3 — explicit weight source
+
+Phase 2 passed the full CI gate. Baseline maintenance now has Follow weigh-ins / Enter weight manually modes. Automatic mode uses only weigh-ins dated on/before the selected date and ignores retained manual values; legacy explicit manual weights remain manual until changed. Unit and browser tests cover reconnecting Progress weigh-ins and preserving legacy overrides.
+
 ## Current handoff
 
 | Item | Audited state |

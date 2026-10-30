@@ -68,12 +68,14 @@ export default function CalorieTracker({db,patch,date,setDate,entry,setEntry}){
       <div className="formgrid">
         <label>Baseline source<select value={baselineMode} onChange={e=>update('baselineMode',e.target.value)}><option value="estimate">Use app estimate</option><option value="custom">Use my own baseline</option></select></label>
         {baselineMode==='custom'&&<label>Custom baseline (kcal)<input type="number" min="800" max="7000" step="10" value={customBaseline} onChange={e=>update('customBaseline',Number(e.target.value))}/></label>}
-        <label>Weight ({units})<input type="number" min="20" max="700" step="0.1" value={displayedWeight} onChange={e=>update('bodyWeight',fromDisplayWeight(e.target.value,units))}/></label>
+        <label>Weight source<select value={cs.weightMode} onChange={e=>patch(p=>updateDayPlan(p,date,{calorieSettings:{weightMode:e.target.value,bodyWeight:cs.bodyWeight??weight}}))}><option value="auto">Follow weigh-ins</option><option value="manual">Enter weight manually</option></select></label>
+        <label>Weight ({units})<input type="number" min="20" max="700" step="0.1" disabled={cs.weightMode==='auto'} value={displayedWeight} onChange={e=>update('bodyWeight',fromDisplayWeight(e.target.value,units))}/></label>
         <label>Sex<select value={sex} onChange={e=>update('sex',e.target.value)}><option value="male">Male</option><option value="female">Female</option></select></label>
         <label>Age<input type="number" min="13" max="100" step="1" value={age} onChange={e=>update('age',Number(e.target.value))}/></label>
         <label>Height (feet)<input type="number" min="4" max="8" step="1" value={heightFeet} onChange={e=>update('heightIn',Number(e.target.value)*12+heightRemainder)}/></label>
         <label>Height (inches)<input type="number" min="0" max="11" step="1" value={heightRemainder} onChange={e=>update('heightIn',heightFeet*12+Number(e.target.value))}/></label>
       </div>
+      <p className="muted">{cs.weightMode==='auto'?'Following the most recent weigh-in on or before this date. New weigh-ins update the calculation automatically.':'Using a manual weight for this date. Choose Follow weigh-ins to reconnect Progress entries.'}</p>
       {baselineMode==='estimate'&&<p className="muted note">Estimated baseline: <strong>{estimatedBaseline.toLocaleString()} kcal/day</strong>. Height, weight, age, and sex adjust the 2,300-kcal reference using the Mifflin–St Jeor metabolic relationship. Treat it as a starting estimate and calibrate against 2–3 weeks of scale trends.</p>}
       {baselineMode==='custom'&&<p className="muted note">Custom mode uses your entered baseline directly. Keep walking, running, lifting, and custom cardio out of that number because those activities are added separately below.</p>}
     </CalorieSection>
