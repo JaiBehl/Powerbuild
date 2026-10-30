@@ -78,8 +78,7 @@ export default function CalorieTracker({db,patch,date,setDate,entry,setEntry}){
       {!adult&&<p className="error">These are adult equations and are not validated for people under 18.</p>}
       <p className="muted">Keep the daily living factor near 1.2 when walking and exercise are logged below. Do not also include those activities in this factor or a custom baseline. These are starting estimates; no equation measures your personal maintenance.</p>
       <p className="muted">{cs.weightMode==='auto'?'Following the most recent weigh-in on or before this date. New weigh-ins update the calculation automatically.':'Using a manual weight for this date. Choose Follow weigh-ins to reconnect Progress entries.'}</p>
-      {baselineMode==='estimate'&&<p className="muted note">Estimated baseline: <strong>{estimatedBaseline.toLocaleString()} kcal/day</strong>. Height, weight, age, and sex adjust the 2,300-kcal reference using the Mifflin–St Jeor metabolic relationship. Treat it as a starting estimate and calibrate against 2–3 weeks of scale trends.</p>}
-      {baselineMode==='custom'&&<p className="muted note">Custom mode uses your entered baseline directly. Keep walking, running, lifting, and custom cardio out of that number because those activities are added separately below.</p>}
+      {baselineMode==='custom'&&<p className="muted note">Custom baseline mode uses your entered number before net activity. Keep logged activity out of this number. A known total maintenance overrides both baseline and activity.</p>}
     </CalorieSection>
 
     <CalorieSection
@@ -87,7 +86,7 @@ export default function CalorieTracker({db,patch,date,setDate,entry,setEntry}){
       description="Adjust walking, running and lifting to estimate activity-related calorie expenditure."
       summary={Math.round(walkExtra+runExtra+liftExtra).toLocaleString()+' kcal'}
     >
-      <p className="muted">Activities below are added on top of the selected baseline. Avoid counting the same activity again under Custom cardio.</p>
+      <p className="muted">{maintenanceMode==='custom'?'These activities remain logged, but your known maintenance total replaces the full estimate.':'Net activity is added to the selected baseline. Avoid counting the same activity again under Custom cardio.'}</p>
       <div className="formgrid">
         <label>Miles walked<input type="range" min="0" max="15" step=".25" value={cs.milesWalked} onChange={e=>update('milesWalked',Number(e.target.value))}/><strong>{cs.milesWalked} miles</strong></label>
         <label>Walking pace (minutes per mile)<input type="number" min="15" max="40" step="0.5" value={walkPace} onChange={e=>update('walkMinutesPerMile',Number(e.target.value))}/></label>
@@ -118,7 +117,7 @@ export default function CalorieTracker({db,patch,date,setDate,entry,setEntry}){
         <div className="metric"><small>CALCULATED GOAL</small><strong>{calculatedTarget.toLocaleString()} <span>kcal</span></strong></div>
         <div className="metric"><small>DAILY CALORIE GOAL</small><strong>{target.toLocaleString()} <span>kcal</span></strong></div>
       </div>
-      <p className="muted note">Maintenance is calculated from your baseline and recorded activity regardless of your weight goal. The goal-based calculation is <b>{Math.abs(toDisplayRate(goalRate,units,2)).toFixed(2)} {rateUnit}</b> {mode==='Bulk'?'gain':mode==='Cut'?'loss':'change'} per week using the remaining days. No arbitrary calorie adjustment cap is applied. These values are estimates, not safe-intake recommendations.</p>
+      <p className="muted note">Maintenance uses your chosen estimate or known total, independently of your weight goal. The goal-based calculation is <b>{Math.abs(toDisplayRate(goalRate,units,2)).toFixed(2)} {rateUnit}</b> {mode==='Bulk'?'gain':mode==='Cut'?'loss':'change'} per week using the remaining days. No arbitrary calorie adjustment cap is applied. These values are estimates, not safe-intake recommendations.</p>
       <div className="formgrid">
         <label>Maintenance source<select value={maintenanceMode} onChange={e=>patch(p=>updateDayPlan(p,date,{calorieSettings:{maintenanceMode:e.target.value,customMaintenance:cs.customMaintenance??estimatedMaintenance}}))}><option value="estimate">Estimate from baseline + activity</option><option value="custom">Use my known total maintenance</option></select></label>
         {maintenanceMode==='custom'&&<label>Known total maintenance (kcal/day)<input type="number" min="1" step="10" value={customMaintenance} onChange={e=>update('customMaintenance',Number(e.target.value))}/></label>}

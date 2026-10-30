@@ -24,6 +24,7 @@ test('unknown effort is labelled and easy or high-rep sets retain rep records',a
 test('maintenance formula and known-total override work without double-counting activity',async({page})=>{
   await seed(page);await openTab(page,'Calorie tracker');const baseline=card(page,'Baseline maintenance'),target=card(page,'Daily calorie target');
   await expect(target.locator('.metric').filter({hasText:'EST. MAINTENANCE'})).toContainText('3,166');
+  await expect(baseline).not.toContainText('2,300-kcal reference');
   await baseline.getByLabel('Resting metabolism formula').selectOption('mifflin');await expect(baseline).toContainText('Mifflin–St Jeor');
   await baseline.getByLabel('Baseline source').selectOption('custom');await baseline.getByLabel('Custom baseline (kcal)').fill('2300');
   await expect(target.locator('.metric').filter({hasText:'EST. MAINTENANCE'})).toContainText('2,936');
