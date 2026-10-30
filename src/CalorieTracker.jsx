@@ -2,6 +2,7 @@ import React from 'react';
 import CardioLog from './CardioLog';
 import FoodLog from './FoodLog';
 import SavedFoods from './SavedFoods';
+import CalorieSection from './CalorieSection';
 import {displayMacroRate,fromDisplayWeight,storeMacroRate,toDisplayRate,toDisplayWeight,unitName} from './units';
 
 export const calorieDefaults={
@@ -120,46 +121,76 @@ export default function CalorieTracker({db,patch,date,setDate,entry,setEntry}){
   const fatRate=displayMacroRate(cs.fatPerLb,units,2);
 
   return <>
-    <section className="panel">
-      <h2>Activity-based calorie target</h2>
-      <p className="muted">Choose a higher weight to bulk, a lower weight to cut, or the same weight to maintain. Change the date whenever you like.</p>
+    <CalorieSection
+      title="Bodyweight goal"
+      description="Choose your target weight and deadline for bulk, cut, or maintenance planning."
+      summary={displayedGoal+' '+units+' · '+db.settings.weightDeadline}
+      className="calorie-weight-goal"
+    >
+      <div className="weight-goal-summary-row">
+        <div className="weight-goal-overview">
+          <small>CURRENT PLAN</small>
+          <strong>{mode}</strong>
+          <span>Current weight: {displayedWeight} {units}. Goal: {displayedGoal} {units} by {db.settings.weightDeadline}.</span>
+        </div>
+        <div className="weight-goal-target">
+          <small>BODYWEIGHT TARGET</small>
+          <strong>{displayedGoal} {units}</strong>
+          <span>{db.settings.weightDeadline}</span>
+        </div>
+      </div>
       <div className="formgrid">
         <label>Goal weight ({units})<input type="number" min="20" max="700" step={units==='kg'?'0.1':'0.5'} value={displayedGoal} onChange={e=>patch(p=>({...p,settings:{...p.settings,targetWeight:fromDisplayWeight(e.target.value,units)}}))}/></label>
         <label>Goal deadline<input type="date" value={db.settings.weightDeadline} onChange={e=>patch(p=>({...p,settings:{...p.settings,weightDeadline:e.target.value}}))}/></label>
       </div>
-      <p className="muted">Current mode: <strong>{mode}</strong> · Target: {displayedGoal} {units} by {db.settings.weightDeadline}</p>
+    </CalorieSection>
 
-      <div className="panel baseline-panel">
-        <div className="between baseline-head">
-          <div className="baseline-copy">
-            <h3>Baseline maintenance</h3>
-            <p className="muted">The app estimate is calibrated so 5'11&quot;, {referenceWeight} {units}, male, age 18 equals exactly 2,300 kcal/day before the activities below are added.</p>
-          </div>
-          <strong>{baseline.toLocaleString()} kcal</strong>
-        </div>
-        <div className="formgrid">
-          <label>Baseline source<select value={baselineMode} onChange={e=>update('baselineMode',e.target.value)}><option value="estimate">Use app estimate</option><option value="custom">Use my own baseline</option></select></label>
-          {baselineMode==='custom'&&<label>Custom baseline (kcal)<input type="number" min="800" max="7000" step="10" value={customBaseline} onChange={e=>update('customBaseline',Number(e.target.value))}/></label>}
-          <label>Weight ({units})<input type="number" min="20" max="700" step="0.1" value={displayedWeight} onChange={e=>update('bodyWeight',fromDisplayWeight(e.target.value,units))}/></label>
-          <label>Sex<select value={sex} onChange={e=>update('sex',e.target.value)}><option value="male">Male</option><option value="female">Female</option></select></label>
-          <label>Age<input type="number" min="13" max="100" step="1" value={age} onChange={e=>update('age',Number(e.target.value))}/></label>
-          <label>Height (feet)<input type="number" min="4" max="8" step="1" value={heightFeet} onChange={e=>update('heightIn',Number(e.target.value)*12+heightRemainder)}/></label>
-          <label>Height (inches)<input type="number" min="0" max="11" step="1" value={heightRemainder} onChange={e=>update('heightIn',heightFeet*12+Number(e.target.value))}/></label>
-        </div>
-        {baselineMode==='estimate'&&<p className="muted note">Estimated baseline: <strong>{estimatedBaseline.toLocaleString()} kcal/day</strong>. Height, weight, age, and sex adjust the 2,300-kcal reference using the Mifflin–St Jeor metabolic relationship. Treat it as a starting estimate and calibrate against 2–3 weeks of scale trends.</p>}
-        {baselineMode==='custom'&&<p className="muted note">Custom mode uses your entered baseline directly. Keep walking, running, lifting, and custom cardio out of that number because those activities are added separately below.</p>}
+    <CalorieSection
+      title="Baseline maintenance"
+      description="Estimate your base daily calories using height, weight, age and sex, or enter a custom baseline."
+      summary={baseline.toLocaleString()+' kcal'}
+    >
+      <p className="muted">The app estimate is calibrated so 5'11&quot;, {referenceWeight} {units}, male, age 18 equals exactly 2,300 kcal/day before the activities below are added.</p>
+      <div className="formgrid">
+        <label>Baseline source<select value={baselineMode} onChange={e=>update('baselineMode',e.target.value)}><option value="estimate">Use app estimate</option><option value="custom">Use my own baseline</option></select></label>
+        {baselineMode==='custom'&&<label>Custom baseline (kcal)<input type="number" min="800" max="7000" step="10" value={customBaseline} onChange={e=>update('customBaseline',Number(e.target.value))}/></label>}
+        <label>Weight ({units})<input type="number" min="20" max="700" step="0.1" value={displayedWeight} onChange={e=>update('bodyWeight',fromDisplayWeight(e.target.value,units))}/></label>
+        <label>Sex<select value={sex} onChange={e=>update('sex',e.target.value)}><option value="male">Male</option><option value="female">Female</option></select></label>
+        <label>Age<input type="number" min="13" max="100" step="1" value={age} onChange={e=>update('age',Number(e.target.value))}/></label>
+        <label>Height (feet)<input type="number" min="4" max="8" step="1" value={heightFeet} onChange={e=>update('heightIn',Number(e.target.value)*12+heightRemainder)}/></label>
+        <label>Height (inches)<input type="number" min="0" max="11" step="1" value={heightRemainder} onChange={e=>update('heightIn',heightFeet*12+Number(e.target.value))}/></label>
       </div>
+      {baselineMode==='estimate'&&<p className="muted note">Estimated baseline: <strong>{estimatedBaseline.toLocaleString()} kcal/day</strong>. Height, weight, age, and sex adjust the 2,300-kcal reference using the Mifflin–St Jeor metabolic relationship. Treat it as a starting estimate and calibrate against 2–3 weeks of scale trends.</p>}
+      {baselineMode==='custom'&&<p className="muted note">Custom mode uses your entered baseline directly. Keep walking, running, lifting, and custom cardio out of that number because those activities are added separately below.</p>}
+    </CalorieSection>
 
-      <p className="muted">Activities below are added on top of the selected baseline, so the baseline should represent a day before these explicitly tracked activities.</p>
+    <CalorieSection
+      title="Daily activity"
+      description="Adjust walking, running and lifting to estimate activity-related calorie expenditure."
+      summary={Math.round(walkExtra+runExtra+liftExtra).toLocaleString()+' kcal'}
+    >
+      <p className="muted">Activities below are added on top of the selected baseline. Avoid counting the same activity again under Custom cardio.</p>
       <div className="formgrid">
         <label>Miles walked<input type="range" min="0" max="15" step=".25" value={cs.milesWalked} onChange={e=>update('milesWalked',Number(e.target.value))}/><strong>{cs.milesWalked} miles</strong></label>
         <label>Miles run (5:00/mile)<input type="range" min="0" max="10" step=".25" value={cs.milesRun} onChange={e=>update('milesRun',Number(e.target.value))}/><strong>{cs.milesRun} miles</strong></label>
         <label>Lifted today?<select value={cs.lifted?'yes':'no'} onChange={e=>update('lifted',e.target.value==='yes')}><option value="yes">Yes</option><option value="no">No</option></select></label>
         <label>Lifting duration (hours)<input type="range" min="1" max="3" step=".25" disabled={!cs.lifted} value={cs.liftHours} onChange={e=>update('liftHours',Number(e.target.value))}/><strong>{cs.liftHours} hours</strong></label>
       </div>
+    </CalorieSection>
 
-      <CardioLog date={date} setDate={setDate} entries={cardioEntries} onChange={updateCardio} totalCalories={cardioExtra}/>
+    <CalorieSection
+      title="Custom cardio"
+      description="Log cardio sessions by exercise, duration and calories burned for your selected date."
+      summary={cardioEntries.length+' logged · '+Math.round(cardioExtra).toLocaleString()+' kcal'}
+    >
+      <CardioLog date={date} setDate={setDate} entries={cardioEntries} onChange={updateCardio} totalCalories={cardioExtra} compact/>
+    </CalorieSection>
 
+    <CalorieSection
+      title="Daily calorie target"
+      description="Review estimated maintenance and choose an automatic or manual daily calorie goal."
+      summary={target.toLocaleString()+' kcal goal'}
+    >
       <div className="summary">
         <div className="metric"><small>BASELINE</small><strong>{baseline.toLocaleString()} <span>kcal</span></strong></div>
         <div className="metric"><small>EST. MAINTENANCE</small><strong>{maintenance.toLocaleString()} <span>kcal</span></strong></div>
@@ -181,11 +212,13 @@ export default function CalorieTracker({db,patch,date,setDate,entry,setEntry}){
       {daysRemaining<=0&&<p className="error">The selected deadline has passed or is today. The calculation uses a one-day fallback; choose a future date for a meaningful goal.</p>}
       {calculatedTarget<=0&&<p className="error">The mathematical calorie target for this goal is {calculatedTarget.toLocaleString()} kcal/day, which is not a viable food intake. Set a realistic deadline or choose your own daily target.</p>}
       {calculatedTarget>maintenance*1.5&&<p className="muted note">This goal implies a large surplus. Consider checking your rate of weight change over time rather than treating the calculated result as a required intake.</p>}
-    </section>
+    </CalorieSection>
 
-    <section className="panel">
-      <h2>Macro targets</h2>
-      <p className="muted">Use calculated targets based on your weight and calorie goal, or set protein, carbs, and fat yourself. Your manual targets are saved to your Powerbuild profile.</p>
+    <CalorieSection
+      title="Macro targets"
+      description="Set protein, carbs and fat automatically or adjust them yourself."
+      summary={'P '+Math.round(protein)+'g · C '+Math.round(carbs)+'g · F '+Math.round(fat)+'g'}
+    >
       <div className="formgrid">
         <label>Macro target source
           <select value={macroTargetMode} onChange={e=>setMacroTargetMode(e.target.value)}>
@@ -209,7 +242,7 @@ export default function CalorieTracker({db,patch,date,setDate,entry,setEntry}){
         </label>)}
       </div>}
       <p className="muted note">The macros above total about {macroCalories.toLocaleString()} kcal. {Math.abs(macroCalories-target)>25?'They differ from your calorie goal; adjust them independently if you want the numbers to match.':'They are close to your calorie goal.'} Food entries below count toward both calories and macro totals.</p>
-    </section>
+    </CalorieSection>
 
     <FoodLog date={date} setDate={setDate} items={logged} updateDayRecord={updateDayRecord} entry={entry} setEntry={setEntry} target={target} macros={{protein,carbs,fat}} onSaveToLibrary={saveToLibrary}/>
     <SavedFoods foods={savedFoods} date={date} onAddToLog={addSavedToLog} onEditFood={updateSavedFood} onDeleteFood={removeSavedFood}/>
