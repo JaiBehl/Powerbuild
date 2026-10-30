@@ -1,14 +1,13 @@
 import React,{useMemo,useState} from 'react';
 import {LineChart,Line,XAxis,YAxis,Tooltip,ResponsiveContainer,CartesianGrid} from 'recharts';
-import {Plus,Minus,Trash2,Target} from 'lucide-react';
+import {Plus,Trash2} from 'lucide-react';
+import CalorieSection from './CalorieSection';
 import {fromDisplayWeight,toDisplayWeight,unitName} from './units';
 
 export default function ProgressTab({db,patch,date,setDate,setTab,weightEntry,setWeightEntry,history,chartLift,setChartLift,chartData,finished,latestWeight}){
   const units=unitName(db.settings.units);
   const goals=Array.isArray(db.strengthGoals)?db.strengthGoals:[];
   const [chartRange,setChartRange]=useState('6M');
-  const [collapsedSections,setCollapsedSections]=useState({});
-  const toggleSection=(key)=>setCollapsedSections(previous=>({...previous,[key]:!previous[key]}));
   const [workoutYear,setWorkoutYear]=useState('all');
   const [workoutSearch,setWorkoutSearch]=useState('');
   const [visibleWorkoutCount,setVisibleWorkoutCount]=useState(30);
@@ -81,23 +80,23 @@ export default function ProgressTab({db,patch,date,setDate,setTab,weightEntry,se
   };
 
   return <>
+    <CalorieSection title="Progress overview" description="Your finished workouts, completed sets, latest bodyweight and current target." summary={finished.length+' finished · '+db.sessions.length+' logged workouts'}>
     <div className="summary"><div className="metric"><small>FINISHED SESSIONS</small><strong>{finished.length}</strong></div><div className="metric"><small>SETS LOGGED</small><strong>{db.sessions.reduce((n,s)=>n+s.exercises.reduce((m,e)=>m+e.sets.filter(x=>x.done).length,0),0)}</strong></div><div className="metric"><small>LATEST WEIGHT</small><strong>{latestWeight?`${toDisplayWeight(latestWeight.weight,units,1)} ${units}`:'—'}</strong></div><div className="metric"><small>WEIGHT TARGET</small><strong>{toDisplayWeight(db.settings.targetWeight,units,1)} {units}</strong></div></div>
+    </CalorieSection>
 
-    <section className="panel">
-      <div className="between"><div><h2>Strength goals</h2><p className="muted">Track only the lifts you care about. Goal weights and dates can be changed anytime in Settings.</p></div><Target size={20}/></div>
+    <CalorieSection title="Strength goals" description="Review your lift targets and the latest estimated 1RM for each exercise." summary={goals.length+' '+(goals.length===1?'goal':'goals')}>
+
       {goals.length===0?<p className="empty">No strength goals set.</p>:<div className="goal-summary-list">{goals.map(g=>{const current=latestFor(g.exercise);return <div className="goal-summary-row" key={g.id}>
         <div className="goal-summary-main"><strong>{g.exercise}</strong><span>{current?`Latest estimated 1RM: ${toDisplayWeight(current,units,1)} ${units}`:'No completed sets yet for an estimated 1RM'}</span></div>
         <div className="goal-summary-target"><small>GOAL</small><b>{toDisplayWeight(g.targetWeight,units,1)} {units}</b><span>{g.deadline?`By ${g.deadline}`:'No goal date'}</span></div>
       </div>})}</div>}
-    </section>
 
-    <section className={'panel progress-collapsible'+(collapsedSections.strengthChart?' is-collapsed':'')}>
-      <button type="button" className="progress-collapse-toggle" aria-label={(collapsedSections.strengthChart?'Expand ':'Minimize ')+'Estimated 1RM trend'} title={(collapsedSections.strengthChart?'Expand ':'Minimize ')+'Estimated 1RM trend'} aria-expanded={!collapsedSections.strengthChart} onClick={()=>toggleSection('strengthChart')}>{collapsedSections.strengthChart?<Plus size={17}/>:<Minus size={17}/>}</button>
-      <div className="between trend-heading">
-        <div><h2>Estimated 1RM trend</h2><p className="muted">Epley estimate from completed sets of 1–15 reps; not a tested max.</p></div>
-        <select value={chartLift} aria-label="Select exercise to chart" onChange={e=>setChartLift(e.target.value)}>{[...new Set(['Barbell bench press','Barbell back squat','Supported seated barbell OHP',...Object.keys(history)])].map(n=><option key={n}>{n}</option>)}</select>
-      </div>
-      {!collapsedSections.strengthChart&&<>
+    </CalorieSection>
+
+    <CalorieSection title="Estimated 1RM trend" description="Estimated strength from logged sets of 1–15 reps. Hover for exact dates and values." summary={displayChartData.length+' logged dates'}>
+
+      <div className="trend-lift-selector"><select value={chartLift} aria-label="Select exercise to chart" onChange={e=>setChartLift(e.target.value)}>{[...new Set(['Barbell bench press','Barbell back squat','Supported seated barbell OHP',...Object.keys(history)])].map(n=><option key={n}>{n}</option>)}</select></div>
+
       <div className="trend-controls">
         <div className="trend-range" role="group" aria-label="Chart date range">
           {['3M','6M','1Y','All'].map(range=><button type="button" key={range} aria-pressed={chartRange===range} className={chartRange===range?'selected':''} onClick={()=>setChartRange(range)}>{range}</button>)}
@@ -116,16 +115,11 @@ export default function ProgressTab({db,patch,date,setDate,setTab,weightEntry,se
         </ResponsiveContainer>
       </div>:<p className="empty">Complete some sets for this exercise to see your strength trend.</p>}
     
-      </>}
-    </section>
 
-    <section className={'panel progress-collapsible'+(collapsedSections.bodyweightChart?' is-collapsed':'')}>
-      <button type="button" className="progress-collapse-toggle" aria-label={(collapsedSections.bodyweightChart?'Expand ':'Minimize ')+'Bodyweight trend'} title={(collapsedSections.bodyweightChart?'Expand ':'Minimize ')+'Bodyweight trend'} aria-expanded={!collapsedSections.bodyweightChart} onClick={()=>toggleSection('bodyweightChart')}>{collapsedSections.bodyweightChart?<Plus size={17}/>:<Minus size={17}/>}</button>
-      <div className="between trend-heading">
-        <div><h2>Bodyweight trend</h2><p className="muted">Your recorded scale weight over time. Hover to see the full date and exact weight.</p></div>
-        <span className="workout-history-total">{allBodyweightLogs.length} weigh-ins</span>
-      </div>
-      {!collapsedSections.bodyweightChart&&<>
+    </CalorieSection>
+
+    <CalorieSection title="Bodyweight trend" description="View your recorded bodyweight over time with year-aware tooltips." summary={allBodyweightLogs.length+' weigh-ins'}>
+
       <div className="trend-controls">
         <div className="trend-range" role="group" aria-label="Bodyweight chart date range">
           {['3M','6M','1Y','All'].map(range=><button key={range} type="button" aria-pressed={bodyweightRange===range} className={bodyweightRange===range?'selected':''} onClick={()=>setBodyweightRange(range)}>{range}</button>)}
@@ -144,16 +138,11 @@ export default function ProgressTab({db,patch,date,setDate,setTab,weightEntry,se
         </ResponsiveContainer>
       </div>:<p className="empty">Log a weigh-in to see your bodyweight trend.</p>}
     
-      </>}
-    </section>
 
-    <section className={'panel progress-collapsible'+(collapsedSections.bodyweightLog?' is-collapsed':'')}>
-      <button type="button" className="progress-collapse-toggle" aria-label={(collapsedSections.bodyweightLog?'Expand ':'Minimize ')+'Bodyweight log'} title={(collapsedSections.bodyweightLog?'Expand ':'Minimize ')+'Bodyweight log'} aria-expanded={!collapsedSections.bodyweightLog} onClick={()=>toggleSection('bodyweightLog')}>{collapsedSections.bodyweightLog?<Plus size={17}/>:<Minus size={17}/>}</button>
-      <div className="between">
-        <div><h2>Bodyweight log</h2><p className="muted">Browse all your weigh-ins across every year of training.</p></div>
-        <span className="workout-history-total">{allBodyweightLogs.length} total weigh-ins</span>
-      </div>
-      {!collapsedSections.bodyweightLog&&<>
+    </CalorieSection>
+
+    <CalorieSection title="Bodyweight log" description="Search, edit and browse recorded weigh-ins across every year." summary={allBodyweightLogs.length+' total weigh-ins'}>
+
       <div className="weightform">
         <input type="date" aria-label="Bodyweight entry date" value={date} onChange={e=>setDate(e.target.value)}/>
         <input type="number" step="0.1" min="0" placeholder={'Weight ('+units+')'} value={weightEntry} onChange={e=>setWeightEntry(e.target.value)}/>
@@ -195,13 +184,11 @@ export default function ProgressTab({db,patch,date,setDate,setTab,weightEntry,se
         </>}
       </>}
     
-      </>}
-    </section>
 
-    <section className={'panel progress-collapsible'+(collapsedSections.workoutHistory?' is-collapsed':'')}>
-      <button type="button" className="progress-collapse-toggle" aria-label={(collapsedSections.workoutHistory?'Expand ':'Minimize ')+'Workout history'} title={(collapsedSections.workoutHistory?'Expand ':'Minimize ')+'Workout history'} aria-expanded={!collapsedSections.workoutHistory} onClick={()=>toggleSection('workoutHistory')}>{collapsedSections.workoutHistory?<Plus size={17}/>:<Minus size={17}/>}</button>
-      <div className="between"><div><h2>Workout history</h2><p className="muted">Browse every saved workout, including your imported sessions from earlier years.</p></div><span className="workout-history-total">{fullWorkoutHistory.length} total workouts</span></div>
-      {!collapsedSections.workoutHistory&&<>
+    </CalorieSection>
+
+    <CalorieSection title="Workout history" description="Find every saved workout by date, exercise or notes, including imported history." summary={fullWorkoutHistory.length+' total workouts'}>
+
       {fullWorkoutHistory.length===0?<p className="empty">No workouts logged yet. Start a workout or import your historical records in Settings &amp; backup.</p>:<>
         <div className="workout-history-filters">
           <label>Year
@@ -226,7 +213,7 @@ export default function ProgressTab({db,patch,date,setDate,setTab,weightEntry,se
         </>}
       </>}
     
-      </>}
-    </section>
+
+    </CalorieSection>
   </>;
 }
