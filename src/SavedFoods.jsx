@@ -84,7 +84,7 @@ export default function SavedFoods({foods=[],date,onAddToLog,onEditFood,onDelete
                 <small>Per serving: {formatAmount(food.calories)} kcal · P {formatAmount(food.protein)} g · C {formatAmount(food.carbs)} g · F {formatAmount(food.fat)} g</small>
               </div>
               <div className="saved-food-add-row">
-                <ServingPicker value={servingAmounts[food.id]??'1'} label={'Servings of '+food.name} onChange={value=>setServingAmounts(p=>({...p,[food.id]:value}))}/>
+                <ServingPicker value={servingAmounts[food.id]??'1'} label="Servings" onChange={value=>setServingAmounts(p=>({...p,[food.id]:value}))}/>
                 <label>Meal<select aria-label={'Meal for '+food.name} value={mealChoices[food.id]||normalizeMeal(food.meal)} onChange={e=>setMealChoices(p=>({...p,[food.id]:e.target.value}))}>{MEALS.map(meal=><option key={meal}>{meal}</option>)}</select></label>
                 <button className="primary saved-food-add-button" onClick={()=>addToLog(food)}><Plus size={16}/> Add to log</button>
               </div>
