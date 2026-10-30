@@ -48,6 +48,10 @@ Previous-session comparisons and the expanded core feature tests passed. Progres
 
 PR records passed the full CI gate. Progress now shows a seven-day bodyweight average line plus a weekly review of finished sessions/sets/volume, logged-day calorie/protein averages, custom cardio and weight-average change versus the prior week. Missing food/weight days stay unknown; duplicate weigh-ins are averaged within a day first. Calendar navigation/scheduling now uses date-only UTC arithmetic across DST/timezones, and empty date edits do not crash the app. Unit/browser tests cover windows, missing days, duplicates, training/nutrition totals and date boundaries.
 
+### Addition 4 — undo and recoverable backups
+
+Weekly review passed the full CI gate. Destructive profile edits now create bounded device recovery copies, with an Undo last change action while no later data change has intervened. Settings can save, download and restore profile versions and restore all-profile copies captured before profile deletion. Backup import/reset/history corrections checkpoint before replacing data. Deep backup validation, storage-error reporting and rollback of failed all-profile writes protect existing data. Unit/browser tests cover deletion/undo, reset/restore, malformed backups, storage quota failures and transaction rollback. Cloud account recovery remains in the sidebar.
+
 ## Current handoff
 
 | Item | Audited state |

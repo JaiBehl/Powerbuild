@@ -1,6 +1,8 @@
+import {validateProfileDb} from './backupSafety.js';
 export const stableStringify=value=>JSON.stringify(value,(_key,v)=>v&&typeof v==='object'&&!Array.isArray(v)?Object.fromEntries(Object.keys(v).sort().filter(k=>v[k]!==undefined).map(k=>[k,v[k]])):v);
 const absent=Symbol('absent'),same=(a,b)=>a===b||(a!==absent&&b!==absent&&stableStringify(a)===stableStringify(b));
 export function validCloudSnapshot(x){
+ try{if(x?.profileData)Object.values(x.profileData).forEach(validateProfileDb);}catch{return false;}
  return !!(x&&Array.isArray(x.profileState?.profiles)&&x.profileState.profiles.length&&x.profileData&&x.profileState.profiles.every(p=>typeof p.id==='string'&&x.profileData[p.id]?.settings&&Array.isArray(x.profileData[p.id].sessions)&&Array.isArray(x.profileData[p.id].weights)&&Array.isArray(x.profileData[p.id].calories)&&x.profileData[p.id].sessions.every(s=>s&&Array.isArray(s.exercises)&&s.exercises.every(e=>e&&typeof e.name==='string'&&Array.isArray(e.sets)))));
 }
 export function mergeCloudSnapshots(base,local,remote){

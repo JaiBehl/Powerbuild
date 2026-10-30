@@ -18,9 +18,9 @@ export function ensureProfiles(loadLegacy,freshDb){
   const id='primary';
   const profile={id,name:'My profile',createdAt:new Date().toISOString()};
   const existing=loadLegacy?.()||freshDb();
-  localStorage.setItem(profileDataKey(id),JSON.stringify(existing));
+  try{localStorage.setItem(profileDataKey(id),JSON.stringify(existing));}catch{}
   const meta={profiles:[profile],activeProfileId:id};
-  localStorage.setItem(PROFILE_META_KEY,JSON.stringify(meta));
+  try{localStorage.setItem(PROFILE_META_KEY,JSON.stringify(meta));}catch{}
   return meta;
 }
 
@@ -43,4 +43,11 @@ export function saveProfileMeta(meta){
 
 export function removeProfileDb(id){
   localStorage.removeItem(profileDataKey(id));
+}
+
+export function saveWorkspaceSnapshot(meta,data,storage=globalThis.localStorage){
+ const writes=[...meta.profiles.map(p=>[profileDataKey(p.id),JSON.stringify(data[p.id])]),[PROFILE_META_KEY,JSON.stringify(meta)]];
+ const old=writes.map(([key])=>[key,storage.getItem(key)]);
+ try{for(const [key,value]of writes)storage.setItem(key,value);}
+ catch(error){for(const [key,value]of old){try{if(value===null)storage.removeItem(key);else storage.setItem(key,value);}catch{}}throw Error('Could not save all profiles on this device. Recovery copies were retained. '+error.message);}
 }

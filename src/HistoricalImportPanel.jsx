@@ -1,7 +1,6 @@
 import React,{useMemo,useState} from 'react';
 import CalorieSection from './CalorieSection';
 import {normalizeHistoricalImport,mergeHistoricalImport} from './historicalImport';
-import {saveRecoveryPoint} from './recovery';
 export default function HistoricalImportPanel({db,patch,profileId,profileName}){
  const [incoming,setIncoming]=useState(null),[mode,setMode]=useState('merge'),[removeMissing,setRemoveMissing]=useState(false),[includeLegacy,setIncludeLegacy]=useState(false),[message,setMessage]=useState('');
  const preview=useMemo(()=>incoming?mergeHistoricalImport(db,incoming,{mode,removeMissing,includeLegacy}):null,[db,incoming,mode,removeMissing,includeLegacy]);
@@ -9,8 +8,7 @@ export default function HistoricalImportPanel({db,patch,profileId,profileName}){
  const apply=()=>{try{
   if(!incoming)return;
   if(!confirm(mode==='correct'?'Apply the previewed corrections/removals? Existing imported values may be replaced. A recovery copy will be saved first.':'Merge the previewed historical records into '+profileName+'? Existing records take precedence.'))return;
-  saveRecoveryPoint('profile:'+profileId,'Before historical '+mode,db);
-  const result=mergeHistoricalImport(db,incoming,{mode,removeMissing,includeLegacy});patch(()=>result.db);setIncoming(null);setMessage('Import applied. '+result.counts.newSessions+' new workouts, '+result.counts.updatedExercises+' corrected exercises, '+result.counts.removedSessions+' removed imported workouts. Recovery copy saved.');
+  const result=mergeHistoricalImport(db,incoming,{mode,removeMissing,includeLegacy});if(!patch(()=>result.db,{checkpoint:'Before historical '+mode}))throw Error('A recovery copy could not be saved; no changes applied.');setIncoming(null);setMessage('Import applied. '+result.counts.newSessions+' new workouts, '+result.counts.updatedExercises+' corrected exercises, '+result.counts.removedSessions+' removed imported workouts. Recovery copy saved.');
  }catch(e){setMessage('Import failed: '+e.message);}};
  return <CalorieSection title="Import Apple Notes workout history" description="Preview additions or corrections before changing your history. Existing records stay unless you explicitly choose correction." summary={db.sessions.length+' workouts saved'}>
  <p className="muted">Choose a converted historical JSON, not a raw Notes ZIP. Use the same import ID to correct an earlier batch. Decimal reps are floored; failed zero-rep attempts remain excluded from strength records.</p>
