@@ -1,3 +1,4 @@
+import {normalizeDayPlans} from './nutrition';
 import {normalizeTemplates} from './workoutOperations';
 import React,{useEffect,useMemo,useState} from 'react';
 import {createRoot} from 'react-dom/client';
@@ -21,7 +22,7 @@ const cloneTemplates=()=>JSON.parse(JSON.stringify(workouts));
 function normalizeDb(x={},options={}){
   const incomingSettings={...initialSettings,...(x.settings||{})};
   const hasExplicitGoals=Array.isArray(x.strengthGoals);
-  return {
+  return normalizeDayPlans({
     settings:incomingSettings,
     strengthGoals:hasExplicitGoals?x.strengthGoals:(options.migrateLegacyGoals?legacyStrengthGoals(incomingSettings.strengthDeadline):[]),
     sessions:Array.isArray(x.sessions)?x.sessions:[],
@@ -30,7 +31,7 @@ function normalizeDb(x={},options={}){
     savedFoods:Array.isArray(x.savedFoods)?x.savedFoods:[],
     calorieSettings:{...calorieDefaults,...(x.calorieSettings||{})},
     templates:normalizeTemplates(x.templates&&typeof x.templates==='object'&&!Array.isArray(x.templates)?x.templates:cloneTemplates()),
-  };
+  });
 }
 
 const freshDb=()=>normalizeDb({strengthGoals:[]});

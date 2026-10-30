@@ -12,6 +12,10 @@ Development branch: `fix/verified-reliability-and-features`. Changes are being i
 
 Exercise changes now default to this session only. An explicit checkbox also applies them to future workouts. Stable template IDs survive rename/reordering; older sessions resolve only through a unique name and ambiguous links are rejected. Unit and browser regressions cover old reordered sessions, session-only deletion, persistent data, explicit future edits and immutable originals. A committed package lock now enables `npm ci` in CI. Full-suite validation is required before phase 2.
 
+### Phase 2 — daily nutrition plans
+
+Phase 1 passed the complete CI gate. Activity, baseline inputs, manual targets/macros and goal settings now snapshot into each nutrition date record as `plan: {calorieSettings, goal}`; food/cardio writes also snapshot the plan. Existing records migrate without losing items/cardio. Edits affect the selected date; an explicit action copies settings into defaults for new dates. Core calorie math moved to tested `src/nutrition.js`; zero manual calorie targets now remain zero. Unit/browser tests cover dated isolation, reload, older-record migration, goal-independent maintenance, uncapped math and food/cardio coexistence.
+
 ## Current handoff
 
 | Item | Audited state |
