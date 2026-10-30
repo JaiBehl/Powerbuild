@@ -12,10 +12,10 @@ This README is the product manual and the handoff for a fresh AI development con
 | Site | [powerbuild-flexible-goals.vercel.app](https://powerbuild-flexible-goals.vercel.app) |
 | Hosting | Existing Vercel project `powerbuild-flexible-goals`, team/dashboard slug `power-build` |
 | Backend | Supabase project `zgbldcmahkokmkfqeljh`; Auth and the account-snapshot table/RPC described below |
-| Source reviewed through | [PR #25 working branch](https://github.com/JaiBehl/Powerbuild/pull/25); final tested SHA recorded after its gate |
+| Source reviewed through | [8df9bd6e4615e0c4cd19a83429f84c634068880d](https://github.com/JaiBehl/Powerbuild/commit/8df9bd6e4615e0c4cd19a83429f84c634068880d) |
 | Release work | [PR #25](https://github.com/JaiBehl/Powerbuild/pull/25): research-informed RPE/1RM and maintenance models; follows reliability PRs #23–#24 and original PRs #1–#22 |
 | Date | October 30, 2026, America/Los_Angeles |
-| Validation | 79 unit/integration tests passed locally; 45 Chromium tests defined (full new gate pending). Strength stage passed [70 + 42 tests](https://github.com/JaiBehl/Powerbuild/actions/runs/41039066800) |
+| Validation | 79 unit/integration + 45 Chromium browser tests, zero failures; production builds; [complete source gate](https://github.com/JaiBehl/Powerbuild/actions/runs/41040442897) |
 
 The source baseline identifies code actually reviewed and tested. Documentation-only or merge commits may be newer. Fetch current `main`, inspect commits since that baseline, and check open PRs before changing anything. Current source governs implemented behavior; the latest explicit user instruction governs desired behavior.
 
@@ -176,7 +176,7 @@ npm run test:all
 | `node build.mjs` | Compatibility alias to the active Vite build; no longer an incomplete file copier |
 | `node scripts/production-smoke.mjs` | Read-only public HTML/bundle release check, with rollout retries |
 
-GitHub Actions runs regression tests/builds on PRs and pushes to `main`. Successful main CI then runs the production smoke check. Reports, failure screenshots and traces are retained for seven days as `browser-regression-results` artifacts. The smoke check verifies public bundle capabilities; combine it with Vercel's exact-commit status when checking a deployment.
+GitHub Actions runs regression tests/builds on PRs and pushes to `main`. Successful main CI then runs the production smoke check. Reports, failure screenshots and traces are retained for seven days as `browser-regression-results` artifacts. The smoke check verifies public bundle capabilities including RPE-aware records and the resting-metabolism formula control; combine it with Vercel's exact-commit status when checking a deployment.
 
 Browser tests use a synthetic Supabase host through the Playwright web-server environment. They exercise the real frontend/client against an isolated protocol backend, not the production database. Tests cover two devices, revision races, conflicts, offline/reload/retry, sign-out/stale responses, confirmation redirects, UI/data flows, backups and phone-width layout. Actual inbox delivery and the user's real Mac/iPhone account session are not exercised by CI.
 
@@ -327,8 +327,11 @@ The original audit read all 34 files at `03d6258633b7376b184a3b7e86bdd201cf18c62
 | Undo/recoverable backups | [Passed](https://github.com/JaiBehl/Powerbuild/actions/runs/41031701772) |
 | Remembered panels/mobile layout | [Passed](https://github.com/JaiBehl/Powerbuild/actions/runs/41032100842) |
 | Same-date concurrent workout protection | [Passed](https://github.com/JaiBehl/Powerbuild/actions/runs/41036125874) |
+| Exercise-specific RPE-aware strength estimates | [Passed](https://github.com/JaiBehl/Powerbuild/actions/runs/41039066800) |
+| Population-matched RMR and net-activity maintenance | [Passed](https://github.com/JaiBehl/Powerbuild/actions/runs/41040088508) |
+| Final calculation wording and all regressions | [Passed](https://github.com/JaiBehl/Powerbuild/actions/runs/41040442897) |
 
-Current review: strength stage passed **70 unit/integration + 42 browser tests**. Maintenance stage: 79 unit/integration tests passed locally, with 45 browser tests awaiting the complete new CI gate. Previous release passed 62 + 40. Source baseline and gate link are at the top. CI includes deletion/restore, quota failures, malformed imports, aliases, actual/estimated PRs, daily plan isolation, weight reconnect, old-session template safety, two-device/offline sync, signup/resend redirects, mobile width, exports and persistent panels. Source/static/protocol tests do not prove actual email delivery or every real-device account scenario.
+Final source gate: **79 unit/integration + 45 browser tests, zero failures**, plus production builds. The strength stage passed 70 + 42 before maintenance implementation began. The final gate covers sex/age/height/mass inputs, athlete-age fallback, RPE/RIR and invalid effort, actual singles, unsupported bodyweight movements, kg invariance, walking pace/lifting intensity, total-maintenance override without double counting, dated settings, backups and phone layout. Previous release passed 62 + 40. Source baseline and gate link are at the top. CI includes deletion/restore, quota failures, malformed imports, aliases, actual/estimated PRs, daily plan isolation, weight reconnect, old-session template safety, two-device/offline sync, signup/resend redirects, mobile width, exports and persistent panels. Source/static/protocol tests do not prove actual email delivery or every real-device account scenario.
 
 GitHub `main` is the established Vercel production source; repo root, Vite, `npm run build`, `dist`. Production and preview are different environments. Check the exact GitHub Vercel commit status and successful main regression/production-smoke jobs before claiming a deployment is verified. Vercel dashboard API access was limited during this work, so CI/static verification is used instead of inventing dashboard configuration facts.
 
