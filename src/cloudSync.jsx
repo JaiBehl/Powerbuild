@@ -159,10 +159,24 @@ export function useCloudSync({db,profileState,applySnapshot}){
     setError('');
     setMessage('');
     const {data,error:authError}=create
-      ?await supabase.auth.signUp({email,password})
+      ?await supabase.auth.signUp({email,password,options:{emailRedirectTo:window.location.origin}})
       :await supabase.auth.signInWithPassword({email,password});
     if(authError){setError(authError.message);return;}
     if(create&&!data.session)setMessage('Check your email to confirm your account, then sign in.');
+  }
+
+  async function resendVerification(email){
+    if(!supabase)return;
+    setError('');
+    setMessage('');
+    if(!email?.trim()){setError('Enter your email address to resend confirmation.');return;}
+    const {error:resendError}=await supabase.auth.resend({
+      type:'signup',
+      email:email.trim(),
+      options:{emailRedirectTo:window.location.origin},
+    });
+    if(resendError){setError(resendError.message);return;}
+    setMessage('Confirmation email requested. Use the newest email link, then sign in.');
   }
 
   async function signOut(){
@@ -181,7 +195,7 @@ export function useCloudSync({db,profileState,applySnapshot}){
     upload(remote?Number(remote.revision):0);
   };
 
-  return {configured:!!supabase,user,status,error,message,signIn,signOut,useCloud,useDevice,retry:()=>setStatus('synced')};
+  return {configured:!!supabase,user,status,error,message,signIn,signOut,resendVerification,useCloud,useDevice,retry:()=>setStatus('synced')};
 }
 
 export function CloudPanel({cloud}){
@@ -198,6 +212,7 @@ export function CloudPanel({cloud}){
       <input type="password" autoComplete={register?'new-password':'current-password'} placeholder="Password" minLength={6} required value={password} onChange={e=>setPassword(e.target.value)}/>
       <button className="cloud-button" type="submit">{register?'Create account':'Sign in'}</button>
       <button className="cloud-link" type="button" onClick={()=>setRegister(v=>!v)}>{register?'Already have an account? Sign in':'Create an account'}</button>
+      <button className="cloud-link" type="button" onClick={()=>cloud.resendVerification(email)}>Resend confirmation email</button>
     </form>:<>
       <div className="cloud-email" title={user.email}>{user.email}</div>
       {(status==='synced'||status==='saving')&&<p className="cloud-state"><CheckCircle2 size={14}/> {status==='saving'?'Saving to cloud…':'Cloud sync active'}</p>}
