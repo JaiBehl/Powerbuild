@@ -17,7 +17,7 @@ export default function TrainTab({db,patch,date,setDate,scheduled,session,update
   const totalVolume=toDisplayWeight(totalVolumeLb,units,0);
   const editEx=(ei,fn)=>updateSession(s=>({...s,exercises:s.exercises.map((e,i)=>i===ei?fn(e):e)}));
   const setCell=(ei,si,key,value)=>updateSession(s=>({...s,exercises:s.exercises.map((e,i)=>i!==ei?e:{...e,sets:e.sets.map((v,j)=>j!==si?v:{...v,[key]:value})})}));
-  const changeExercise=(fn)=>{try{patch(()=>fn(db));setExerciseError('');}catch(e){setExerciseError(e.message);}};
+  const changeExercise=(fn)=>{try{const next=fn(db);patch(()=>next);setExerciseError('');}catch(e){setExerciseError(e.message);}};
   const addExercise=()=>{if(!newExerciseName.trim()||!session)return;changeExercise(value=>addSessionExercise(value,session.id,newExerciseName,updateFuture));setNewExerciseName('');};
   const editExercise=(ei)=>{
     const ex=session.exercises[ei];
