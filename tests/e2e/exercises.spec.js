@@ -13,3 +13,10 @@ test('custom exercise links persist and remove without changing original logs',a
  await page.reload();await openTab(page,'Settings & backup');await expect(card(page,'Exercise names & aliases')).toContainText('db press → Dumbbell bench press');
  await card(page,'Exercise names & aliases').getByLabel('Remove link db press',{exact:true}).click();await expect(card(page,'Exercise names & aliases')).toContainText('0 custom links');
 });
+
+test('a 225 single is recorded as 225 rather than 232.5 in goals',async({page})=>{
+ const s=makeSession();s.exercises[0].sets[0]={weight:225,reps:1,done:true};
+ await seed(page,makeDb({sessions:[s],strengthGoals:[{id:'bench-goal',exercise:'Touch-and-go bench press',targetWeight:315,deadline:'2027-10-12'}]}));await openTab(page,'Progress');
+ await expect(card(page,'Strength goals')).toContainText('225 lb');await expect(card(page,'Strength goals')).not.toContainText('232.5');
+ await expect(card(page,'Estimated 1RM trend')).toContainText('Singles use the actual logged load');
+});

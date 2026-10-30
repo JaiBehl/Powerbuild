@@ -94,7 +94,7 @@ export default function ProgressTab({db,patch,date,setDate,setTab,weightEntry,se
 
     </CalorieSection>
 
-    <CalorieSection title="Estimated 1RM trend" description="Estimated strength from logged sets of 1–15 reps. Hover for exact dates and values." summary={displayChartData.length+' logged dates'}>
+    <CalorieSection title="Estimated 1RM trend" description="Singles use the actual logged load; 2–15 reps use an estimate. Hover for exact dates and values." summary={displayChartData.length+' logged dates'}>
 
       <div className="trend-lift-selector"><select value={chartLift} aria-label="Select exercise to chart" onChange={e=>setChartLift(e.target.value)}>{exerciseChoices(['Barbell bench press','Barbell back squat','Supported seated barbell OHP',...Object.keys(history)],db.exerciseAliases).map(n=><option key={n}>{n}</option>)}</select></div>
 

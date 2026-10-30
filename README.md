@@ -24,6 +24,10 @@ Phase 2 passed the full CI gate. Baseline maintenance now has Follow weigh-ins /
 
 Phase 3 passed the full CI gate. Standard barbell/touch-and-go bench labels now share one chart and goal series; paused/incline/standing variations remain distinct. Settings provides explicit reversible custom links and same-name opt-outs. Resolution does not rewrite original workout text. Alias maps are profile data included in backups/sync. Unit/browser tests cover shared history, goal values, variant separation, persisted links and cycle rejection.
 
+### Phase 5 — accurate single-rep records
+
+Phase 4 passed the full CI gate. `e1rm(weight, 1)` now returns actual load; integer sets of 2–15 reps still use Epley, and non-finite loads/partial reps are excluded. Chart copy distinguishes logged singles from estimates. Unit/browser regressions verify 225 × 1 remains 225 rather than 232.5 and that aliases/goals still agree.
+
 ## Current handoff
 
 | Item | Audited state |

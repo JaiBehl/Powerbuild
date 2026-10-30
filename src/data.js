@@ -111,5 +111,5 @@ export function createSession(type,date,templates=workouts){
 
 export function e1rm(w,r){
   const a=Number(w),b=Number(r);
-  return a>0&&b>0&&b<=15?a*(1+b/30):null;
+  return Number.isFinite(a)&&a>0&&Number.isInteger(b)&&b>0&&b<=15?(b===1?a:a*(1+b/30)):null;
 }
