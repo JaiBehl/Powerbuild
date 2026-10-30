@@ -36,3 +36,14 @@ test('PR panel separates achieved singles, estimates and recent performance',asy
  await expect(records.getByRole('row').filter({hasText:'Estimated 1RM (2–15 reps)'})).toContainText('233.3 lb');
  await expect(records).toContainText('Best load at each rep count');
 });
+
+test('weekly review combines logged-day averages and seven-day bodyweight trends',async({page})=>{
+ const s=makeSession('Push A','2026-10-29');s.finished=true;s.exercises[0].sets[0]={weight:100,reps:5,done:true};
+ await seed(page,makeDb({sessions:[s],weights:[{date:'2026-10-23',weight:178},{date:'2026-10-24',weight:180},{date:DAY,weight:184}],calories:[{date:'2026-10-29',items:[{calories:200,protein:10}],cardio:[]},{date:DAY,items:[{calories:400,protein:30}],cardio:[{durationMinutes:20,calories:100}]}]}));await openTab(page,'Progress');
+ const review=card(page,'Weekly review');await review.getByLabel('Week ending',{exact:true}).fill(DAY);
+ await expect(review.locator('.metric').filter({hasText:'SEVEN-DAY WEIGHT AVERAGE'})).toContainText('182 lb');
+ await expect(review.locator('.metric').filter({hasText:'AVERAGE CALORIES EATEN'})).toContainText('300');
+ await expect(review.locator('.metric').filter({hasText:'AVERAGE PROTEIN'})).toContainText('20');
+ await expect(review.locator('.metric').filter({hasText:'FINISHED WORKOUTS'})).toContainText('1');
+ await review.getByLabel('Week ending',{exact:true}).fill('');await expect(page.getByRole('heading',{level:1})).toBeVisible();
+});

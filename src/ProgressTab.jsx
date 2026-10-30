@@ -1,3 +1,5 @@
+import WeeklyReview from './WeeklyReview';
+import {rollingWeightAverage} from './trends';
 import PersonalRecords from './PersonalRecords';
 import {exerciseChoices,resolveExerciseName} from './exerciseCatalog';
 import React,{useMemo,useState} from 'react';
@@ -50,6 +52,7 @@ export default function ProgressTab({db,patch,date,setDate,setTab,weightEntry,se
     const all=[...allBodyweightLogs].reverse().map(entry=>({
       date:entry.date,
       value:toDisplayWeight(entry.weight,units,1),
+      average:toDisplayWeight(rollingWeightAverage(db.weights,entry.date).average,units,1),
     }));
     if(!all.length||bodyweightRange==='All')return all;
     const months={'3M':3,'6M':6,'1Y':12}[bodyweightRange]||6;
@@ -86,6 +89,7 @@ export default function ProgressTab({db,patch,date,setDate,setTab,weightEntry,se
     <div className="summary"><div className="metric"><small>FINISHED SESSIONS</small><strong>{finished.length}</strong></div><div className="metric"><small>SETS LOGGED</small><strong>{db.sessions.reduce((n,s)=>n+s.exercises.reduce((m,e)=>m+e.sets.filter(x=>x.done).length,0),0)}</strong></div><div className="metric"><small>LATEST WEIGHT</small><strong>{latestWeight?`${toDisplayWeight(latestWeight.weight,units,1)} ${units}`:'—'}</strong></div><div className="metric"><small>WEIGHT TARGET</small><strong>{toDisplayWeight(db.settings.targetWeight,units,1)} {units}</strong></div></div>
     </CalorieSection>
 
+    <WeeklyReview db={db} date={date} setDate={setDate}/>
     <CalorieSection title="Strength goals" description="Review your lift targets and the latest estimated 1RM for each exercise." summary={goals.length+' '+(goals.length===1?'goal':'goals')}>
 
       {goals.length===0?<p className="empty">No strength goals set.</p>:<div className="goal-summary-list">{goals.map(g=>{const current=latestFor(g.exercise);return <div className="goal-summary-row" key={g.id}>
@@ -135,8 +139,9 @@ export default function ProgressTab({db,patch,date,setDate,setTab,weightEntry,se
             <CartesianGrid vertical={false} stroke="#2a3b52" strokeDasharray="3 7"/>
             <XAxis dataKey="date" tickFormatter={iso=>formatAxisDate(iso,bodyweightRange)} interval="preserveStartEnd" minTickGap={42} tickMargin={12} tick={{fill:'#94aac6',fontSize:11}} axisLine={false} tickLine={false}/>
             <YAxis domain={['auto','auto']} tickCount={5} width={48} tickFormatter={v=>Number(v).toFixed(1)} tick={{fill:'#94aac6',fontSize:11}} axisLine={false} tickLine={false}/>
-            <Tooltip labelFormatter={formatTooltipDate} formatter={v=>[Number(v).toLocaleString('en-US',{minimumFractionDigits:1,maximumFractionDigits:1})+' '+units,'Bodyweight']} contentStyle={{background:'#17283f',border:'1px solid #416086',borderRadius:12,color:'#eaf0fc',boxShadow:'0 10px 25px #080e1a80'}} labelStyle={{color:'#eaf0fc',fontWeight:700,marginBottom:5}} itemStyle={{color:'#9fc1ff'}} cursor={{stroke:'#5778a4',strokeDasharray:'4 4'}}/>
+            <Tooltip labelFormatter={formatTooltipDate} formatter={(v,name)=>[Number(v).toLocaleString('en-US',{minimumFractionDigits:1,maximumFractionDigits:1})+' '+units,name]} contentStyle={{background:'#17283f',border:'1px solid #416086',borderRadius:12,color:'#eaf0fc',boxShadow:'0 10px 25px #080e1a80'}} labelStyle={{color:'#eaf0fc',fontWeight:700,marginBottom:5}} itemStyle={{color:'#9fc1ff'}} cursor={{stroke:'#5778a4',strokeDasharray:'4 4'}}/>
             <Line type="linear" dataKey="value" stroke="#84b2ff" strokeWidth={2.5} dot={bodyweightChartData.length===1?{r:4}:false} activeDot={{r:5,stroke:'#dceaff',strokeWidth:2,fill:'#639dff'}} isAnimationActive={false} name="Bodyweight"/>
+            <Line type="linear" dataKey="average" stroke="#6ed4b0" strokeWidth={2} strokeDasharray="5 3" dot={false} isAnimationActive={false} name="Seven-day average"/>
           </LineChart>
         </ResponsiveContainer>
       </div>:<p className="empty">Log a weigh-in to see your bodyweight trend.</p>}

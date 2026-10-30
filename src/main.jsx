@@ -1,3 +1,4 @@
+import {isISODate,addCalendarDays,startOfWeek} from './dates';
 import {buildStrengthHistory,resolveExerciseName} from './exerciseCatalog';
 import {normalizeDayPlans,normalizeCalorieSettings} from './nutrition';
 import {normalizeTemplates} from './workoutOperations';
@@ -95,7 +96,8 @@ function App(){
   const [profileState,setProfileState]=useState(()=>initialProfileState);
   const [db,setDb]=useState(()=>normalizeDb(loadProfileDb(initialProfileState.activeProfileId,freshDb),{migrateLegacyGoals:initialProfileState.activeProfileId==='primary'}));
   const [tab,setTab]=useState('today');
-  const [date,setDate]=useState(isoToday());
+  const [date,setDateState]=useState(isoToday());
+  const setDate=value=>{if(isISODate(value))setDateState(value);};
   const [viewWeek,setViewWeek]=useState(0);
   const [chartLift,setChartLift]=useState('Touch-and-go bench press');
   const [importError,setImportError]=useState('');
@@ -131,8 +133,8 @@ function App(){
   const session=db.sessions.find(s=>s.date===date);
   const updateSession=(fn)=>{if(!session)return;patch(p=>({...p,sessions:p.sessions.map(s=>s.id===session.id?fn(s):s)}))};
   const start=(type)=>{const s=createSession(type,date,db.templates||workouts);patch(p=>({...p,sessions:[...p.sessions.filter(x=>x.date!==date),s]}));setShowManual(false)};
-  const changeDate=(days)=>{const d=new Date(date+'T12:00:00');d.setDate(d.getDate()+days);setDate(d.toISOString().slice(0,10))};
-  const weekDates=Array.from({length:7},(_,i)=>{const d=new Date(isoToday()+'T12:00:00');d.setDate(d.getDate()-((d.getDay()+6)%7)+7*viewWeek+i);return d.toISOString().slice(0,10)});
+  const changeDate=days=>setDate(addCalendarDays(date,days));
+  const weekDates=Array.from({length:7},(_,i)=>addCalendarDays(startOfWeek(isoToday()),7*viewWeek+i));
 
   function resetProfileUi(){
     setTab('today');
@@ -244,7 +246,7 @@ function App(){
 
   const headings={
     today:['Workout logger','Log every set, track overload, and protect recovery.'],
-    calendar:['Rolling PPL schedule','Five training days. Six sessions in continuous rotation.'],
+    calendar:['Rolling PPL schedule',`${db.settings.schedule.length} training days. Six sessions in continuous rotation.`],
     progress:['Strength & progress','See trends instead of guessing from individual sessions.'],
     calories:['Calorie & macro tracker','Calculate your daily targets and log nutrition.'],
     settings:['Preferences & backups','Your plan, goals, and local data.'],

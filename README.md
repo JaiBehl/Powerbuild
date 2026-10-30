@@ -44,6 +44,10 @@ Cloud phase 7 passed the complete CI gate, including two-device/retry/confirmati
 
 Previous-session comparisons and the expanded core feature tests passed. Progress now separates achieved singles, estimated 1RM from 2–15 reps and best load at each rep count. It compares all-time records through a selected date with the last 90 calendar days, using exercise aliases and current display units. Failed/invalid/future sets are excluded and ties retain the first achievement date. Unit/browser regressions cover each distinction.
 
+### Addition 3 — seven-day trends and weekly review
+
+PR records passed the full CI gate. Progress now shows a seven-day bodyweight average line plus a weekly review of finished sessions/sets/volume, logged-day calorie/protein averages, custom cardio and weight-average change versus the prior week. Missing food/weight days stay unknown; duplicate weigh-ins are averaged within a day first. Calendar navigation/scheduling now uses date-only UTC arithmetic across DST/timezones, and empty date edits do not crash the app. Unit/browser tests cover windows, missing days, duplicates, training/nutrition totals and date boundaries.
+
 ## Current handoff
 
 | Item | Audited state |
