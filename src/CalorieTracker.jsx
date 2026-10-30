@@ -1,6 +1,7 @@
 import React from 'react';
 import CardioLog from './CardioLog';
 import FoodLog from './FoodLog';
+import SavedFoods from './SavedFoods';
 import {displayMacroRate,fromDisplayWeight,storeMacroRate,toDisplayRate,toDisplayWeight,unitName} from './units';
 
 export const calorieDefaults={
@@ -55,6 +56,7 @@ export default function CalorieTracker({db,patch,date,setDate,entry,setEntry}){
 
   const record=db.calories.find(x=>x.date===date);
   const logged=Array.isArray(record?.items)?record.items:[];
+  const savedFoods=Array.isArray(db.savedFoods)?db.savedFoods:[];
   const cardioEntries=Array.isArray(record?.cardio)?record.cardio:[];
   const cardioExtra=cardioEntries.reduce((sum,item)=>sum+Math.max(0,Number(item.calories)||0),0);
   const updateDayRecord=(fn)=>patch(p=>{
@@ -105,6 +107,10 @@ export default function CalorieTracker({db,patch,date,setDate,entry,setEntry}){
     },
   }));
   const updateCardio=entries=>updateDayRecord(day=>({...day,cardio:entries}));
+  const saveToLibrary=food=>patch(p=>({...p,savedFoods:[...(p.savedFoods||[]),food]}));
+  const updateSavedFood=food=>patch(p=>({...p,savedFoods:(p.savedFoods||[]).map(item=>item.id===food.id?food:item)}));
+  const removeSavedFood=id=>patch(p=>({...p,savedFoods:(p.savedFoods||[]).filter(item=>item.id!==id)}));
+  const addSavedToLog=food=>updateDayRecord(day=>({...day,items:[...day.items,food]}));
 
   const displayedGoal=toDisplayWeight(db.settings.targetWeight,units,1);
   const displayedWeight=toDisplayWeight(weight,units,1);
@@ -205,6 +211,7 @@ export default function CalorieTracker({db,patch,date,setDate,entry,setEntry}){
       <p className="muted note">The macros above total about {macroCalories.toLocaleString()} kcal. {Math.abs(macroCalories-target)>25?'They differ from your calorie goal; adjust them independently if you want the numbers to match.':'They are close to your calorie goal.'} Food entries below count toward both calories and macro totals.</p>
     </section>
 
-    <FoodLog date={date} setDate={setDate} items={logged} updateDayRecord={updateDayRecord} entry={entry} setEntry={setEntry} target={target} macros={{protein,carbs,fat}}/>
+    <FoodLog date={date} setDate={setDate} items={logged} updateDayRecord={updateDayRecord} entry={entry} setEntry={setEntry} target={target} macros={{protein,carbs,fat}} onSaveToLibrary={saveToLibrary}/>
+    <SavedFoods foods={savedFoods} date={date} onAddToLog={addSavedToLog} onEditFood={updateSavedFood} onDeleteFood={removeSavedFood}/>
   </>;
 }
