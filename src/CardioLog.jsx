@@ -4,7 +4,7 @@ import './cardio.css';
 
 const emptyDraft={name:'',durationMinutes:'',calories:''};
 
-export default function CardioLog({date,setDate,entries,onChange,totalCalories}){
+export default function CardioLog({date,setDate,entries,onChange,totalCalories,compact=false}){
   const [draft,setDraft]=useState(emptyDraft);
 
   useEffect(()=>{setDraft(emptyDraft)},[date]);
@@ -26,6 +26,9 @@ export default function CardioLog({date,setDate,entries,onChange,totalCalories})
   };
 
   return <div className="cardio-section">
+    {compact?<div className="cardio-date-only">
+      <label>Cardio date<input aria-label="Cardio date" type="date" value={date} onChange={e=>setDate(e.target.value)}/></label>
+    </div>:<>
     <div className="between cardio-heading">
       <div>
         <h3>Custom cardio</h3>
@@ -37,6 +40,7 @@ export default function CardioLog({date,setDate,entries,onChange,totalCalories})
       </div>
     </div>
 
+    </>}
     {entries.length>0&&<div className="cardio-list">
       {entries.map(item=><div className="cardio-row" key={item.id}>
         <label>Exercise

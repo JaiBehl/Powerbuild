@@ -1,10 +1,10 @@
 import React,{useState} from 'react';
-import {Plus,Minus,Pencil,Save,Trash2,X,BookOpen} from 'lucide-react';
+import {Plus,Pencil,Save,Trash2,X} from 'lucide-react';
+import CalorieSection from './CalorieSection';
 import ServingPicker from './ServingPicker';
 import {MEALS,NUTRIENTS,formatAmount,makeLoggedFood,normalizeMeal,savedFoodFrom} from './foodLibrary';
 
 export default function SavedFoods({foods=[],date,onAddToLog,onEditFood,onDeleteFood}){
-  const [collapsed,setCollapsed]=useState(false);
   const [search,setSearch]=useState('');
   const [servingAmounts,setServingAmounts]=useState({});
   const [mealChoices,setMealChoices]=useState({});
@@ -50,15 +50,12 @@ export default function SavedFoods({foods=[],date,onAddToLog,onEditFood,onDelete
     setError('');
   };
 
-  return <section className={'panel saved-foods-panel'+(collapsed?' is-collapsed':'')}>
-    <button type="button" className="saved-foods-collapse" aria-label={collapsed?'Expand Saved Foods':'Minimize Saved Foods'} title={collapsed?'Expand Saved Foods':'Minimize Saved Foods'} aria-expanded={!collapsed} onClick={()=>setCollapsed(v=>!v)}>
-      {collapsed?<Plus size={17}/>:<Minus size={17}/>}
-    </button>
-    <div className="between saved-foods-heading">
-      <div><h2><BookOpen size={20}/> Saved Foods</h2>{!collapsed&&<p className="muted">Your personal food library. Choose a serving amount and add a saved food directly to the selected day's log.</p>}</div>
-      <span className="workout-history-total">{library.length} saved</span>
-    </div>
-    {!collapsed&&<>
+  return <CalorieSection
+    title="Saved Foods"
+    description="Your personal food library. Choose a serving amount and add a saved food to the selected day's log."
+    summary={library.length+' saved'}
+    className="saved-foods-panel"
+  >
       {library.length===0?<p className="empty">No saved foods yet. Use "Save to Saved Foods" when adding a food or the bookmark beside any previously logged meal.</p>:<>
         <label className="saved-foods-search">Find saved food
           <input type="search" value={search} placeholder="Search your food library" onChange={e=>setSearch(e.target.value)}/>
@@ -94,6 +91,5 @@ export default function SavedFoods({foods=[],date,onAddToLog,onEditFood,onDelete
       </>}
       {message&&<p className="food-success" role="status">{message}</p>}
       {error&&<p className="error" role="alert">{error}</p>}
-    </>}
-  </section>;
+  </CalorieSection>;
 }
