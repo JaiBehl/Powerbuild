@@ -19,7 +19,7 @@ export function mergeCloudSnapshots(base,local,remote){
   }
   if([b,l,r].every(Array.isArray)){
    const arrays=[b,l,r],all=arrays.flat();
-   const field=['id','date'].find(k=>all.every(x=>x&&typeof x==='object'&&!Array.isArray(x)&&x[k]!==undefined)&&arrays.every(a=>new Set(a.map(x=>String(x[k]))).size===a.length));
+   const field=['date','id'].find(k=>all.every(x=>x&&typeof x==='object'&&!Array.isArray(x)&&x[k]!==undefined)&&arrays.every(a=>new Set(a.map(x=>String(x[k]))).size===a.length));
    if(field){
     const maps=arrays.map(a=>new Map(a.map(x=>[String(x[field]),x]))),keys=[...new Set([...maps[0].keys(),...maps[1].keys(),...maps[2].keys()])];
     return keys.flatMap(k=>{const value=walk(...maps.map(m=>m.has(k)?m.get(k):absent),path+'['+k+']');return value===absent?[]:[value];});

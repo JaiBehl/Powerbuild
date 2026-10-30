@@ -4,6 +4,10 @@ Powerbuild is a local-first powerbuilding web app: workout/set logging, a rollin
 
 This README is the product manual and the handoff for a fresh AI development conversation. Read it with `AGENTS.md`, then inspect current source. Live user logs, private Notes exports and credentials are not included.
 
+## Same-date sync follow-up
+
+A final review found a race when devices independently create workouts on the same date with different UUIDs. Calendar records now match by unique date before ID; incompatible same-date additions require a choice rather than creating a hidden second workout. Added pure merge and two-device browser regressions. This follow-up is tracked separately from PR #23; final source/count evidence will be refreshed after its full gate.
+
 ## Current release and continuation
 
 | Item | Current context |

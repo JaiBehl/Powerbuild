@@ -42,3 +42,15 @@ test('a response from a signed-out session cannot reactivate sync or replace lat
  backend.hold=true;await saveWeight(page,'2026-10-30',185);await expect.poll(()=>backend.pending.length).toBe(1);await page.getByRole('button',{name:'Sign out',exact:true}).click();await expect(page.getByRole('button',{name:'Sign in',exact:true})).toBeVisible();
  await saveWeight(page,'2026-10-30',190);backend.release();await expect.poll(()=>backend.row.payload.profileData.test.weights[0]?.weight).toBe(185);await expect(page.getByRole('button',{name:'Sign in',exact:true})).toBeVisible();expect((await readDb(page)).weights[0].weight).toBe(190);
 });
+
+test('two devices starting the same date show a conflict rather than hide a duplicate workout',async({browser})=>{
+ const backend=fakeBackend(),a=await browser.newContext(),b=await browser.newContext();await backend.install(a);await backend.install(b);
+ try{
+  const p=await a.newPage(),q=await b.newPage();await seed(p);await login(p);await p.getByRole('button',{name:'Upload this device',exact:true}).click();await syncActive(p);await seed(q);await login(q);await syncActive(q);
+  backend.hold=true;
+  for(const page of [p,q]){await page.getByLabel('Workout date').fill('2026-10-30');await page.getByRole('button',{name:'Start another workout',exact:true}).click();await page.locator('.manual select').selectOption('Push A');await page.getByRole('button',{name:'Start selected',exact:true}).click();}
+  await expect.poll(()=>backend.pending.length,{timeout:10000}).toBe(2);backend.release();
+  await expect.poll(async()=>await p.getByRole('button',{name:'Use cloud data',exact:true}).count()+await q.getByRole('button',{name:'Use cloud data',exact:true}).count(),{timeout:20000}).toBe(1);
+  expect(backend.row.payload.profileData.test.sessions.length).toBe(1);expect((await readDb(p)).sessions.length).toBe(1);expect((await readDb(q)).sessions.length).toBe(1);
+ }finally{backend.release();await a.close();await b.close();}
+});
