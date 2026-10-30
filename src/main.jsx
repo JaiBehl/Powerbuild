@@ -1,3 +1,4 @@
+import {PanelScopeContext} from './panelScope';
 import {saveRecoveryPoint,listRecoveryPoints} from './recovery';
 import {validateProfileDb,removesData} from './backupSafety';
 import {isISODate,addCalendarDays,startOfWeek} from './dates';
@@ -274,7 +275,7 @@ function App(){
   const [title,subtitle]=headings[tab];
   const unit=unitName(db.settings.units);
 
-  return <div className="app">
+  return <PanelScopeContext.Provider value={[profileState.activeProfileId,tab]}><div className="app">
     <aside className="sidebar">
       <div className="brand"><div className="brand-icon"><Dumbbell size={24}/></div><div><strong>POWERBUILD</strong><small>STRENGTH × PHYSIQUE</small></div></div>
       <nav>{[['today',Dumbbell,'Train'],['calendar',CalendarDays,'Schedule'],['progress',ChartNoAxesCombined,'Progress'],['calories',Flame,'Calorie tracker'],['settings',SettingsIcon,'Settings & backup']].map(([id,Icon,label])=><button key={id} className={tab===id?'active':''} onClick={()=>setTab(id)}><Icon size={19}/>{label}</button>)}</nav>
@@ -293,7 +294,7 @@ function App(){
       {tab==='settings'&&<SettingsTab {...{db,patch,patchSettings,exportJson,exportCsv,importJson,importError,cloneTemplates,importHistoricalJson,historyImportStatus}} onRestoreWorkspace={restoreWorkspace} profileId={profileState.activeProfileId} profileName={activeProfile?.name||'My profile'} cloudEnabled={!!cloud.user&&['synced','saving'].includes(cloud.status)}/>} 
       <footer>Powerbuild Tracker · Local-first workout log · Estimates are not medical or coaching guarantees.</footer>
     </main>
-  </div>;
+  </div></PanelScopeContext.Provider>;
 }
 
 createRoot(document.getElementById('root')).render(<App/>);

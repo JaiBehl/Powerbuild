@@ -52,6 +52,10 @@ PR records passed the full CI gate. Progress now shows a seven-day bodyweight av
 
 Weekly review passed the full CI gate. Destructive profile edits now create bounded device recovery copies, with an Undo last change action while no later data change has intervened. Settings can save, download and restore profile versions and restore all-profile copies captured before profile deletion. Backup import/reset/history corrections checkpoint before replacing data. Deep backup validation, storage-error reporting and rollback of failed all-profile writes protect existing data. Unit/browser tests cover deletion/undo, reset/restore, malformed backups, storage quota failures and transaction rollback. Cloud account recovery remains in the sidebar.
 
+### Addition 5 — remembered panel state
+
+Undo/recovery and storage-failure tests passed the full CI gate. Panel collapse state now persists on the device across tabs/reloads, scoped independently to profile, tab and panel; exercise cards use stable template/session identity. Descriptions/counts remain visible and mounted drafts stay intact. Preferences are separate from synced training data and safely fall back if storage is unavailable. Added persistence/profile-isolation tests and a phone-width pass across all tabs.
+
 ## Current handoff
 
 | Item | Audited state |

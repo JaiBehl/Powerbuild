@@ -136,7 +136,7 @@ export function CloudPanel({cloud}){
       {(status==='choose'||status==='conflict')&&<><p><AlertTriangle size={14}/> {status==='choose'?'Cloud data and device data differ. Choose which to keep.':'Sync conflict: changes exist on multiple devices.'}</p>{cloud.conflicts.length>0&&<p>Conflicting values: {cloud.conflicts.slice(0,3).join(', ')}</p>}<button className="cloud-button" onClick={cloud.useCloud}>Use cloud data</button><button className="cloud-button cloud-secondary" onClick={cloud.useDevice}>Keep this device data</button><button className="cloud-link" onClick={cloud.downloadDevice}>Download this device copy</button><button className="cloud-link" onClick={cloud.downloadCloud}>Download cloud copy</button></>}
       {(status==='offline'||status==='error')&&<button className="cloud-button" onClick={cloud.retry}>Retry sync</button>}
       <button className="cloud-link" onClick={()=>setShowRecovery(v=>!v)}>Account recovery copies ({cloud.recoveries.length})</button>
-      {showRecovery&&<div>{cloud.recoveries.map(point=><div key={point.id}><p>{point.label} · {new Date(point.createdAt).toLocaleString()}</p><button className="cloud-button cloud-secondary" onClick={()=>cloud.restore(point.id)}>Restore account copy</button></div>)}</div>}
+      {showRecovery&&<div className="cloud-recovery-list">{cloud.recoveries.map(point=><div key={point.id}><p>{point.label} · {new Date(point.createdAt).toLocaleString()}</p><button className="cloud-button cloud-secondary" onClick={()=>cloud.restore(point.id)}>Restore account copy</button></div>)}</div>}
       <button className="cloud-link cloud-signout" onClick={cloud.signOut}><LogOut size={13}/> Sign out</button>
     </>}
     {message&&<p className="cloud-note">{message}</p>}
