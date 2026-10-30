@@ -1,3 +1,4 @@
+import PersonalRecords from './PersonalRecords';
 import {exerciseChoices,resolveExerciseName} from './exerciseCatalog';
 import React,{useMemo,useState} from 'react';
 import {LineChart,Line,XAxis,YAxis,Tooltip,ResponsiveContainer,CartesianGrid} from 'recharts';
@@ -94,6 +95,7 @@ export default function ProgressTab({db,patch,date,setDate,setTab,weightEntry,se
 
     </CalorieSection>
 
+    <PersonalRecords db={db} date={date} setDate={setDate} lift={chartLift} setLift={setChartLift}/>
     <CalorieSection title="Estimated 1RM trend" description="Singles use the actual logged load; 2–15 reps use an estimate. Hover for exact dates and values." summary={displayChartData.length+' logged dates'}>
 
       <div className="trend-lift-selector"><select value={chartLift} aria-label="Select exercise to chart" onChange={e=>setChartLift(e.target.value)}>{exerciseChoices(['Barbell bench press','Barbell back squat','Supported seated barbell OHP',...Object.keys(history)],db.exerciseAliases).map(n=><option key={n}>{n}</option>)}</select></div>

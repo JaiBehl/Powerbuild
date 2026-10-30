@@ -40,6 +40,10 @@ All six bug fixes passed their full CI gates. Sync now three-way merges non-conf
 
 Cloud phase 7 passed the complete CI gate, including two-device/retry/confirmation simulations. Train now shows completed sets from the latest earlier finished session for that movement, resolved through aliases and converted to current units. Current inputs are not overwritten. Added focused tests and broad browser regressions for goal CRUD, kg storage/display, food/cardio coexistence and active-profile JSON/CSV exports.
 
+### Addition 2 — personal records
+
+Previous-session comparisons and the expanded core feature tests passed. Progress now separates achieved singles, estimated 1RM from 2–15 reps and best load at each rep count. It compares all-time records through a selected date with the last 90 calendar days, using exercise aliases and current display units. Failed/invalid/future sets are excluded and ties retain the first achievement date. Unit/browser regressions cover each distinction.
+
 ## Current handoff
 
 | Item | Audited state |

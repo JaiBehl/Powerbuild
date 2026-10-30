@@ -27,3 +27,12 @@ test('JSON backup and converted sets CSV contain active profile data',async({pag
  let wait=page.waitForEvent('download');await page.getByRole('button',{name:'Export profile backup',exact:true}).click();let file=await wait;const db=JSON.parse(await downloadedText(file));expect(db.sessions[0].exercises[0].sets[0].weight).toBe(225);
  await page.getByLabel('Weight unit').selectOption('kg');wait=page.waitForEvent('download');await page.getByRole('button',{name:'Export sets CSV',exact:true}).click();file=await wait;const csv=await downloadedText(file);expect(csv).toContain('Weight (kg)');expect(csv).toContain('102.06');expect(csv).toContain('Barbell bench press');
 });
+
+test('PR panel separates achieved singles, estimates and recent performance',async({page})=>{
+ const session=(date,weight,reps)=>{const s=makeSession('Push A',date);s.exercises[0].sets[0]={weight,reps,done:true};return s;};
+ await seed(page,makeDb({sessions:[session('2026-01-01',225,1),session('2026-10-29',200,5),session('2026-10-30',215,1)]}));await openTab(page,'Progress');
+ const records=card(page,'Personal records');await records.getByLabel('Records through date',{exact:true}).fill(DAY);
+ const single=records.getByRole('row').filter({hasText:'Achieved single'});await expect(single).toContainText('225 lb');await expect(single).toContainText('215 lb');
+ await expect(records.getByRole('row').filter({hasText:'Estimated 1RM (2–15 reps)'})).toContainText('233.3 lb');
+ await expect(records).toContainText('Best load at each rep count');
+});
