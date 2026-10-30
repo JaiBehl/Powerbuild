@@ -32,6 +32,10 @@ Phase 4 passed the full CI gate. `e1rm(weight, 1)` now returns actual load; inte
 
 Phase 5 passed the full CI gate. Historical JSON now previews changes before applying. Default merge still keeps existing data; explicit correction updates owned records, can remove missing records from that batch, and requires a separate opt-in for older marked sessions. Manual/unrelated records remain protected by default. Missing IDs are generated deterministically, real dates/finite sets are validated, and fractional reps floor. A device recovery snapshot is required before applying; storage failure blocks replacement. Legacy missing weigh-ins without provenance remain retained. Tests cover preview, corrections, cleanup, ownership, idempotence, validation and recovery.
 
+### Phase 7 — cloud merge, retry and recovery
+
+All six bug fixes passed their full CI gates. Sync now three-way merges non-conflicting changes against the last known snapshot, respects deletions and retains explicit choices for same-value conflicts. It saves account recovery copies before replacing/combining versions, supports downloads and account recovery restore, ignores responses from obsolete sessions, rechecks revisions on retry and preserves current UI during background updates. Protocol browser tests use an isolated synthetic Supabase backend for two devices, revision races, offline/reload/retry, sign-out and confirmation redirects; live private account data is not used. Existing ownership RLS/RPC contract is unchanged.
+
 ## Current handoff
 
 | Item | Audited state |

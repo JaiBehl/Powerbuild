@@ -105,7 +105,7 @@ function App(){
   const [weightEntry,setWeightEntry]=useState('');
   const [calorieEntry,setCalorieEntry]=useState({name:'',meal:'Breakfast',servings:'1',calories:'',protein:'',carbs:'',fat:''});
 
-  function applyCloudSnapshot(snapshot){
+  function applyCloudSnapshot(snapshot,options={}){
     if(!snapshot?.profileState?.profiles?.length||!snapshot.profileData)throw Error('Invalid cloud data');
     const meta=snapshot.profileState;
     const active=meta.profiles.some(p=>p.id===meta.activeProfileId)?meta.activeProfileId:meta.profiles[0].id;
@@ -116,7 +116,7 @@ function App(){
     saveProfileMeta(nextMeta);
     setProfileState(nextMeta);
     setDb(normalizeDb(snapshot.profileData[active]||freshDb()));
-    resetProfileUi();
+    if(!options.preserveUi)resetProfileUi();
   }
 
   const cloud=useCloudSync({db,profileState,applySnapshot:applyCloudSnapshot});
