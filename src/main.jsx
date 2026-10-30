@@ -200,7 +200,7 @@ function App(){
     })));
     return m;
   },[db.sessions]);
-  const chartData=Object.entries(history[chartLift]||{}).sort(([a],[b])=>a.localeCompare(b)).map(([d,value])=>({date:d.slice(5),value}));
+  const chartData=Object.entries(history[chartLift]||{}).sort(([a],[b])=>a.localeCompare(b)).map(([d,value])=>({date:d,value}));
   const finished=db.sessions.filter(s=>s.finished).sort((a,b)=>b.date.localeCompare(a.date));
   const latestWeight=[...db.weights].sort((a,b)=>b.date.localeCompare(a.date))[0];
 
