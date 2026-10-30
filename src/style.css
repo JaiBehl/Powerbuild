@@ -30,3 +30,18 @@
 .trend-caption{font-size:12px;color:#9eb1c9}
 .trend-chart{height:320px}
 @media(max-width:650px){.trend-heading{flex-direction:column;align-items:stretch}.trend-heading select{width:100%;max-width:100%}.trend-chart{height:265px}.trend-range button{padding:7px 12px}}
+
+
+/* Full workout archive with year filtering and incremental history browsing. */
+.workout-history-total{font-size:12px;color:#bbd1ee;background:#233851;padding:8px 12px;border:1px solid #354d6a;border-radius:999px;white-space:nowrap}
+.workout-history-filters{display:grid;grid-template-columns:minmax(160px,220px) minmax(240px,1fr);gap:14px;margin:18px 0 12px}
+.workout-history-filters label{display:grid;gap:7px;font-size:12px;color:#aebfd6}
+.workout-history-filters select,.workout-history-filters input{width:100%;min-width:0}
+.workout-history-meta{color:#8fa6c4;font-size:12px;margin-bottom:12px}
+.workout-history-list button{min-height:63px;gap:16px}
+.workout-history-list button:hover{background:#243f60}
+.workout-history-list button:focus-visible{outline:2px solid #8db7ff;outline-offset:2px}
+.workout-history-list button strong{font-size:13px}
+.workout-history-stats{font-size:12px;color:#b7c9de;text-align:right}
+.workout-history-more{display:flex;justify-content:center;padding:20px 0 0}
+@media(max-width:620px){.workout-history-filters{grid-template-columns:1fr}.workout-history-stats{font-size:11px}.workout-history-list button{padding:12px 10px}.workout-history-total{font-size:11px}}
