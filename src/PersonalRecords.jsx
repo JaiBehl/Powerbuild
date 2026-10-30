@@ -3,7 +3,13 @@ import CalorieSection from './CalorieSection';
 import {personalRecords} from './trainingStats';
 import {exerciseNames} from './exerciseCatalog';
 import {formatWeight,unitName} from './units';
-const display=(record,units)=>record?formatWeight(record.value,units,1)+' · '+record.date:'No record';
+import {MAX_BODYWEIGHT_GAP_DAYS} from './recordBodyweight';
+function BodyweightContext({bodyweight,units}){
+ if(!bodyweight)return <small className="muted">BW unavailable · no weigh-in within {MAX_BODYWEIGHT_GAP_DAYS} days</small>;
+ const source=bodyweight.method==='same-day'?'logged '+bodyweight.sources[0].date:bodyweight.method==='interpolated'?'interpolated '+bodyweight.sources.map(s=>s.date).join(' → '):'nearest '+bodyweight.sources[0].date+' ('+bodyweight.daysAway+' days away)';
+ return <small className="muted">{bodyweight.estimated?'Est. BW':'BW'} {formatWeight(bodyweight.value,units,1)} · {source}</small>;
+}
+const display=(record,units)=>record?<>{formatWeight(record.value,units,1)+' · '+record.date}<BodyweightContext bodyweight={record.bodyweight} units={units}/></>:'No record';
 const estimateDisplay=(record,units)=>record?<>{display(record,units)}<small className="muted">{record.missingRpe?'RPE missing · assumes failure':record.reps+' reps @ RPE '+record.rpe+' · '+Number((10-record.rpe).toFixed(1))+' RIR'}</small></>:'No qualifying estimate';
 export default function PersonalRecords({db,date,setDate,lift,setLift}){
  const units=unitName(db.settings.units),result=personalRecords(db,lift,date);
@@ -11,6 +17,7 @@ export default function PersonalRecords({db,date,setDate,lift,setLift}){
  return <CalorieSection title="Personal records" description="Achieved singles, RPE-aware strength estimates and rep PRs, with all-time and recent comparisons." summary={result.all.count+' qualifying sets'}>
  <div className="formgrid"><label>Exercise<select aria-label="Exercise for records" value={lift} onChange={e=>setLift(e.target.value)}>{names.map(name=><option key={name}>{name}</option>)}</select></label><label>Records through date<input aria-label="Records through date" type="date" value={date} onChange={e=>setDate(e.target.value)}/></label></div>
  <p className="muted">All time through {date}. Recent means the last 90 calendar days. Achieved singles show the load actually lifted. Estimates use RPE 7–10 (10 − RPE = reps in reserve), up to 10 reps including reserve. Blank RPE assumes failure and may underestimate capacity; easy sets are excluded from predictions.</p>
+ <p className="muted">BW uses the same-day weigh-in average. Est. BW interpolates between weigh-ins within {MAX_BODYWEIGHT_GAP_DAYS} days on each side, or uses the nearest within {MAX_BODYWEIGHT_GAP_DAYS} days. Only weigh-ins through {date} are used; adding or editing them updates this context.</p>
  <div className="records-scroll"><table className="records-table"><thead><tr><th>Record</th><th>All time</th><th>Last 90 days</th></tr></thead><tbody>
  <tr><th>Achieved single</th><td>{display(result.all.single,units)}</td><td>{display(result.recent.single,units)}</td></tr>
  <tr><th>Estimated 1RM (RPE-aware)</th><td>{estimateDisplay(result.all.estimated,units)}</td><td>{estimateDisplay(result.recent.estimated,units)}</td></tr>
