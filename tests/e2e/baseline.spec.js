@@ -15,7 +15,7 @@ test('food fractions update totals and saved food is reusable',async({page})=>{
  await log.getByLabel('Food / meal name',{exact:true}).fill('Synthetic oats');
  await log.getByLabel('Calories (kcal) per serving',{exact:true}).fill('200');
  await log.getByLabel('Protein (g) per serving',{exact:true}).fill('10');
- await log.getByRole('button',{name:'0.5 servings',exact:true}).click();
+ await log.getByRole('button',{name:'½×',exact:true}).click();
  await log.getByRole('button',{name:'Save to Saved Foods',exact:true}).click();
  await log.getByRole('button',{name:'Add food to daily totals',exact:true}).click();
  await expect.poll(async()=> (await readDb(page)).calories[0].items[0].calories).toBe(100);
