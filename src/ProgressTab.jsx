@@ -1,12 +1,14 @@
 import React,{useMemo,useState} from 'react';
 import {LineChart,Line,XAxis,YAxis,Tooltip,ResponsiveContainer,CartesianGrid} from 'recharts';
-import {Plus,Trash2,Target} from 'lucide-react';
+import {Plus,Minus,Trash2,Target} from 'lucide-react';
 import {fromDisplayWeight,toDisplayWeight,unitName} from './units';
 
 export default function ProgressTab({db,patch,date,setDate,setTab,weightEntry,setWeightEntry,history,chartLift,setChartLift,chartData,finished,latestWeight}){
   const units=unitName(db.settings.units);
   const goals=Array.isArray(db.strengthGoals)?db.strengthGoals:[];
   const [chartRange,setChartRange]=useState('6M');
+  const [collapsedSections,setCollapsedSections]=useState({});
+  const toggleSection=(key)=>setCollapsedSections(previous=>({...previous,[key]:!previous[key]}));
   const [workoutYear,setWorkoutYear]=useState('all');
   const [workoutSearch,setWorkoutSearch]=useState('');
   const [visibleWorkoutCount,setVisibleWorkoutCount]=useState(30);
@@ -89,11 +91,13 @@ export default function ProgressTab({db,patch,date,setDate,setTab,weightEntry,se
       </div>})}</div>}
     </section>
 
-    <section className="panel">
+    <section className={'panel progress-collapsible'+(collapsedSections.strengthChart?' is-collapsed':'')}>
+      <button type="button" className="progress-collapse-toggle" aria-label={(collapsedSections.strengthChart?'Expand ':'Minimize ')+'Estimated 1RM trend'} title={(collapsedSections.strengthChart?'Expand ':'Minimize ')+'Estimated 1RM trend'} aria-expanded={!collapsedSections.strengthChart} onClick={()=>toggleSection('strengthChart')}>{collapsedSections.strengthChart?<Plus size={17}/>:<Minus size={17}/>}</button>
       <div className="between trend-heading">
         <div><h2>Estimated 1RM trend</h2><p className="muted">Epley estimate from completed sets of 1–15 reps; not a tested max.</p></div>
         <select value={chartLift} aria-label="Select exercise to chart" onChange={e=>setChartLift(e.target.value)}>{[...new Set(['Barbell bench press','Barbell back squat','Supported seated barbell OHP',...Object.keys(history)])].map(n=><option key={n}>{n}</option>)}</select>
       </div>
+      {!collapsedSections.strengthChart&&<>
       <div className="trend-controls">
         <div className="trend-range" role="group" aria-label="Chart date range">
           {['3M','6M','1Y','All'].map(range=><button type="button" key={range} aria-pressed={chartRange===range} className={chartRange===range?'selected':''} onClick={()=>setChartRange(range)}>{range}</button>)}
@@ -111,13 +115,17 @@ export default function ProgressTab({db,patch,date,setDate,setTab,weightEntry,se
           </LineChart>
         </ResponsiveContainer>
       </div>:<p className="empty">Complete some sets for this exercise to see your strength trend.</p>}
+    
+      </>}
     </section>
 
-    <section className="panel">
+    <section className={'panel progress-collapsible'+(collapsedSections.bodyweightChart?' is-collapsed':'')}>
+      <button type="button" className="progress-collapse-toggle" aria-label={(collapsedSections.bodyweightChart?'Expand ':'Minimize ')+'Bodyweight trend'} title={(collapsedSections.bodyweightChart?'Expand ':'Minimize ')+'Bodyweight trend'} aria-expanded={!collapsedSections.bodyweightChart} onClick={()=>toggleSection('bodyweightChart')}>{collapsedSections.bodyweightChart?<Plus size={17}/>:<Minus size={17}/>}</button>
       <div className="between trend-heading">
         <div><h2>Bodyweight trend</h2><p className="muted">Your recorded scale weight over time. Hover to see the full date and exact weight.</p></div>
         <span className="workout-history-total">{allBodyweightLogs.length} weigh-ins</span>
       </div>
+      {!collapsedSections.bodyweightChart&&<>
       <div className="trend-controls">
         <div className="trend-range" role="group" aria-label="Bodyweight chart date range">
           {['3M','6M','1Y','All'].map(range=><button key={range} type="button" aria-pressed={bodyweightRange===range} className={bodyweightRange===range?'selected':''} onClick={()=>setBodyweightRange(range)}>{range}</button>)}
@@ -135,13 +143,17 @@ export default function ProgressTab({db,patch,date,setDate,setTab,weightEntry,se
           </LineChart>
         </ResponsiveContainer>
       </div>:<p className="empty">Log a weigh-in to see your bodyweight trend.</p>}
+    
+      </>}
     </section>
 
-    <section className="panel">
+    <section className={'panel progress-collapsible'+(collapsedSections.bodyweightLog?' is-collapsed':'')}>
+      <button type="button" className="progress-collapse-toggle" aria-label={(collapsedSections.bodyweightLog?'Expand ':'Minimize ')+'Bodyweight log'} title={(collapsedSections.bodyweightLog?'Expand ':'Minimize ')+'Bodyweight log'} aria-expanded={!collapsedSections.bodyweightLog} onClick={()=>toggleSection('bodyweightLog')}>{collapsedSections.bodyweightLog?<Plus size={17}/>:<Minus size={17}/>}</button>
       <div className="between">
         <div><h2>Bodyweight log</h2><p className="muted">Browse all your weigh-ins across every year of training.</p></div>
         <span className="workout-history-total">{allBodyweightLogs.length} total weigh-ins</span>
       </div>
+      {!collapsedSections.bodyweightLog&&<>
       <div className="weightform">
         <input type="date" aria-label="Bodyweight entry date" value={date} onChange={e=>setDate(e.target.value)}/>
         <input type="number" step="0.1" min="0" placeholder={'Weight ('+units+')'} value={weightEntry} onChange={e=>setWeightEntry(e.target.value)}/>
@@ -182,10 +194,14 @@ export default function ProgressTab({db,patch,date,setDate,setTab,weightEntry,se
           </div>}
         </>}
       </>}
+    
+      </>}
     </section>
 
-    <section className="panel">
+    <section className={'panel progress-collapsible'+(collapsedSections.workoutHistory?' is-collapsed':'')}>
+      <button type="button" className="progress-collapse-toggle" aria-label={(collapsedSections.workoutHistory?'Expand ':'Minimize ')+'Workout history'} title={(collapsedSections.workoutHistory?'Expand ':'Minimize ')+'Workout history'} aria-expanded={!collapsedSections.workoutHistory} onClick={()=>toggleSection('workoutHistory')}>{collapsedSections.workoutHistory?<Plus size={17}/>:<Minus size={17}/>}</button>
       <div className="between"><div><h2>Workout history</h2><p className="muted">Browse every saved workout, including your imported sessions from earlier years.</p></div><span className="workout-history-total">{fullWorkoutHistory.length} total workouts</span></div>
+      {!collapsedSections.workoutHistory&&<>
       {fullWorkoutHistory.length===0?<p className="empty">No workouts logged yet. Start a workout or import your historical records in Settings &amp; backup.</p>:<>
         <div className="workout-history-filters">
           <label>Year
@@ -208,6 +224,8 @@ export default function ProgressTab({db,patch,date,setDate,setTab,weightEntry,se
           </div>
           {visibleWorkoutCount<matchingWorkouts.length&&<div className="workout-history-more"><button className="secondary" onClick={()=>setVisibleWorkoutCount(n=>n+30)}>Show 30 more workouts</button></div>}
         </>}
+      </>}
+    
       </>}
     </section>
   </>;

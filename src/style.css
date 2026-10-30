@@ -54,3 +54,24 @@
 .bodyweight-history-list span{font-size:13px;color:#c4d3e9;font-variant-numeric:tabular-nums}
 .bodyweight-history-list button:focus-visible{outline:2px solid #8db7ff;outline-offset:2px}
 @media(max-width:620px){.bodyweight-history-list>div{grid-template-columns:minmax(0,1fr) auto 30px;gap:10px}.bodyweight-history-list span,.bodyweight-history-list b{font-size:12px}}
+
+
+/* Independently collapsible Progress sections. Strength goals remain fixed open. */
+.progress-collapsible{position:relative}
+.progress-collapsible>.between{padding-left:36px;min-height:36px}
+.progress-collapse-toggle{
+  position:absolute;left:14px;top:17px;
+  display:flex;align-items:center;justify-content:center;
+  width:27px;height:27px;padding:0;
+  border:1px solid #3d5373;border-radius:7px;
+  background:#233954;color:#d5e5ff;cursor:pointer;
+  transition:background .15s,border-color .15s;
+}
+.progress-collapse-toggle:hover{background:#315582;border-color:#7299cf}
+.progress-collapse-toggle:focus-visible{outline:2px solid #8db7ff;outline-offset:3px}
+.progress-collapsible.is-collapsed>.between .muted,
+.progress-collapsible.is-collapsed>.between select,
+.progress-collapsible.is-collapsed>.between .workout-history-total{display:none}
+.progress-collapsible.is-collapsed>.between{margin:0}
+.progress-collapsible.is-collapsed>.between h2{margin-bottom:0}
+@media(max-width:520px){.progress-collapsible>.between{padding-left:32px}.progress-collapse-toggle{left:12px;top:14px}}
