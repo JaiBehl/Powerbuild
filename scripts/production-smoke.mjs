@@ -1,3 +1,5 @@
+import {pathToFileURL} from 'node:url';
+import {resolve} from 'node:path';
 export async function inspectProduction(origin,fetcher=fetch){
  const base=new URL(origin),htmlResponse=await fetcher(base.href,{signal:AbortSignal.timeout(15000),cache:'no-store'});
  if(!htmlResponse.ok)throw Error('Production HTML returned '+htmlResponse.status);
@@ -10,7 +12,7 @@ export async function inspectProduction(origin,fetcher=fetch){
  const missing=required.filter(label=>!bundle.includes(label));if(missing.length)throw Error('Production bundle is missing release features: '+missing.join(', '));
  return {origin:base.origin,asset:asset.pathname,features:required};
 }
-if(import.meta.url===new URL(process.argv[1]||'', 'file://'+process.cwd()+'/').href){
+if(process.argv[1]&&import.meta.url===pathToFileURL(resolve(process.argv[1])).href){
  let last;
  for(let attempt=1;attempt<=12;attempt++){
   try{console.log(JSON.stringify(await inspectProduction(process.argv[2]||'https://powerbuild-flexible-goals.vercel.app')));last=null;break;}
