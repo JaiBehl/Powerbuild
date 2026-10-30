@@ -243,3 +243,66 @@
 @media(max-width:390px){
   .saved-food-item .saved-food-add-button{flex:1}
 }
+
+
+/* Calorie Tracker: independent cards with persistent mini-descriptions & counts */
+.calorie-section{min-width:0}
+.calorie-section-header{display:flex;align-items:flex-start;gap:12px;min-width:0}
+.calorie-section-toggle{
+  display:inline-flex;align-items:center;justify-content:center;flex:0 0 29px;
+  height:29px;margin-top:0;padding:0;border-radius:7px;cursor:pointer;
+  background:#243a56;color:#dceaff;border:1px solid #46617f;
+}
+.calorie-section-toggle:hover{background:#345b86;border-color:#82ade2}
+.calorie-section-toggle:focus-visible{outline:2px solid #8db7ff;outline-offset:3px}
+.calorie-section-heading{flex:1 1 auto;min-width:0}
+.calorie-section-heading h2{margin:2px 0 5px;font-size:20px;line-height:1.2}
+.calorie-section-description{margin:0!important;line-height:1.55}
+.calorie-section-stat{flex:0 0 auto;max-width:42%;align-self:flex-start;min-width:0;margin-top:1px;
+  padding:6px 10px;border:1px solid #354d6a;border-radius:9px;background:#21364f;
+  color:#dce9ff;font-weight:700;font-size:12px;text-align:right;white-space:normal;
+  font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.calorie-section-content{margin-top:17px}
+.calorie-section-content[hidden]{display:none!important}
+.calorie-section-collapsed{padding-top:17px;padding-bottom:17px}
+.calorie-section-collapsed .calorie-section-header{align-items:center}
+.calorie-section-collapsed .calorie-section-toggle{margin-top:0}
+.calorie-section-collapsed .calorie-section-stat{align-self:center}
+.calorie-section-collapsed .calorie-section-description{display:block!important}
+.calorie-section .formgrid{margin-bottom:8px}
+.calorie-section .summary{margin-top:4px}
+
+/* Bodyweight target borrows the strength-goal row and right-side target style. */
+.weight-goal-summary-row{display:flex;align-items:center;justify-content:space-between;gap:18px;
+  border-radius:10px;background:#1b2b41;padding:14px 16px}
+.weight-goal-overview,.weight-goal-target{display:grid;gap:5px}
+.weight-goal-overview small,.weight-goal-target small{color:#879bb6;font-size:10px;letter-spacing:1px}
+.weight-goal-overview strong{font-size:15px}
+.weight-goal-overview span,.weight-goal-target span{color:#aabbcf;font-size:12px;line-height:1.5}
+.weight-goal-target{min-width:160px;justify-items:end;text-align:right}
+.weight-goal-target strong{font-size:20px;color:#edf3ff;font-variant-numeric:tabular-nums}
+.calorie-weight-goal .formgrid{margin:16px 0 3px}
+.cardio-date-only{display:flex;justify-content:flex-end;margin:0 0 14px}
+.cardio-date-only>label,.food-log-date-row>label{display:grid;gap:6px;color:#b7c7dc;font-size:12px}
+.cardio-date-only input,.food-log-date-row input{width:160px}
+.food-log-date-row{display:flex;justify-content:flex-end;margin-bottom:13px}
+.calorie-section.food-log-panel .food-summary{margin-top:8px}
+
+/* Saved Foods relies on shared section header, the compact individual cards remain unchanged. */
+.calorie-section.saved-foods-panel .calorie-section-content{margin-top:10px}
+@media(max-width:720px){
+  .calorie-section-header{gap:9px;flex-wrap:wrap}
+  .calorie-section-toggle{flex-basis:28px;height:28px}
+  .calorie-section-heading{flex-basis:calc(100% - 40px)}
+  .calorie-section-stat{max-width:none;margin-left:37px;margin-top:0}
+  .calorie-section-collapsed .calorie-section-stat{margin-left:auto}
+  .calorie-section-heading h2{font-size:18px}
+  .weight-goal-summary-row{align-items:flex-start}
+}
+@media(max-width:520px){
+  .weight-goal-summary-row{flex-direction:column;gap:13px}
+  .weight-goal-target{min-width:0;justify-items:start;text-align:left}
+  .calorie-section{padding:14px}
+  .calorie-section-collapsed{padding:13px 14px}
+  .calorie-section-stat{font-size:11px}
+}
