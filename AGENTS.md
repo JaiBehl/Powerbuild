@@ -13,6 +13,7 @@
 - Activity/targets/goal fallback are date snapshots; defaults seed new dates. Manual calorie weights remain explicit until automatic weigh-ins are selected.
 - Exercise edits are session-only by default. Future-template permission is explicit and resets per session; match stable IDs or a unique legacy name, never position.
 - Supported seated OHP uses upright back support; legacy bench is touch-and-go. Keep distinct variations separate unless explicitly linked. Never impose old/default goals on saved profiles.
+- PR bodyweights are derived from dated weigh-ins: same-day means, then interpolation/nearest within 30 days per side. Label estimates with sources; never substitute current/default weight. Rank relative records independently by unrounded load/bodyweight, retain achievement dates and exclude unavailable bodyweights or unsupported bodyweight/assisted resistance. Do not persist derived estimates over logs.
 - Preserve local profiles, supported backups, import provenance and repeat-safe merge. Correction/removal requires preview, explicit choice and a saved recovery copy.
 - Cloud stores all profiles in one account snapshot. Three-way merge only non-conflicting edits; retain choices/recovery for real conflicts. Guard obsolete auth responses and ownership RLS.
 - Before destructive changes, save recovery or abort with a useful error. Do not run destructive tests on real user history, auth accounts or cloud payloads.
