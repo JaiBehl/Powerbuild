@@ -6,7 +6,7 @@ export function previousPerformance(db,name,date,resistance){
  const canonical=resolveExerciseName(name,db.exerciseAliases);
  const sessions=db.sessions.filter(s=>s.finished&&s.date<date).sort((a,b)=>b.date.localeCompare(a.date));
  for(const session of sessions){
-  const sets=session.exercises.filter(e=>resolveExerciseName(e.name,db.exerciseAliases)===canonical&&(!resistance||(e.resistance==='bodyweight'?'bodyweight':'external')===resistance)).flatMap(e=>e.sets.map(s=>({...s,resistance:e.resistance||'external'}))).filter(s=>s.done&&Number.isInteger(Number(s.reps))&&Number(s.reps)>0&&Number.isFinite(Number(s.weight))&&Number(s.weight)>=0);
+  const sets=session.exercises.filter(e=>resolveExerciseName(e.name,db.exerciseAliases)===canonical&&(!resistance||(e.resistance==='bodyweight'?'bodyweight':'external')===resistance)).flatMap(e=>e.sets.map(s=>({...s,resistance:e.resistance||'external'}))).filter(s=>s.done&&s.weight!==''&&s.weight!==null&&s.weight!==undefined&&Number.isInteger(Number(s.reps))&&Number(s.reps)>0&&Number.isFinite(Number(s.weight))&&Number(s.weight)>=0);
   if(sets.length)return {date:session.date,type:session.type,sets:sets.map(s=>({...s}))};
  }
  return null;

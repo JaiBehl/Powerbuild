@@ -18,6 +18,7 @@ export function captureSchedule(db,settings=db.settings){
  const next=normalizeProgram(db),clean=scheduleSettings(settings);if(clean.scheduleMode==='weekdays'){clean.workoutCycle=[];clean.cycleOffset=0;}else clean.weekdayWorkouts={};validateSchedule(clean,next.templates);
  const names=[...new Set((clean.scheduleMode==='weekdays'?Object.values(clean.weekdayWorkouts):clean.workoutCycle).filter(Boolean))];
  const templates=Object.fromEntries(names.map(name=>[name,structuredClone(next.templates[name])])),workoutMeta=Object.fromEntries(names.map(name=>[name,{...structuredClone(next.workoutMeta[name]),revisions:[]}]));
+ const workoutIds=Object.values(workoutMeta).map(m=>m.id);if(new Set(workoutIds).size!==workoutIds.length)throw Error('This plan references two names for the same workout. Use one name or duplicate the workout first.');
  const ids=new Set(Object.values(templates).flat().map(row=>row[6]?.exerciseId));
  return {settings:clean,templates,workoutMeta,exerciseLibrary:structuredClone(next.exerciseLibrary.filter(e=>ids.has(e.id)).map(e=>({...e,revisions:[]})))};
 }
