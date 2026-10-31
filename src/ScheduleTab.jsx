@@ -1,12 +1,16 @@
+import ScheduleEditor from './ScheduleEditor';
+import {programCycle} from './programLibrary';
 import React from 'react';
 import {ChevronLeft,ChevronRight} from 'lucide-react';
 import {cycle,workouts,isoToday,scheduledWorkout} from './data';
 import CalorieSection from './CalorieSection';
 
-export default function ScheduleTab({db,setTab,setDate,viewWeek,setViewWeek,weekDates}){
+export default function ScheduleTab({db,patch,setTab,setDate,viewWeek,setViewWeek,weekDates}){
+  const fixed=db.settings.scheduleMode==='weekdays',rotation=fixed?Array.from({length:7},(_,i)=>db.settings.weekdayWorkouts?.[i+1]||null):programCycle(db.settings);
   const completedInWeek=weekDates.filter(d=>db.sessions.some(s=>s.date===d&&s.finished)).length;
   const plannedInWeek=weekDates.filter(d=>!!scheduledWorkout(d,db.settings)).length;
   return <>
+    <ScheduleEditor {...{db,patch}}/>
     <CalorieSection title="Weekly rotation"
       description="Browse your training calendar and open any date to log or review a workout."
       summary={completedInWeek+' / '+plannedInWeek+' planned sessions'}>
@@ -28,14 +32,14 @@ export default function ScheduleTab({db,setTab,setDate,viewWeek,setViewWeek,week
           {session?.finished&&<em>✓ Done</em>}
         </button>;
       })}</div>
-      <p className="muted note">Completed or manually logged sessions appear on their dates. The planned rotation advances on training days even when a workout is skipped. Change the rotation offset under Settings if needed.</p>
+      <p className="muted note">Completed or manually logged sessions appear on their dates. The planned rotation advances on training days even when a workout is skipped. Edit your rotation or weekday assignments above.</p>
     </CalorieSection>
-    <CalorieSection title="Six-workout cycle"
-      description="Preview all six session templates in your repeating training rotation."
-      summary={cycle.length+' workout templates'}>
-      <div className="cyclegrid">{cycle.map((name,i)=><div className="cycleitem" key={name}>
-        <span>{i+1}</span><strong>{name}</strong>
-        <small>{(db.templates?.[name]||workouts[name]).length} exercises</small>
+    <CalorieSection title="Workout cycle"
+      description="Preview the reusable workouts in your current repeating training rotation."
+      summary={fixed?'Fixed weekday assignments':rotation.length+' rotation slots'}>
+      <div className="cyclegrid">{rotation.map((name,i)=><div className="cycleitem" key={name+i}>
+        <span>{fixed?['Mon','Tue','Wed','Thu','Fri','Sat','Sun'][i]:i+1}</span><strong>{name||'Rest'}</strong>
+        <small>{(db.templates?.[name]||workouts[name]||[]).length} exercises</small>
       </div>)}</div>
     </CalorieSection>
   </>;

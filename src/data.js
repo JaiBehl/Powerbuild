@@ -1,3 +1,4 @@
+import {resistanceConfig} from './resistance.js';
 import {isISODate} from './dates.js';
 import {normalizeTemplates} from './workoutOperations.js';
 export const cycle=['Push A','Pull A','Legs A','Push B','Pull B','Legs B'];
@@ -79,27 +80,32 @@ export const isoToday=()=>{
 export function scheduledWorkout(date,settings){
  if(!isISODate(date)||!isISODate(settings.startDate))return null;
  const start=new Date(settings.startDate+'T12:00:00Z'),end=new Date(date+'T12:00:00Z'),diff=Math.round((end-start)/86400000);
- if(diff<0)return null;let count=0;const schedule=settings.schedule||[];
+ if(diff<0)return null;if(settings.scheduleMode==='weekdays')return settings.weekdayWorkouts?.[((end.getUTCDay()+6)%7)+1]||null;let count=0;const schedule=settings.schedule||[];
  for(let i=0;i<=diff;i++){const day=new Date(start.getTime()+i*86400000).getUTCDay();if(schedule.includes(((day+6)%7)+1))count++;}
  if(!schedule.includes(((end.getUTCDay()+6)%7)+1))return null;
- return cycle[((count-1+(settings.cycleOffset||0))%6+6)%6];
+ const rotation=Array.isArray(settings.workoutCycle)?settings.workoutCycle:cycle;if(!rotation.length)return null;
+ return rotation[((count-1+(Number(settings.cycleOffset)||0))%rotation.length+rotation.length)%rotation.length];
 }
 
 export function createSession(type,date,templates=workouts){
+  const rows=normalizeTemplates(templates)[type]||normalizeTemplates(workouts)[type];
+  if(!rows)throw Error('Choose a saved workout template.');
   return {
     id:(globalThis.crypto?.randomUUID?.()||Date.now().toString(36)),
     date,
     type,
     notes:'',
     finished:false,
-    exercises:(normalizeTemplates(templates)[type]||normalizeTemplates(workouts)[type]).map((e,i)=>({
+    exercises:rows.map((e,i)=>({
       id:globalThis.crypto?.randomUUID?.()||'exercise-'+Date.now()+'-'+i,
       templateId:e[5],
+      ...(e[6]?.exerciseId?{libraryExerciseId:e[6].exerciseId}:{}),
       name:e[0],
       range:e[2],
       target:e[3],
       kind:e[4]||'accessory',
-      sets:Array.from({length:e[1]},(_,j)=>({weight:'',reps:'',rpe:'',done:false,tag:e[4]==='strength'?(j===0?'Top':'Backoff'):''})),
+      resistance:resistanceConfig(e[6],e[0]).resistance,
+      sets:Array.from({length:e[1]},(_,j)=>({weight:resistanceConfig(e[6],e[0]).resistance==='bodyweight'?resistanceConfig(e[6],e[0]).defaultAddedWeight:'',reps:'',rpe:'',done:false,tag:e[4]==='strength'?(j===0?'Top':'Backoff'):''})),
     })),
   };
 }

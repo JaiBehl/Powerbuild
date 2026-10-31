@@ -27,7 +27,7 @@ export function exerciseChoices(names,aliases={}){return [...new Set(names.map(n
 export function buildStrengthHistory(sessions,aliases={}){
  const history={};
  for(const session of sessions)for(const exercise of session.exercises)for(const set of exercise.sets){
-  if(!set.done)continue;const name=resolveExerciseName(exercise.name,aliases);
+  if(!set.done||exercise.resistance==='bodyweight')continue;const name=resolveExerciseName(exercise.name,aliases);
   const estimated=e1rm(set.weight,set.reps,set.rpe,name);
   const achieved=Number(set.reps)===1&&Number.isFinite(Number(set.weight))&&Number(set.weight)>0?Number(set.weight):null;
   const value=estimated??achieved;if(value===null)continue;
@@ -37,7 +37,7 @@ export function buildStrengthHistory(sessions,aliases={}){
 }
 
 export function exerciseNames(db){
- return exerciseChoices(['Barbell bench press','Barbell back squat','Supported seated barbell OHP',...Object.values(db.templates||{}).flat().map(e=>e[0]),...(db.sessions||[]).flatMap(s=>s.exercises.map(e=>e.name)),...(db.strengthGoals||[]).map(g=>g.exercise)],db.exerciseAliases);
+ return exerciseChoices(['Barbell bench press','Barbell back squat','Supported seated barbell OHP',...(db.exerciseLibrary||[]).map(e=>e.name),...Object.values(db.templates||{}).flat().map(e=>e[0]),...(db.sessions||[]).flatMap(s=>s.exercises.map(e=>e.name)),...(db.strengthGoals||[]).map(g=>g.exercise)],db.exerciseAliases);
 }
 export function selectedExerciseName(selected,db){
  const names=exerciseNames(db),resolved=resolveExerciseName(selected,db.exerciseAliases);

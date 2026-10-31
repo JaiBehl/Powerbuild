@@ -1,3 +1,6 @@
+import ExerciseLibrary from './ExerciseLibrary';
+import WorkoutLibrary from './WorkoutLibrary';
+import {normalizeProgram,activeWorkoutNames} from './programLibrary';
 import {validCloudSnapshot} from './syncMerge';
 import {PanelScopeContext} from './panelScope';
 import {saveRecoveryPoint,listRecoveryPoints} from './recovery';
@@ -8,7 +11,7 @@ import {normalizeDayPlans,normalizeCalorieSettings} from './nutrition';
 import {normalizeTemplates} from './workoutOperations';
 import React,{useEffect,useMemo,useRef,useState} from 'react';
 import {createRoot} from 'react-dom/client';
-import {Dumbbell,CalendarDays,ChartNoAxesCombined,Settings as SettingsIcon,Target,Flame} from 'lucide-react';
+import {Dumbbell,CalendarDays,ChartNoAxesCombined,Settings as SettingsIcon,Target,Flame,BookOpen} from 'lucide-react';
 import {workouts,initialSettings,legacyStrengthGoals,isoToday,scheduledWorkout,createSession,e1rm} from './data';
 import TrainTab from './TrainTab';
 import ScheduleTab from './ScheduleTab';
@@ -28,7 +31,7 @@ const cloneTemplates=()=>JSON.parse(JSON.stringify(workouts));
 function normalizeDb(x={},options={}){
   const incomingSettings={...initialSettings,...(x.settings||{})};
   const hasExplicitGoals=Array.isArray(x.strengthGoals);
-  return normalizeDayPlans({
+  return normalizeProgram(normalizeDayPlans({
     settings:incomingSettings,
     strengthGoals:hasExplicitGoals?x.strengthGoals:(options.migrateLegacyGoals?legacyStrengthGoals(incomingSettings.strengthDeadline):[]),
     sessions:Array.isArray(x.sessions)?x.sessions:[],
@@ -37,8 +40,12 @@ function normalizeDb(x={},options={}){
     savedFoods:Array.isArray(x.savedFoods)?x.savedFoods:[],
     exerciseAliases:x.exerciseAliases&&typeof x.exerciseAliases==='object'&&!Array.isArray(x.exerciseAliases)?x.exerciseAliases:{},
     calorieSettings:normalizeCalorieSettings(x.calorieSettings||{}),
+    workoutMeta:x.workoutMeta,
+    exerciseLibrary:x.exerciseLibrary,
+    savedSchedules:Array.isArray(x.savedSchedules)?x.savedSchedules:[],
+    scheduleLog:Array.isArray(x.scheduleLog)?x.scheduleLog:[],
     templates:normalizeTemplates(x.templates&&typeof x.templates==='object'&&!Array.isArray(x.templates)?x.templates:cloneTemplates()),
-  });
+  }));
 }
 
 const freshDb=()=>normalizeDb({strengthGoals:[]});
@@ -153,7 +160,7 @@ function App(){
   const scheduled=scheduledWorkout(date,db.settings);
   const session=db.sessions.find(s=>s.date===date);
   const updateSession=(fn)=>{if(!session)return;patch(p=>({...p,sessions:p.sessions.map(s=>s.id===session.id?fn(s):s)}))};
-  const start=(type)=>{const s=createSession(type,date,db.templates||workouts);patch(p=>({...p,sessions:[...p.sessions.filter(x=>x.date!==date),s]}));setShowManual(false)};
+  const start=(type)=>{try{if(!activeWorkoutNames(db).includes(type))throw Error('Choose an active saved workout.');const s={...createSession(type,date,db.templates||workouts),workoutId:db.workoutMeta?.[type]?.id};patch(p=>({...p,sessions:[...p.sessions.filter(x=>x.date!==date),s]}));setShowManual(false);}catch(e){setStorageError(e.message);}};
   const changeDate=days=>setDate(addCalendarDays(date,days));
   const weekDates=Array.from({length:7},(_,i)=>addCalendarDays(startOfWeek(isoToday()),7*viewWeek+i));
 
@@ -229,8 +236,8 @@ function App(){
   const exportJson=()=>download(`powerbuild-${safeProfileName}-backup.json`,JSON.stringify(db,null,2),'application/json');
   const exportCsv=()=>{
     const unit=unitName(db.settings.units);
-    const rows=[['Date','Workout','Exercise','Set',`Weight (${unit})`,'Reps','RPE','Set type','Completed']];
-    db.sessions.forEach(s=>s.exercises.forEach(e=>e.sets.forEach((v,i)=>rows.push([s.date,s.type,e.name,i+1,v.weight===''?'':toDisplayWeight(v.weight,db.settings.units,2),v.reps,v.rpe,v.tag,v.done]))));
+    const rows=[['Date','Workout','Exercise','Set',`Weight (${unit})`,'Reps','RPE','Set type','Completed','Resistance','Load basis']];
+    db.sessions.forEach(s=>s.exercises.forEach(e=>e.sets.forEach((v,i)=>rows.push([s.date,s.type,e.name,i+1,v.weight===''?'':toDisplayWeight(v.weight,db.settings.units,2),v.reps,v.rpe,v.tag,v.done,e.resistance||'external',e.resistance==='bodyweight'?'Added weight':'External load']))));
     download(`powerbuild-${safeProfileName}-sets.csv`,rows.map(r=>r.map(v=>'"'+String(v??'').replaceAll('"','""')+'"').join(',')).join('\n'),'text/csv');
   };
   async function importJson(ev){
@@ -269,7 +276,8 @@ function App(){
 
   const headings={
     today:['Workout logger','Log every set, track overload, and protect recovery.'],
-    calendar:['Rolling PPL schedule',`${db.settings.schedule.length} training days. Six sessions in continuous rotation.`],
+    calendar:['Workout schedule',db.settings.scheduleMode==='weekdays'?'Fixed weekday workout assignments.':`${db.settings.schedule.length} training days. Saved workouts in your training rotation.`],
+    library:['Training library','Build reusable workouts and manage your saved training plans.'],
     progress:['Strength & progress','See trends instead of guessing from individual sessions.'],
     calories:['Calorie & macro tracker','Calculate your daily targets and log nutrition.'],
     settings:['Preferences & backups','Your plan, goals, and local data.'],
@@ -280,7 +288,7 @@ function App(){
   return <PanelScopeContext.Provider value={[profileState.activeProfileId,tab]}><div className="app">
     <aside className="sidebar">
       <div className="brand"><div className="brand-icon"><Dumbbell size={24}/></div><div><strong>POWERBUILD</strong><small>STRENGTH × PHYSIQUE</small></div></div>
-      <nav>{[['today',Dumbbell,'Train'],['calendar',CalendarDays,'Schedule'],['progress',ChartNoAxesCombined,'Progress'],['calories',Flame,'Calorie tracker'],['settings',SettingsIcon,'Settings & backup']].map(([id,Icon,label])=><button key={id} className={tab===id?'active':''} onClick={()=>setTab(id)}><Icon size={19}/>{label}</button>)}</nav>
+      <nav>{[['today',Dumbbell,'Train'],['calendar',CalendarDays,'Schedule'],['library',BookOpen,'Library'],['progress',ChartNoAxesCombined,'Progress'],['calories',Flame,'Calorie tracker'],['settings',SettingsIcon,'Settings & backup']].map(([id,Icon,label])=><button key={id} className={tab===id?'active':''} onClick={()=>setTab(id)}><Icon size={19}/>{label}</button>)}</nav>
       <ProfileSwitcher profiles={profileState.profiles} activeId={profileState.activeProfileId} onSwitch={switchProfile} onCreate={createProfile} onRename={renameProfile} onDelete={deleteProfile}/>
       <CloudPanel cloud={cloud}/>
       <div className="side-foot">Data is saved on this device first. Sign in to sync across devices. Keep a backup.</div>
@@ -290,7 +298,8 @@ function App(){
       {undoPoint&&<div className="recovery-banner" role="status"><span>A recovery copy was saved before this change.</span><button className="secondary" onClick={undo}>Undo last change</button><button className="textbtn" onClick={()=>setUndoPoint(null)}>Dismiss</button></div>}
       <header><div><p className="eyebrow">POWERBUILD TRACKER</p><h1>{title}</h1><p className="muted">{subtitle}</p></div><span className="goalpill"><Target size={15}/> {toDisplayWeight(db.settings.targetWeight,db.settings.units,1)} {unit} · {db.settings.weightDeadline}</span></header>
       {tab==='today'&&<TrainTab {...{db,patch,date,setDate,scheduled,session,updateSession,start,showManual,setShowManual,manualType,setManualType,changeDate}}/>}
-      {tab==='calendar'&&<ScheduleTab {...{db,setTab,setDate,viewWeek,setViewWeek,weekDates}}/>}
+      {tab==='calendar'&&<ScheduleTab {...{db,patch,setTab,setDate,viewWeek,setViewWeek,weekDates}}/>}
+      {tab==='library'&&<><WorkoutLibrary {...{db,patch}} onChooseWorkout={name=>{setManualType(name);setShowManual(true);setTab('today');}}/><ExerciseLibrary {...{db,patch}}/></>}
       {tab==='progress'&&<ProgressTab {...{db,patch,date,setDate,setTab,weightEntry,setWeightEntry,history,chartLift,setChartLift,chartData,finished,latestWeight}}/>}
       {tab==='calories'&&<CalorieTracker {...{db,patch,date,setDate,entry:calorieEntry,setEntry:setCalorieEntry}}/>}
       {tab==='settings'&&<SettingsTab {...{db,patch,patchSettings,exportJson,exportCsv,importJson,importError,cloneTemplates,importHistoricalJson,historyImportStatus}} onExportWorkspace={()=>download('powerbuild-all-profiles-backup.json',JSON.stringify(workspaceSnapshot(),null,2),'application/json')} onRestoreWorkspace={restoreWorkspace} profileId={profileState.activeProfileId} profileName={activeProfile?.name||'My profile'} cloudEnabled={!!cloud.user&&['synced','saving'].includes(cloud.status)}/>} 
