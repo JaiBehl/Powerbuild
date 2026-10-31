@@ -1,14 +1,14 @@
 import {cycle} from './data.js';
 import {normalizeTemplates,replaceWorkoutRows} from './workoutOperations.js';
-export const libraryId=()=>globalThis.crypto?.randomUUID?.()||'library-'+Date.now()+'-'+Math.random().toString(36).slice(2);
-export const libraryDate=value=>value&&Number.isFinite(Date.parse(value))?new Date(value).toLocaleString(undefined,{year:'numeric',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'Existing / imported';
+import {libraryId,validLibraryName} from './libraryCore.js';
+import {normalizeExerciseLibrary} from './exerciseLibrary.js';
+export {libraryId,libraryDate,validLibraryName} from './libraryCore.js';
 export const programCycle=settings=>Array.isArray(settings.workoutCycle)?settings.workoutCycle:cycle;
 const key=name=>String(name||'').trim().toLowerCase();
-export function validLibraryName(value){const name=String(value||'').trim();if(!name||name.length>100||['__proto__','constructor','prototype'].includes(key(name)))throw Error('Enter a name of 1–100 characters.');return name;}
-export function normalizeProgram(db){
+export function normalizeProgram(db,options={}){
  const templates=normalizeTemplates(db.templates||{}),meta={};
  for(const name of Object.keys(templates)){const old=db.workoutMeta?.[name];meta[name]={id:old?.id||'workout:'+encodeURIComponent(name),description:'',createdAt:null,updatedAt:null,archived:false,revisions:[],...old,name};}
- return {...db,templates,workoutMeta:meta,sessions:(db.sessions||[]).map(s=>s.workoutId||!Object.hasOwn(meta,s.type)?s:{...s,workoutId:meta[s.type].id})};
+ return normalizeExerciseLibrary({...db,templates,workoutMeta:meta,sessions:(db.sessions||[]).map(s=>s.workoutId||!Object.hasOwn(meta,s.type)?s:{...s,workoutId:meta[s.type].id})},options);
 }
 export const activeWorkoutNames=db=>Object.keys(db.templates||{}).filter(name=>!db.workoutMeta?.[name]?.archived).sort((a,b)=>a.localeCompare(b));
 export function workoutEntry(db,id){return Object.entries(db.workoutMeta||{}).find(([,m])=>m.id===id);}
@@ -22,13 +22,13 @@ export function saveWorkout(db,{id,name,description='',rows=[],expectedSignature
  if(id&&!old)throw Error('This workout no longer exists.');
  if(expectedSignature!==undefined&&expectedSignature!==workoutSignature(next,id))throw Error('This workout changed since you opened it. Reload it before saving.');
  if(Object.keys(next.templates).some(n=>key(n)===key(name)&&n!==old?.[0]))throw Error('A workout with that name already exists.');
- const clean=validateRows(rows),now=new Date().toISOString();
- if(!old){if(Object.keys(next.templates).length>=500)throw Error('Workout library limit reached.');return {...next,templates:{...next.templates,[name]:clean},workoutMeta:{...next.workoutMeta,[name]:{id:libraryId(),name,description:String(description).slice(0,2000),createdAt:now,updatedAt:now,archived:false,revisions:[]}}};}
+ const clean=validateRows(rows).map(row=>{const linked=next.exerciseLibrary.find(e=>e.id===row[6]?.exerciseId);if(linked)row[0]=linked.name;return row;}),now=new Date().toISOString();
+ if(!old){if(Object.keys(next.templates).length>=500)throw Error('Workout library limit reached.');return normalizeProgram({...next,templates:{...next.templates,[name]:clean},workoutMeta:{...next.workoutMeta,[name]:{id:libraryId(),name,description:String(description).slice(0,2000),createdAt:now,updatedAt:now,archived:false,revisions:[]}}},{newEntryDate:now});}
  const oldName=old[0];next=replaceWorkoutRows(next,oldName,clean);
  const meta={...next.workoutMeta[oldName],name,description:String(description).slice(0,2000)};
  const templates={...next.templates},workoutMeta={...next.workoutMeta};delete templates[oldName];delete workoutMeta[oldName];templates[name]=clean;workoutMeta[name]=meta;
  const settings={...next.settings};if(oldName!==name){settings.workoutCycle=programCycle(settings).map(n=>n===oldName?name:n);if(settings.weekdayWorkouts)settings.weekdayWorkouts=Object.fromEntries(Object.entries(settings.weekdayWorkouts).map(([day,n])=>[day,n===oldName?name:n]));}
- return {...next,templates,workoutMeta,settings};
+ return normalizeProgram({...next,templates,workoutMeta,settings},{newEntryDate:now});
 }
 export function duplicateWorkout(db,id){const next=normalizeProgram(db),entry=workoutEntry(next,id);if(!entry)throw Error('Workout no longer exists.');const base=entry[0].slice(0,90);let name=base+' copy',i=2;while(Object.keys(next.templates).some(n=>key(n)===key(name)))name=base+' copy '+i++;
  return saveWorkout(next,{name,description:entry[1].description,rows:next.templates[entry[0]].map(row=>{const r=structuredClone(row);r[5]=libraryId();return r;})});}

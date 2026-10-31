@@ -98,6 +98,7 @@ export function createSession(type,date,templates=workouts){
     exercises:rows.map((e,i)=>({
       id:globalThis.crypto?.randomUUID?.()||'exercise-'+Date.now()+'-'+i,
       templateId:e[5],
+      libraryExerciseId:e[6]?.exerciseId,
       name:e[0],
       range:e[2],
       target:e[3],

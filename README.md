@@ -42,6 +42,10 @@ Source access is still required for edits. Current workouts, foods, goals and pr
 
 ### Training library
 
+- **Exercise library / Exercise editor** keep reusable definitions with default sets, rep ranges, effort, creation/update dates, duplication, archive and 10-version edit history. Existing template and historical names seed the catalog without inventing original dates. New exercises created through the workout/session editors enter the same catalog.
+- Workout templates and Train can reuse saved exercises. Exercise renames update linked future templates and add an old-label link for progress continuity; existing session names/sets are not rewritten. Applying new default prescriptions to linked templates is explicit. Per-workout overrides remain possible, and changing an exercise name directly in a template detaches its old catalog link.
+
+
 - **Library → Workout library** lists every saved workout with creation/update dates, search, duplication and an archived-workout view. Existing templates migrate with stable IDs without inventing historical creation dates.
 - **Workout editor** creates and edits the reusable template, including name, description, exercise order, set counts, rep ranges, effort targets and strength/accessory focus. Edits affect new sessions; logged sessions retain their original names/sets. Select in Train chooses the workout without overwriting an occupied date.
 - Renames update the active rotation while stable workout IDs keep old session-to-template links usable. Session-only edits remain the default in Train. Future-template edits also enter workout edit history.
@@ -245,6 +249,7 @@ First-device migration: export backups on the device with existing data, sign in
 | `cardio[]` | `{id,name,durationMinutes,calories}` |
 | `savedFoods` | Per-one-serving `{id,name,meal,calories,protein,carbs,fat}` |
 | `calorieSettings` | Defaults for baseline, demographics, weight mode, activity, macro rates and manual overrides |
+| `exerciseLibrary` | Reusable `{id,name,sets,range,target,kind,createdAt,updatedAt,archived,revisions}` definitions; template row `[6].exerciseId` links them |
 | `workoutMeta` | Workout name → `{id,name,description,createdAt,updatedAt,archived,revisions}`; up to 10 previous template versions |
 | `settings.workoutCycle` | Optional ordered workout-name rotation; missing uses the original six, empty means no planned workouts |
 | `templates` | Workout → tuples `[name,setCount,repRange,effortTarget,kind?,templateId]` |
@@ -299,6 +304,7 @@ Explicit correction updates records owned by the same import ID. Optional remova
 | `index.html`, `src/main.jsx` | Entry; app state, normalization/migration, profiles, dates, exports/imports, undo and persistence orchestration |
 | `src/data.js`, `src/dates.js` | Default program/settings, session factory, estimator compatibility export, strict dates and calendar arithmetic |
 | `src/TrainTab.jsx`, `src/workoutOperations.js` | Workout UI, explicit template edits and stable identity matching |
+| `src/ExerciseLibrary.jsx`, `src/exerciseLibrary.js`, `src/libraryCore.js` | Exercise catalog/editor, migration, linked template updates, archive, revisions and shared library helpers |
 | `src/WorkoutLibrary.jsx`, `src/programLibrary.js` | Reusable workout library/editor, stable identity, rename/duplicate/archive and version restore |
 | `src/ScheduleTab.jsx` | Weekly schedule and six-session preview |
 | `src/ProgressTab.jsx` | Goal summaries, charts and all-years histories |

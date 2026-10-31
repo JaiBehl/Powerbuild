@@ -76,7 +76,7 @@ export default function SettingsTab({db,patch,patchSettings,exportJson,exportCsv
     <RecoveryPanel db={db} patch={patch} profileId={profileId} profileName={profileName} onRestoreWorkspace={onRestoreWorkspace} onExportWorkspace={onExportWorkspace}/>
     <CalorieSection title="Reset profile" description={"Permanently erase workouts, nutrition, goals and settings for "+profileName+" only."} summary={profileName} className="warning">
       <p className="muted">Clears only this profile's workout logs, weight entries, nutrition, strength goals, custom exercises, and settings. Other profiles are untouched. Back up your profile first.</p>
-      <button className="danger" onClick={()=>{if(confirm(`Erase all data in ${profileName}? Other profiles will not be affected.`))patch({settings:{...initialSettings},strengthGoals:[],sessions:[],weights:[],calories:[],savedFoods:[],exerciseAliases:{},workoutMeta:{},calorieSettings:{...calorieDefaults},templates:cloneTemplates()},{checkpoint:'Before profile reset'})}}><RotateCcw size={16}/> Reset profile</button>
+      <button className="danger" onClick={()=>{if(confirm(`Erase all data in ${profileName}? Other profiles will not be affected.`))patch({settings:{...initialSettings},strengthGoals:[],sessions:[],weights:[],calories:[],savedFoods:[],exerciseAliases:{},workoutMeta:{},exerciseLibrary:[],calorieSettings:{...calorieDefaults},templates:cloneTemplates()},{checkpoint:'Before profile reset'})}}><RotateCcw size={16}/> Reset profile</button>
     </CalorieSection>
   </>;
 }

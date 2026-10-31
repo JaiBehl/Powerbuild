@@ -1,3 +1,4 @@
+import ExerciseLibrary from './ExerciseLibrary';
 import WorkoutLibrary from './WorkoutLibrary';
 import {normalizeProgram,activeWorkoutNames} from './programLibrary';
 import {validCloudSnapshot} from './syncMerge';
@@ -40,6 +41,7 @@ function normalizeDb(x={},options={}){
     exerciseAliases:x.exerciseAliases&&typeof x.exerciseAliases==='object'&&!Array.isArray(x.exerciseAliases)?x.exerciseAliases:{},
     calorieSettings:normalizeCalorieSettings(x.calorieSettings||{}),
     workoutMeta:x.workoutMeta,
+    exerciseLibrary:x.exerciseLibrary,
     templates:normalizeTemplates(x.templates&&typeof x.templates==='object'&&!Array.isArray(x.templates)?x.templates:cloneTemplates()),
   }));
 }
@@ -295,7 +297,7 @@ function App(){
       <header><div><p className="eyebrow">POWERBUILD TRACKER</p><h1>{title}</h1><p className="muted">{subtitle}</p></div><span className="goalpill"><Target size={15}/> {toDisplayWeight(db.settings.targetWeight,db.settings.units,1)} {unit} · {db.settings.weightDeadline}</span></header>
       {tab==='today'&&<TrainTab {...{db,patch,date,setDate,scheduled,session,updateSession,start,showManual,setShowManual,manualType,setManualType,changeDate}}/>}
       {tab==='calendar'&&<ScheduleTab {...{db,setTab,setDate,viewWeek,setViewWeek,weekDates}}/>}
-      {tab==='library'&&<WorkoutLibrary {...{db,patch}} onChooseWorkout={name=>{setManualType(name);setShowManual(true);setTab('today');}}/>}
+      {tab==='library'&&<><WorkoutLibrary {...{db,patch}} onChooseWorkout={name=>{setManualType(name);setShowManual(true);setTab('today');}}/><ExerciseLibrary {...{db,patch}}/></>}
       {tab==='progress'&&<ProgressTab {...{db,patch,date,setDate,setTab,weightEntry,setWeightEntry,history,chartLift,setChartLift,chartData,finished,latestWeight}}/>}
       {tab==='calories'&&<CalorieTracker {...{db,patch,date,setDate,entry:calorieEntry,setEntry:setCalorieEntry}}/>}
       {tab==='settings'&&<SettingsTab {...{db,patch,patchSettings,exportJson,exportCsv,importJson,importError,cloneTemplates,importHistoricalJson,historyImportStatus}} onExportWorkspace={()=>download('powerbuild-all-profiles-backup.json',JSON.stringify(workspaceSnapshot(),null,2),'application/json')} onRestoreWorkspace={restoreWorkspace} profileId={profileState.activeProfileId} profileName={activeProfile?.name||'My profile'} cloudEnabled={!!cloud.user&&['synced','saving'].includes(cloud.status)}/>} 

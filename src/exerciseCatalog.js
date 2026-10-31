@@ -37,7 +37,7 @@ export function buildStrengthHistory(sessions,aliases={}){
 }
 
 export function exerciseNames(db){
- return exerciseChoices(['Barbell bench press','Barbell back squat','Supported seated barbell OHP',...Object.values(db.templates||{}).flat().map(e=>e[0]),...(db.sessions||[]).flatMap(s=>s.exercises.map(e=>e.name)),...(db.strengthGoals||[]).map(g=>g.exercise)],db.exerciseAliases);
+ return exerciseChoices(['Barbell bench press','Barbell back squat','Supported seated barbell OHP',...(db.exerciseLibrary||[]).map(e=>e.name),...Object.values(db.templates||{}).flat().map(e=>e[0]),...(db.sessions||[]).flatMap(s=>s.exercises.map(e=>e.name)),...(db.strengthGoals||[]).map(g=>g.exercise)],db.exerciseAliases);
 }
 export function selectedExerciseName(selected,db){
  const names=exerciseNames(db),resolved=resolveExerciseName(selected,db.exerciseAliases);
