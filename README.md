@@ -40,10 +40,18 @@ Source access is still required for edits. Current workouts, foods, goals and pr
 
 ## Features by tab
 
+### Training library
+
+- **Library → Workout library** lists every saved workout with creation/update dates, search, duplication and an archived-workout view. Existing templates migrate with stable IDs without inventing historical creation dates.
+- **Workout editor** creates and edits the reusable template, including name, description, exercise order, set counts, rep ranges, effort targets and strength/accessory focus. Edits affect new sessions; logged sessions retain their original names/sets. Select in Train chooses the workout without overwriting an occupied date.
+- Renames update the active rotation while stable workout IDs keep old session-to-template links usable. Session-only edits remain the default in Train. Future-template edits also enter workout edit history.
+- Up to 10 previous workout versions can be restored. Archiving retains the workout and its logs; active schedule references must be removed first. Library data is profile-scoped and survives backup, recovery and cloud snapshot normalization.
+
+
 ### Train
 
 - Date picker, previous/next day and Today; scheduled-workout/rest label. Date is shared with Progress and nutrition.
-- Start the scheduled workout or any of six workout types manually, including on rest days. The model is one session per date.
+- Start the scheduled workout or any active saved workout manually, including on rest days. The model is one session per date.
 - Each exercise logs weight, reps, optional RPE, done flag and Top/Backoff tag; add/remove sets. Overview shows completed/total sets, completed volume and finished status.
 - Add any exercise; edit name, rep range or effort; remove an exercise. By default these affect only this session. The explicit future-template checkbox also updates the matching template. Ambiguous older links are rejected instead of changing the wrong exercise.
 - New custom exercises start at three sets, 8–12 reps, 1–2 RIR. Individual set-count changes affect the session, not the future template.
@@ -234,6 +242,8 @@ First-device migration: export backups on the device with existing data, sign in
 | `cardio[]` | `{id,name,durationMinutes,calories}` |
 | `savedFoods` | Per-one-serving `{id,name,meal,calories,protein,carbs,fat}` |
 | `calorieSettings` | Defaults for baseline, demographics, weight mode, activity, macro rates and manual overrides |
+| `workoutMeta` | Workout name → `{id,name,description,createdAt,updatedAt,archived,revisions}`; up to 10 previous template versions |
+| `settings.workoutCycle` | Optional ordered workout-name rotation; missing uses the original six, empty means no planned workouts |
 | `templates` | Workout → tuples `[name,setCount,repRange,effortTarget,kind?,templateId]` |
 
 Fresh defaults: start `2026-10-12`, 180 → 160 lb, weight deadline `2027-04-12`, strength deadline `2027-10-12`, lb, weekdays `[1,2,3,5,6]`, offset 0. Empty logs/goals/library; cloned program. Nutrition defaults: ten Haaf athlete RMR; living factor 1.2; saved custom baseline field 2,300 (used only in custom mode); 71 in; male; age 18; automatic weight; four walking miles at 22.5 min/mile; zero running; lifted 1.5 h at 3.5 MET; calculated maintenance/targets; protein 1 g/lb and fat 0.3 g/lb. Actual saved values take precedence.
@@ -286,6 +296,7 @@ Explicit correction updates records owned by the same import ID. Optional remova
 | `index.html`, `src/main.jsx` | Entry; app state, normalization/migration, profiles, dates, exports/imports, undo and persistence orchestration |
 | `src/data.js`, `src/dates.js` | Default program/settings, session factory, estimator compatibility export, strict dates and calendar arithmetic |
 | `src/TrainTab.jsx`, `src/workoutOperations.js` | Workout UI, explicit template edits and stable identity matching |
+| `src/WorkoutLibrary.jsx`, `src/programLibrary.js` | Reusable workout library/editor, stable identity, rename/duplicate/archive and version restore |
 | `src/ScheduleTab.jsx` | Weekly schedule and six-session preview |
 | `src/ProgressTab.jsx` | Goal summaries, charts and all-years histories |
 | `src/exerciseCatalog.js`, `src/ExerciseAliases.jsx` | Canonical movement resolution, shared selectors/history and alias editor |

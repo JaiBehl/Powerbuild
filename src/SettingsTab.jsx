@@ -1,3 +1,4 @@
+import {programCycle} from './programLibrary';
 import RecoveryPanel from './RecoveryPanel';
 import HistoricalImportPanel from './HistoricalImportPanel';
 import ExerciseAliases from './ExerciseAliases';
@@ -44,7 +45,7 @@ export default function SettingsTab({db,patch,patchSettings,exportJson,exportCsv
         <label>Default starting weight ({units})<input type="number" step={units==='kg'?'0.1':'0.5'} value={toDisplayWeight(db.settings.startWeight,units,1)} onChange={e=>patchSettings({startWeight:fromDisplayWeight(e.target.value,units)})}/></label>
         <label>Default target weight ({units})<input type="number" step={units==='kg'?'0.1':'0.5'} value={toDisplayWeight(db.settings.targetWeight,units,1)} onChange={e=>patchSettings({targetWeight:fromDisplayWeight(e.target.value,units)})}/></label>
         <label>Default weight goal deadline<input type="date" value={db.settings.weightDeadline} onChange={e=>patchSettings({weightDeadline:e.target.value})}/></label>
-        <label>Cycle offset (0–5)<select value={db.settings.cycleOffset||0} onChange={e=>patchSettings({cycleOffset:Number(e.target.value)})}>{cycle.map((x,i)=><option value={i} key={i}>{i} — start with {x}</option>)}</select></label>
+        <label>Cycle offset<select value={db.settings.cycleOffset||0} onChange={e=>patchSettings({cycleOffset:Number(e.target.value)})}>{programCycle(db.settings).map((x,i)=><option value={i} key={i}>{i} — start with {x}</option>)}</select></label>
       </div>
       <p className="muted">Bodyweight settings here are defaults for new nutrition dates. To change a recorded day's goal, open that date in Calorie tracker.</p>
       <h3>Training weekdays</h3>
@@ -75,7 +76,7 @@ export default function SettingsTab({db,patch,patchSettings,exportJson,exportCsv
     <RecoveryPanel db={db} patch={patch} profileId={profileId} profileName={profileName} onRestoreWorkspace={onRestoreWorkspace} onExportWorkspace={onExportWorkspace}/>
     <CalorieSection title="Reset profile" description={"Permanently erase workouts, nutrition, goals and settings for "+profileName+" only."} summary={profileName} className="warning">
       <p className="muted">Clears only this profile's workout logs, weight entries, nutrition, strength goals, custom exercises, and settings. Other profiles are untouched. Back up your profile first.</p>
-      <button className="danger" onClick={()=>{if(confirm(`Erase all data in ${profileName}? Other profiles will not be affected.`))patch({settings:{...initialSettings},strengthGoals:[],sessions:[],weights:[],calories:[],savedFoods:[],exerciseAliases:{},calorieSettings:{...calorieDefaults},templates:cloneTemplates()},{checkpoint:'Before profile reset'})}}><RotateCcw size={16}/> Reset profile</button>
+      <button className="danger" onClick={()=>{if(confirm(`Erase all data in ${profileName}? Other profiles will not be affected.`))patch({settings:{...initialSettings},strengthGoals:[],sessions:[],weights:[],calories:[],savedFoods:[],exerciseAliases:{},workoutMeta:{},calorieSettings:{...calorieDefaults},templates:cloneTemplates()},{checkpoint:'Before profile reset'})}}><RotateCcw size={16}/> Reset profile</button>
     </CalorieSection>
   </>;
 }

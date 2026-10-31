@@ -82,17 +82,20 @@ export function scheduledWorkout(date,settings){
  if(diff<0)return null;let count=0;const schedule=settings.schedule||[];
  for(let i=0;i<=diff;i++){const day=new Date(start.getTime()+i*86400000).getUTCDay();if(schedule.includes(((day+6)%7)+1))count++;}
  if(!schedule.includes(((end.getUTCDay()+6)%7)+1))return null;
- return cycle[((count-1+(settings.cycleOffset||0))%6+6)%6];
+ const rotation=Array.isArray(settings.workoutCycle)?settings.workoutCycle:cycle;if(!rotation.length)return null;
+ return rotation[((count-1+(Number(settings.cycleOffset)||0))%rotation.length+rotation.length)%rotation.length];
 }
 
 export function createSession(type,date,templates=workouts){
+  const rows=normalizeTemplates(templates)[type]||normalizeTemplates(workouts)[type];
+  if(!rows)throw Error('Choose a saved workout template.');
   return {
     id:(globalThis.crypto?.randomUUID?.()||Date.now().toString(36)),
     date,
     type,
     notes:'',
     finished:false,
-    exercises:(normalizeTemplates(templates)[type]||normalizeTemplates(workouts)[type]).map((e,i)=>({
+    exercises:rows.map((e,i)=>({
       id:globalThis.crypto?.randomUUID?.()||'exercise-'+Date.now()+'-'+i,
       templateId:e[5],
       name:e[0],

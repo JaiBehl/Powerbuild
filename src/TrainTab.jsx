@@ -1,3 +1,4 @@
+import {activeWorkoutNames} from './programLibrary';
 import PreviousPerformance from './PreviousPerformance';
 import {addSessionExercise,editSessionExercise,removeSessionExercise} from './workoutOperations';
 import React,{useState,useEffect} from 'react';
@@ -11,7 +12,7 @@ export default function TrainTab({db,patch,date,setDate,scheduled,session,update
   const [updateFuture,setUpdateFuture]=useState(false);
   const [exerciseError,setExerciseError]=useState('');
   useEffect(()=>{setUpdateFuture(false);setExerciseError('');},[session?.id]);
-  const units=unitName(db.settings.units);
+  const units=unitName(db.settings.units),available=activeWorkoutNames(db),selectedManual=available.includes(manualType)?manualType:available[0]||'';
   const allSets=session?.exercises.flatMap(e=>e.sets)||[];
   const completed=allSets.filter(x=>x.done).length;
   const total=allSets.length;
@@ -35,7 +36,7 @@ export default function TrainTab({db,patch,date,setDate,scheduled,session,update
 
   return <>
     <div className="datebar"><button className="iconbtn" onClick={()=>changeDate(-1)}><ChevronLeft/></button><input aria-label="Workout date" type="date" value={date} onChange={e=>setDate(e.target.value)}/><button className="iconbtn" onClick={()=>changeDate(1)}><ChevronRight/></button><button className="secondary" onClick={()=>setDate(isoToday())}>Today</button><span className="spacer"/><span className="muted">Scheduled: <b>{scheduled||'Rest day'}</b></span></div>
-    {!session?<CalorieSection title={scheduled||'Recovery day'} description="Start your scheduled session or choose another workout for the selected date." summary={scheduled||'Rest day'} className="train-empty-section"><div className="heroicon"><Dumbbell size={28}/></div><p>{scheduled?'Ready to train? Start this session to record every working set.':'Your schedule has a rest day. You can still log a workout manually.'}</p>{scheduled&&<button className="primary" onClick={()=>start(scheduled)}><Plus size={17}/> Start {scheduled}</button>}<button className="textbtn" onClick={()=>setShowManual(!showManual)}>{showManual?'Hide options':'Start another workout'}</button>{showManual&&<div className="manual"><select value={manualType} onChange={e=>setManualType(e.target.value)}>{cycle.map(c=><option key={c}>{c}</option>)}</select><button className="secondary" onClick={()=>start(manualType)}>Start selected</button></div>}</CalorieSection>:<>
+    {!session?<CalorieSection title={scheduled||'Recovery day'} description="Start your scheduled session or choose another workout for the selected date." summary={scheduled||'Rest day'} className="train-empty-section"><div className="heroicon"><Dumbbell size={28}/></div><p>{scheduled?'Ready to train? Start this session to record every working set.':'Your schedule has a rest day. You can still log a workout manually.'}</p>{scheduled&&<button className="primary" onClick={()=>start(scheduled)}><Plus size={17}/> Start {scheduled}</button>}<button className="textbtn" onClick={()=>setShowManual(!showManual)}>{showManual?'Hide options':'Start another workout'}</button>{showManual&&<div className="manual"><select aria-label="Workout to start" value={selectedManual} onChange={e=>setManualType(e.target.value)}>{available.map(c=><option key={c}>{c}</option>)}</select><button className="secondary" disabled={!selectedManual} onClick={()=>start(selectedManual)}>Start selected</button></div>}</CalorieSection>:<>
       <CalorieSection title="Session overview" description="Track session type, sets completed, total lifting volume and workout status." summary={completed+' / '+total+' sets · '+(session.finished?'Finished':'In progress')}>
       <div className="summary"><div className="metric"><small>SESSION</small><strong>{session.type}</strong></div><div className="metric"><small>SETS COMPLETED</small><strong>{completed}<span> / {total}</span></strong></div><div className="metric"><small>VOLUME</small><strong>{Number(totalVolume||0).toLocaleString()} <span>{units}</span></strong></div><div className="metric"><small>STATUS</small><strong>{session.finished?'Finished':'In progress'}</strong></div></div>
       <label className="weekpick"><input type="checkbox" checked={updateFuture} onChange={e=>setUpdateFuture(e.target.checked)}/> Apply exercise changes to future sessions</label>
