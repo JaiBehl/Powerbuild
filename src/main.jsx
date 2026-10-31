@@ -42,6 +42,8 @@ function normalizeDb(x={},options={}){
     calorieSettings:normalizeCalorieSettings(x.calorieSettings||{}),
     workoutMeta:x.workoutMeta,
     exerciseLibrary:x.exerciseLibrary,
+    savedSchedules:Array.isArray(x.savedSchedules)?x.savedSchedules:[],
+    scheduleLog:Array.isArray(x.scheduleLog)?x.scheduleLog:[],
     templates:normalizeTemplates(x.templates&&typeof x.templates==='object'&&!Array.isArray(x.templates)?x.templates:cloneTemplates()),
   }));
 }
@@ -274,7 +276,7 @@ function App(){
 
   const headings={
     today:['Workout logger','Log every set, track overload, and protect recovery.'],
-    calendar:['Workout schedule',`${db.settings.schedule.length} training days. Saved workouts in your training rotation.`],
+    calendar:['Workout schedule',db.settings.scheduleMode==='weekdays'?'Fixed weekday workout assignments.':`${db.settings.schedule.length} training days. Saved workouts in your training rotation.`],
     library:['Training library','Build reusable workouts and manage your saved training plans.'],
     progress:['Strength & progress','See trends instead of guessing from individual sessions.'],
     calories:['Calorie & macro tracker','Calculate your daily targets and log nutrition.'],
@@ -296,7 +298,7 @@ function App(){
       {undoPoint&&<div className="recovery-banner" role="status"><span>A recovery copy was saved before this change.</span><button className="secondary" onClick={undo}>Undo last change</button><button className="textbtn" onClick={()=>setUndoPoint(null)}>Dismiss</button></div>}
       <header><div><p className="eyebrow">POWERBUILD TRACKER</p><h1>{title}</h1><p className="muted">{subtitle}</p></div><span className="goalpill"><Target size={15}/> {toDisplayWeight(db.settings.targetWeight,db.settings.units,1)} {unit} · {db.settings.weightDeadline}</span></header>
       {tab==='today'&&<TrainTab {...{db,patch,date,setDate,scheduled,session,updateSession,start,showManual,setShowManual,manualType,setManualType,changeDate}}/>}
-      {tab==='calendar'&&<ScheduleTab {...{db,setTab,setDate,viewWeek,setViewWeek,weekDates}}/>}
+      {tab==='calendar'&&<ScheduleTab {...{db,patch,setTab,setDate,viewWeek,setViewWeek,weekDates}}/>}
       {tab==='library'&&<><WorkoutLibrary {...{db,patch}} onChooseWorkout={name=>{setManualType(name);setShowManual(true);setTab('today');}}/><ExerciseLibrary {...{db,patch}}/></>}
       {tab==='progress'&&<ProgressTab {...{db,patch,date,setDate,setTab,weightEntry,setWeightEntry,history,chartLift,setChartLift,chartData,finished,latestWeight}}/>}
       {tab==='calories'&&<CalorieTracker {...{db,patch,date,setDate,entry:calorieEntry,setEntry:setCalorieEntry}}/>}

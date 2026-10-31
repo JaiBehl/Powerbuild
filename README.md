@@ -1,6 +1,6 @@
 # Powerbuild
 
-Powerbuild is a local-first powerbuilding web app: workout/set logging, a rolling push/pull/legs schedule, strength goals and PRs, bodyweight trends, maintenance/macros, individual food logs, saved foods and cardio. Optional Supabase accounts synchronize profiles across devices. React/Vite builds the frontend; Vercel hosts it.
+Powerbuild is a local-first powerbuilding web app: workout/set logging, editable workouts, exercises and saved training schedules, strength goals and PRs, bodyweight trends, maintenance/macros, individual food logs, saved foods and cardio. Optional Supabase accounts synchronize profiles across devices. React/Vite builds the frontend; Vercel hosts it.
 
 This README is the product manual and the handoff for a fresh AI development conversation. Read it with `AGENTS.md`, then inspect current source. Live user logs, private Notes exports and credentials are not included.
 
@@ -67,7 +67,11 @@ Source access is still required for edits. Current workouts, foods, goals and pr
 
 ### Schedule and default program
 
-Cycle: **Push A → Pull A → Legs A → Push B → Pull B → Legs B**, continuing across weeks. Fresh weekdays are Monday/Tuesday/Wednesday/Friday/Saturday. Settings changes weekdays, start date and offset 0–5. Planned rotation advances on scheduled dates even if a workout is skipped. Dates before the start have no plan. Calendar arithmetic is date-only and timezone/DST independent.
+Cycle: **Push A → Pull A → Legs A → Push B → Pull B → Legs B**, continuing across weeks. Fresh weekdays are Monday/Tuesday/Wednesday/Friday/Saturday. Schedule edits weekdays, start date, starting slot and the complete rotation. Settings also retains the rotation weekday/offset controls. Planned rotation advances on scheduled dates even if a workout is skipped. Dates before the start have no plan. Calendar arithmetic is date-only and timezone/DST independent.
+
+**Schedule editor** supports repeating rotations (reorder/add/remove slots, repeat workouts, explicit Rest slots, selected training weekdays) or fixed Monday–Sunday assignments. Changes update planned dates while logged sessions remain unchanged. Apply saves a recovery copy first.
+
+**Saved schedules** stores named complete program snapshots with descriptions, creation/update dates, search, copies, archive/restore and up to 10 previous versions. Loading fills the editor for review; Apply activates it. A saved program includes its referenced workout templates and prescriptions, independent of later edits. Restore workout templates is selectable when applying a saved plan; disabling it uses current templates. Restoration matches stable workout IDs, preserves workout logs and avoids overwriting unrelated name collisions. The **Schedule application log** keeps the last 100 applied programs, each loadable for reuse. Libraries and application history are profile-scoped and included in backups/cloud snapshots.
 
 Browse previous/current/next week, open dates in Train, see finished indicators and completed/planned counts, and preview template exercise counts.
 
@@ -250,9 +254,10 @@ First-device migration: export backups on the device with existing data, sign in
 | `savedFoods` | Per-one-serving `{id,name,meal,calories,protein,carbs,fat}` |
 | `calorieSettings` | Defaults for baseline, demographics, weight mode, activity, macro rates and manual overrides |
 | `exerciseLibrary` | Reusable `{id,name,sets,range,target,kind,createdAt,updatedAt,archived,revisions}` definitions; template row `[6].exerciseId` links them |
+| `savedSchedules`, `scheduleLog` | Named program snapshots with templates/exercises and up to 10 prior versions; last 100 applied schedule snapshots |
 | `workoutMeta` | Workout name → `{id,name,description,createdAt,updatedAt,archived,revisions}`; up to 10 previous template versions |
 | `settings.workoutCycle` | Optional ordered workout-name rotation; missing uses the original six, empty means no planned workouts |
-| `templates` | Workout → tuples `[name,setCount,repRange,effortTarget,kind?,templateId]` |
+| `templates` | Workout → tuples `[name,setCount,repRange,effortTarget,kind?,templateId,exerciseConfig?]` |
 
 Fresh defaults: start `2026-10-12`, 180 → 160 lb, weight deadline `2027-04-12`, strength deadline `2027-10-12`, lb, weekdays `[1,2,3,5,6]`, offset 0. Empty logs/goals/library; cloned program. Nutrition defaults: ten Haaf athlete RMR; living factor 1.2; saved custom baseline field 2,300 (used only in custom mode); 71 in; male; age 18; automatic weight; four walking miles at 22.5 min/mile; zero running; lifted 1.5 h at 3.5 MET; calculated maintenance/targets; protein 1 g/lb and fat 0.3 g/lb. Actual saved values take precedence.
 
@@ -303,6 +308,7 @@ Explicit correction updates records owned by the same import ID. Optional remova
 | --- | --- |
 | `index.html`, `src/main.jsx` | Entry; app state, normalization/migration, profiles, dates, exports/imports, undo and persistence orchestration |
 | `src/data.js`, `src/dates.js` | Default program/settings, session factory, estimator compatibility export, strict dates and calendar arithmetic |
+| `src/ScheduleEditor.jsx`, `src/scheduleLibrary.js` | Rotation/fixed-day editor, program snapshot library, restoration and application log |
 | `src/TrainTab.jsx`, `src/workoutOperations.js` | Workout UI, explicit template edits and stable identity matching |
 | `src/ExerciseLibrary.jsx`, `src/exerciseLibrary.js`, `src/libraryCore.js` | Exercise catalog/editor, migration, linked template updates, archive, revisions and shared library helpers |
 | `src/WorkoutLibrary.jsx`, `src/programLibrary.js` | Reusable workout library/editor, stable identity, rename/duplicate/archive and version restore |
