@@ -27,7 +27,7 @@ export function exerciseChoices(names,aliases={}){return [...new Set(names.map(n
 export function buildStrengthHistory(sessions,aliases={}){
  const history={};
  for(const session of sessions)for(const exercise of session.exercises)for(const set of exercise.sets){
-  if(!set.done)continue;const name=resolveExerciseName(exercise.name,aliases);
+  if(!set.done||exercise.resistance==='bodyweight')continue;const name=resolveExerciseName(exercise.name,aliases);
   const estimated=e1rm(set.weight,set.reps,set.rpe,name);
   const achieved=Number(set.reps)===1&&Number.isFinite(Number(set.weight))&&Number(set.weight)>0?Number(set.weight):null;
   const value=estimated??achieved;if(value===null)continue;

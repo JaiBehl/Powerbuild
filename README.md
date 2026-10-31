@@ -55,13 +55,20 @@ Source access is still required for edits. Current workouts, foods, goals and pr
 - Inactive chart tooltips are removed from layout so their hidden boxes cannot create horizontal page scrolling; active tooltip behavior remains covered.
 
 
+### Bodyweight and weighted calisthenics
+
+- Toggle **Bodyweight exercise** in the exercise editor, each workout-template row or the current session. Bodyweight mode logs **added weight**; zero is bodyweight only. Default added load is reusable; individual sets can vary it. External-load exercises keep their normal weight fields. Both modes convert correctly between lb/kg while storing pounds.
+- The exercise library includes Push-up, Pull-up, Chin-up, Dip, Inverted row and Bodyweight squat. Unambiguous calisthenic names seed bodyweight defaults for future templates; ambiguous “Pull-up or lat pulldown” stays external until explicitly chosen. Existing logged sets retain their prior interpretation. Switching a populated session asks before changing the meaning of its weights and saves recovery; applying mode changes to future templates remains explicit.
+- Absolute strength records includes **Bodyweight exercise records**: most bodyweight-only reps, heaviest added load and best added load at each rep count, all-time/recent, with dated bodyweight context. These sets do not become external-load 1RMs or relative lift/BW ratios. Previous performance matches the resistance mode and labels BW + added weight. External-load volume counts added weight only, without guessing how much body mass a movement displaces.
+- JSON/program snapshots retain mode/default added load. Sets CSV appends Resistance and Load basis columns; its Weight field means added load for bodyweight exercises. No assistance-load calculator or movement-specific effective-mass model is included.
+
 ### Train
 
 - Date picker, previous/next day and Today; scheduled-workout/rest label. Date is shared with Progress and nutrition.
 - Start the scheduled workout or any active saved workout manually, including on rest days. The model is one session per date.
 - Each exercise logs weight, reps, optional RPE, done flag and Top/Backoff tag; add/remove sets. Overview shows completed/total sets, completed volume and finished status.
 - Add any exercise; edit name, rep range or effort; remove an exercise. By default these affect only this session. The explicit future-template checkbox also updates the matching template. Ambiguous older links are rejected instead of changing the wrong exercise.
-- New custom exercises start at three sets, 8–12 reps, 1–2 RIR. Individual set-count changes affect the session, not the future template.
+- New unsaved exercises start at three sets, 8–12 reps, 1–2 RIR; choosing a saved exercise uses its defaults. Individual set-count changes affect the session, not the future template.
 - Previous finished session appears beside the current sets, using movement aliases and current units. It excludes the current/future dates and does not overwrite current inputs.
 - Notes save as typed. Finish/reopen changes status; delete requires confirmation and creates a recovery copy. Finishing does not manually advance the date-based rotation.
 
@@ -200,7 +207,7 @@ npm run test:all
 | `node build.mjs` | Compatibility alias to the active Vite build; no longer an incomplete file copier |
 | `node scripts/production-smoke.mjs` | Read-only public HTML/bundle release check, with rollout retries |
 
-GitHub Actions runs regression tests/builds on PRs and pushes to `main`. Successful main CI then runs the production smoke check. Reports, failure screenshots and traces are retained for seven days as `browser-regression-results` artifacts. The smoke check verifies public bundle capabilities including the calculator date, weigh-in source/date, weekly goal pace, Absolute strength records, BW percentage labels, relative strength records, historical bodyweight estimate labels, RPE-aware records and the resting-metabolism formula control; combine it with Vercel's exact-commit status when checking a deployment.
+GitHub Actions runs regression tests/builds on PRs and pushes to `main`. Successful main CI then runs the production smoke check. Reports, failure screenshots and traces are retained for seven days as `browser-regression-results` artifacts. The smoke check verifies public bundle capabilities including the training libraries, schedule editor, bodyweight/added-load controls, calculator date, weigh-in source/date, weekly goal pace, Absolute strength records, BW percentage labels, relative strength records, historical bodyweight estimate labels, RPE-aware records and the resting-metabolism formula control; combine it with Vercel's exact-commit status when checking a deployment.
 
 Browser tests use a synthetic Supabase host through the Playwright web-server environment. They exercise the real frontend/client against an isolated protocol backend, not the production database. Tests cover two devices, revision races, conflicts, offline/reload/retry, sign-out/stale responses, confirmation redirects, UI/data flows, backups and phone-width layout. Actual inbox delivery and the user's real Mac/iPhone account session are not exercised by CI.
 
@@ -244,7 +251,7 @@ First-device migration: export backups on the device with existing data, sign in
 | `strengthGoals` | `[{id, exercise, targetWeight, deadline}]` |
 | `exerciseAliases` | Normalized logged name → canonical display name; identity overrides permit opting out |
 | `sessions` | `[{id, date, type, notes, finished, exercises}]` |
-| `exercises[]` | `{id, templateId?, name, range, target, kind, sets}` plus optional import provenance |
+| `exercises[]` | `{id, templateId?, libraryExerciseId?, name, range, target, kind, resistance?, sets}` plus optional import provenance |
 | `sets[]` | `{weight, reps, rpe, done, tag}`; blank values may be `''`, entered values can be strings |
 | `weights` | `[{date, weight, id?, sourceImportId?}]`, canonical lb |
 | `calories` | `[{date, items, cardio, plan}]` |
@@ -253,13 +260,14 @@ First-device migration: export backups on the device with existing data, sign in
 | `cardio[]` | `{id,name,durationMinutes,calories}` |
 | `savedFoods` | Per-one-serving `{id,name,meal,calories,protein,carbs,fat}` |
 | `calorieSettings` | Defaults for baseline, demographics, weight mode, activity, macro rates and manual overrides |
-| `exerciseLibrary` | Reusable `{id,name,sets,range,target,kind,createdAt,updatedAt,archived,revisions}` definitions; template row `[6].exerciseId` links them |
+| `exerciseLibrary` | Reusable `{id,name,sets,range,target,kind,resistance,defaultAddedWeight,createdAt,updatedAt,archived,revisions}` definitions; template row `[6].exerciseId` links them |
 | `savedSchedules`, `scheduleLog` | Named program snapshots with templates/exercises and up to 10 prior versions; last 100 applied schedule snapshots |
 | `workoutMeta` | Workout name → `{id,name,description,createdAt,updatedAt,archived,revisions}`; up to 10 previous template versions |
-| `settings.workoutCycle` | Optional ordered workout-name rotation; missing uses the original six, empty means no planned workouts |
+| `settings.scheduleMode`, `settings.weekdayWorkouts` | Rotation or fixed-weekday mode; weekday 1–7 → workout name/null(Rest); missing mode retains legacy rotation |
+| `settings.workoutCycle` | Optional ordered workout-name/null(Rest) rotation; missing uses the original six, empty means no planned workouts |
 | `templates` | Workout → tuples `[name,setCount,repRange,effortTarget,kind?,templateId,exerciseConfig?]` |
 
-Fresh defaults: start `2026-10-12`, 180 → 160 lb, weight deadline `2027-04-12`, strength deadline `2027-10-12`, lb, weekdays `[1,2,3,5,6]`, offset 0. Empty logs/goals/library; cloned program. Nutrition defaults: ten Haaf athlete RMR; living factor 1.2; saved custom baseline field 2,300 (used only in custom mode); 71 in; male; age 18; automatic weight; four walking miles at 22.5 min/mile; zero running; lifted 1.5 h at 3.5 MET; calculated maintenance/targets; protein 1 g/lb and fat 0.3 g/lb. Actual saved values take precedence.
+Fresh defaults: start `2026-10-12`, 180 → 160 lb, weight deadline `2027-04-12`, strength deadline `2027-10-12`, lb, weekdays `[1,2,3,5,6]`, offset 0. Empty logs/goals/saved schedules; workout/exercise libraries seed from the cloned program and built-in calisthenics. Nutrition defaults: ten Haaf athlete RMR; living factor 1.2; saved custom baseline field 2,300 (used only in custom mode); 71 in; male; age 18; automatic weight; four walking miles at 22.5 min/mile; zero running; lifted 1.5 h at 3.5 MET; calculated maintenance/targets; protein 1 g/lb and fat 0.3 g/lb. Actual saved values take precedence.
 
 | Storage key | Meaning |
 | --- | --- |
@@ -312,9 +320,10 @@ Explicit correction updates records owned by the same import ID. Optional remova
 | `src/TrainTab.jsx`, `src/workoutOperations.js` | Workout UI, explicit template edits and stable identity matching |
 | `src/ExerciseLibrary.jsx`, `src/exerciseLibrary.js`, `src/libraryCore.js` | Exercise catalog/editor, migration, linked template updates, archive, revisions and shared library helpers |
 | `src/WorkoutLibrary.jsx`, `src/programLibrary.js` | Reusable workout library/editor, stable identity, rename/duplicate/archive and version restore |
-| `src/ScheduleTab.jsx` | Weekly schedule and six-session preview |
+| `src/ScheduleTab.jsx` | Weekly calendar and current rotation/fixed-weekday preview |
 | `src/ProgressTab.jsx` | Goal summaries, charts and all-years histories |
 | `src/exerciseCatalog.js`, `src/ExerciseAliases.jsx` | Canonical movement resolution, shared selectors/history and alias editor |
+| `src/resistance.js`, `src/ResistanceFields.jsx` | Resistance modes, calisthenic defaults and shared bodyweight/added-load controls |
 | `src/trainingStats.js`, `src/PreviousPerformance.jsx`, `src/PersonalRecords.jsx` | Previous finished sets, absolute/relative single/estimated/rep records and historical bodyweight context |
 | `src/recordBodyweight.js` | Cached historical bodyweight matching, same-day averages, bounded interpolation/nearest estimates and source provenance |
 | `src/trends.js`, `src/WeeklyReview.jsx` | Daily-weight averages and weekly training/nutrition summary |

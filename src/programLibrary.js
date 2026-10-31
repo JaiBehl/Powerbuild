@@ -1,3 +1,4 @@
+import {resistanceConfig} from './resistance.js';
 import {cycle} from './data.js';
 import {normalizeTemplates,replaceWorkoutRows} from './workoutOperations.js';
 import {libraryId,validLibraryName} from './libraryCore.js';
@@ -15,7 +16,7 @@ export function workoutEntry(db,id){return Object.entries(db.workoutMeta||{}).fi
 export function workoutSignature(db,id){const entry=workoutEntry(db,id);return entry?JSON.stringify([entry[0],db.templates[entry[0]],entry[1].description,entry[1].archived]):null;}
 function validateRows(rows){
  if(!Array.isArray(rows)||rows.length>200)throw Error('A workout can have up to 200 exercises.');
- const seen=new Set();return rows.map(row=>{const out=structuredClone(row);out[0]=validLibraryName(row[0]);const sets=Number(row[1]);if(!Number.isInteger(sets)||sets<1||sets>100)throw Error('Set count must be a whole number from 1 to 100.');out[1]=sets;out[2]=String(row[2]||'8–12');out[3]=String(row[3]||'1–2 RIR');out[4]=row[4]==='strength'?'strength':'accessory';if(!out[5]||seen.has(out[5]))out[5]=libraryId();seen.add(out[5]);return out;});
+ const seen=new Set();return rows.map(row=>{const out=structuredClone(row);out[0]=validLibraryName(row[0]);const sets=Number(row[1]);if(!Number.isInteger(sets)||sets<1||sets>100)throw Error('Set count must be a whole number from 1 to 100.');out[1]=sets;if(row[6]?.resistance!==undefined&&!['external','bodyweight'].includes(row[6].resistance))throw Error('Choose a valid exercise resistance.');if(row[6]?.defaultAddedWeight!==undefined&&(!Number.isFinite(Number(row[6].defaultAddedWeight))||Number(row[6].defaultAddedWeight)<0))throw Error('Default added weight must be nonnegative.');out[6]={...out[6],...resistanceConfig(out[6],out[0])};out[2]=String(row[2]||'8–12');out[3]=String(row[3]||'1–2 RIR');out[4]=row[4]==='strength'?'strength':'accessory';if(!out[5]||seen.has(out[5]))out[5]=libraryId();seen.add(out[5]);return out;});
 }
 export function saveWorkout(db,{id,name,description='',rows=[],expectedSignature}={}){
  let next=normalizeProgram(db);name=validLibraryName(name);const old=id?workoutEntry(next,id):null;

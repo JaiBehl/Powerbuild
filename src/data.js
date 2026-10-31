@@ -1,3 +1,4 @@
+import {resistanceConfig} from './resistance.js';
 import {isISODate} from './dates.js';
 import {normalizeTemplates} from './workoutOperations.js';
 export const cycle=['Push A','Pull A','Legs A','Push B','Pull B','Legs B'];
@@ -103,7 +104,8 @@ export function createSession(type,date,templates=workouts){
       range:e[2],
       target:e[3],
       kind:e[4]||'accessory',
-      sets:Array.from({length:e[1]},(_,j)=>({weight:'',reps:'',rpe:'',done:false,tag:e[4]==='strength'?(j===0?'Top':'Backoff'):''})),
+      resistance:resistanceConfig(e[6],e[0]).resistance,
+      sets:Array.from({length:e[1]},(_,j)=>({weight:resistanceConfig(e[6],e[0]).resistance==='bodyweight'?resistanceConfig(e[6],e[0]).defaultAddedWeight:'',reps:'',rpe:'',done:false,tag:e[4]==='strength'?(j===0?'Top':'Backoff'):''})),
     })),
   };
 }

@@ -236,8 +236,8 @@ function App(){
   const exportJson=()=>download(`powerbuild-${safeProfileName}-backup.json`,JSON.stringify(db,null,2),'application/json');
   const exportCsv=()=>{
     const unit=unitName(db.settings.units);
-    const rows=[['Date','Workout','Exercise','Set',`Weight (${unit})`,'Reps','RPE','Set type','Completed']];
-    db.sessions.forEach(s=>s.exercises.forEach(e=>e.sets.forEach((v,i)=>rows.push([s.date,s.type,e.name,i+1,v.weight===''?'':toDisplayWeight(v.weight,db.settings.units,2),v.reps,v.rpe,v.tag,v.done]))));
+    const rows=[['Date','Workout','Exercise','Set',`Weight (${unit})`,'Reps','RPE','Set type','Completed','Resistance','Load basis']];
+    db.sessions.forEach(s=>s.exercises.forEach(e=>e.sets.forEach((v,i)=>rows.push([s.date,s.type,e.name,i+1,v.weight===''?'':toDisplayWeight(v.weight,db.settings.units,2),v.reps,v.rpe,v.tag,v.done,e.resistance||'external',e.resistance==='bodyweight'?'Added weight':'External load']))));
     download(`powerbuild-${safeProfileName}-sets.csv`,rows.map(r=>r.map(v=>'"'+String(v??'').replaceAll('"','""')+'"').join(',')).join('\n'),'text/csv');
   };
   async function importJson(ev){

@@ -360,3 +360,5 @@ main,.sidebar nav{min-width:0}.sidebar nav{max-width:100%}.records-scroll{max-wi
 .records-table th small{display:block;font-size:11px;color:#a9bfdc;font-weight:400}
 .actions>label{display:grid;gap:6px;min-width:0}.actions .weekpick{display:flex}
 @media(max-width:520px){.template-exercise{padding:10px}.template-exercise .formgrid{grid-template-columns:minmax(0,1fr)}.template-exercise .actions{flex-wrap:wrap}}
+
+.resistance-fields{margin:12px 0;min-width:0}.resistance-fields>label:not(.weekpick){display:grid;gap:6px;max-width:300px}.resistance-fields .muted{font-size:12px}.resistance-fields input[role=switch]{accent-color:#84b2ff}

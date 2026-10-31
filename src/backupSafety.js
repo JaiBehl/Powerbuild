@@ -2,6 +2,7 @@ import {validateSchedule} from './scheduleLibrary.js';
 import {isISODate} from './dates.js';
 const array=(value,label)=>{if(!Array.isArray(value))throw Error(label+' must be an array.');};
 const number=(value,label)=>{if(value!==''&&value!==undefined&&value!==null&&((typeof value!=='string'&&typeof value!=='number')||!Number.isFinite(Number(value))||Number(value)<0))throw Error(label+' must be a nonnegative number.');};
+const checkResistance=value=>{if(!value)return;if(value.resistance!==undefined&&!['external','bodyweight'].includes(value.resistance))throw Error('Exercise resistance is invalid.');if(value.defaultAddedWeight!==undefined&&(value.defaultAddedWeight===''||value.defaultAddedWeight===null||!Number.isFinite(Number(value.defaultAddedWeight))||Number(value.defaultAddedWeight)<0))throw Error('Default added weight is invalid.');};
 export function validateProfileDb(value){
  if(!value||typeof value!=='object'||!value.settings||typeof value.settings!=='object'||Array.isArray(value.settings))throw Error('Not a valid Powerbuild profile backup.');
  array(value.sessions,'Workouts');array(value.weights,'Weigh-ins');
@@ -25,6 +26,10 @@ export function validateProfileDb(value){
   }
  }
  if(value.exerciseLibrary!==undefined){array(value.exerciseLibrary,'Exercise library');if(value.exerciseLibrary.length>10000)throw Error('Exercise library is too large.');const ids=new Set(),names=new Set();for(const e of value.exerciseLibrary){if(!e||typeof e.id!=='string'||!e.id||ids.has(e.id)||typeof e.name!=='string'||!e.name.trim()||names.has(e.name.trim().toLowerCase())||!Number.isInteger(Number(e.sets))||Number(e.sets)<1||Number(e.sets)>100||typeof e.range!=='string'||typeof e.target!=='string'||typeof e.archived!=='boolean')throw Error('An exercise library entry is invalid.');ids.add(e.id);names.add(e.name.trim().toLowerCase());array(e.revisions,'Exercise revisions');if(e.revisions.length>10)throw Error('Too many exercise revisions.');for(const r of e.revisions)if(!r||!Number.isFinite(Date.parse(r.at))||!r.data||typeof r.data.name!=='string'||!Number.isInteger(Number(r.data.sets)))throw Error('An exercise revision is invalid.');}}
+ for(const s of value.sessions)for(const e of s.exercises)checkResistance(e);
+ for(const rows of Object.values(value.templates||{}))for(const row of rows)checkResistance(row[6]);
+ for(const m of Object.values(value.workoutMeta||{}))for(const r of m.revisions)for(const row of r.exercises)checkResistance(row[6]);
+ for(const e of value.exerciseLibrary||[]){checkResistance(e);for(const k of ['createdAt','updatedAt'])if(e[k]!=null&&!Number.isFinite(Date.parse(e[k])))throw Error('Exercise library date is invalid.');for(const r of e.revisions)checkResistance(r.data);}
  for(const goal of value.strengthGoals||[]){if(!goal||typeof goal.exercise!=='string')throw Error('A strength goal exercise is invalid.');number(goal.targetWeight,'Goal weight');}
  for(const food of value.savedFoods||[]){if(!food||typeof food!=='object')throw Error('A saved food is invalid.');for(const field of ['calories','protein','carbs','fat'])number(food[field],field);}
  const checkSettings=settings=>{

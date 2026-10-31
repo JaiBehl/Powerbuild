@@ -122,7 +122,7 @@ export default function ProgressTab({db,patch,date,setDate,setTab,weightEntry,se
             <Line type="linear" dataKey="value" stroke="#84b2ff" strokeWidth={2.5} dot={displayChartData.length===1?{r:4}:false} activeDot={{r:5,stroke:'#dceaff',strokeWidth:2,fill:'#639dff'}} isAnimationActive={false} name="Estimated 1RM"/>
           </LineChart>
         </ResponsiveContainer>
-      </div>:<p className="empty">Complete some sets for this exercise to see your strength trend.</p>}
+      </div>:<p className="empty">Complete qualifying loaded sets for a strength trend. Bodyweight exercise records appear in Absolute strength records below.</p>}
     
 
     </CalorieSection>
