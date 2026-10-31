@@ -46,6 +46,7 @@ Source access is still required for edits. Current workouts, foods, goals and pr
 - **Workout editor** creates and edits the reusable template, including name, description, exercise order, set counts, rep ranges, effort targets and strength/accessory focus. Edits affect new sessions; logged sessions retain their original names/sets. Select in Train chooses the workout without overwriting an occupied date.
 - Renames update the active rotation while stable workout IDs keep old session-to-template links usable. Session-only edits remain the default in Train. Future-template edits also enter workout edit history.
 - Up to 10 previous workout versions can be restored. Archiving retains the workout and its logs; active schedule references must be removed first. Library data is profile-scoped and survives backup, recovery and cloud snapshot normalization.
+- Phone navigation and wide record/library tables stay within their scroll containers as the Library tab is added.
 
 
 ### Train

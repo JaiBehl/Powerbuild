@@ -353,6 +353,7 @@
 .records-table td small{display:block;margin-top:4px;font-size:11px}
 
 /* Reusable training libraries use the existing compact card and table system. */
+main,.sidebar nav{min-width:0}.sidebar nav{max-width:100%}.records-scroll{max-width:100%;min-width:0}
 .template-exercise{border:1px solid #354d6a;border-radius:10px;padding:14px;margin:14px 0;min-width:0}
 .template-exercise legend{padding:0 7px;color:#dce9ff;font-weight:600;overflow-wrap:anywhere;max-width:100%}
 .records-table th small{display:block;font-size:11px;color:#a9bfdc;font-weight:400}
