@@ -6,7 +6,7 @@ const key=name=>String(name||'').trim().toLowerCase();
 export function normalizeExerciseLibrary(db,{newEntryDate=null}={}){
  const list=structuredClone(Array.isArray(db.exerciseLibrary)?db.exerciseLibrary:[]).map(e=>({...e,...resistanceConfig(e,e.name)})),byId=new Map(list.map(e=>[e.id,e])),byName=new Map(list.map(e=>[key(e.name),e]));
  const ensure=(name,sets,range,target,kind,requestedId,source={})=>{
-  let e=byId.get(requestedId)||byName.get(key(name));
+  let e=byId.get(requestedId)||byName.get(key(name))||byName.get(key(resolveExerciseName(name,db.exerciseAliases)));
   if(!e){e={id:'exercise:'+encodeURIComponent(key(name)),name,sets:Math.max(1,Math.min(100,Number(sets)||3)),range:range||'8–12',target:target||'1–2 RIR',kind:kind||'accessory',...resistanceConfig(source,name),createdAt:newEntryDate,updatedAt:newEntryDate,archived:false,revisions:[]};list.push(e);byId.set(e.id,e);byName.set(key(name),e);}return e;
  };
  const templates=Object.fromEntries(Object.entries(normalizeTemplates(db.templates||{})).map(([name,rows])=>[name,rows.map(row=>{const next=structuredClone(row),config=next[6]&&typeof next[6]==='object'?next[6]:{};const e=ensure(row[0],row[1],row[2],row[3],row[4],config.exerciseId,config);next[6]={...config,...resistanceConfig(Object.hasOwn(config,'resistance')?config:e,row[0]),exerciseId:e.id};return next;})]));

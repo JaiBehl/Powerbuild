@@ -43,7 +43,7 @@ Source access is still required for edits. Current workouts, foods, goals and pr
 ### Training library
 
 - **Exercise library / Exercise editor** keep reusable definitions with default sets, rep ranges, effort, creation/update dates, duplication, archive and 10-version edit history. Existing template and historical names seed the catalog without inventing original dates. New exercises created through the workout/session editors enter the same catalog.
-- Workout templates and Train can reuse saved exercises. Exercise renames update linked future templates and add an old-label link for progress continuity; existing session names/sets are not rewritten. Applying new default prescriptions to linked templates is explicit. Per-workout overrides remain possible, and changing an exercise name directly in a template detaches its old catalog link.
+- Workout templates and Train can reuse saved exercises. Exercise renames update linked future templates and add an old-label link for progress continuity; existing session names/sets are not rewritten. Reloading resolves historical labels to their renamed definitions without recreating obsolete catalog entries. Applying new default prescriptions to linked templates is explicit. Per-workout overrides remain possible, and changing an exercise name directly in a template detaches its old catalog link.
 
 
 - **Library → Workout library** lists every saved workout with creation/update dates, search, duplication and an archived-workout view. Existing templates migrate with stable IDs without inventing historical creation dates.
