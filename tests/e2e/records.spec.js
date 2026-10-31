@@ -48,7 +48,9 @@ test('absolute winners show their own BW percentages for singles, estimates and 
  const singles=records.getByRole('row').filter({hasText:'Achieved single'});await expect(singles.getByRole('cell').nth(0)).toContainText('230 lb');await expect(singles.getByRole('cell').nth(0)).toContainText('115.0% BW');await expect(singles.getByRole('cell').nth(1)).toContainText('Est. 125.0% BW');
  await expect(records.getByRole('row').filter({hasText:'Estimated 1RM (RPE-aware)'})).toContainText('Est. 126.4% BW');
  await expect(records.getByRole('row').filter({has:page.getByRole('rowheader',{name:'5',exact:true})})).toContainText('Est. 111.1% BW');
- expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1)).toBe(true);
+ const layout=await page.evaluate(()=>({width:window.innerWidth,scroll:document.documentElement.scrollWidth,nodes:[...document.querySelectorAll('body *')].map(e=>({tag:e.tagName,cls:e.className?.baseVal??e.className,text:e.textContent?.slice(0,70),x:e.getBoundingClientRect().x,right:e.getBoundingClientRect().right,width:e.getBoundingClientRect().width,overflow:getComputedStyle(e).overflowX})).filter(e=>e.right>window.innerWidth+1).slice(0,40)}));
+ if(layout.scroll>layout.width+1)console.log('Phone overflow diagnostics:',JSON.stringify(layout));
+ expect(layout.scroll<=layout.width+1).toBe(true);
  await openTab(page,'Settings & backup');await page.getByLabel('Weight unit').selectOption('kg');await openTab(page,'Progress');records=card(page,'Absolute strength records');await expect(records).toContainText('115.0% BW');await expect(records).toContainText('Est. 125.0% BW');await expect(records).toContainText('Est. 126.4% BW');
 });
 test('renaming absolute records preserves the old saved collapse preference',async({page})=>{
