@@ -48,6 +48,7 @@ Source access is still required for edits. Current workouts, foods, goals and pr
 - Up to 10 previous workout versions can be restored. Archiving retains the workout and its logs; active schedule references must be removed first. Library data is profile-scoped and survives backup, recovery and cloud snapshot normalization.
 - Phone navigation and wide record/library tables stay within their scroll containers as the Library tab is added.
 - Phone regression failures report the overflowing elements' layout bounds for diagnosis alongside screenshots/traces.
+- Inactive chart tooltips are removed from layout so their hidden boxes cannot create horizontal page scrolling; active tooltip behavior remains covered.
 
 
 ### Train
