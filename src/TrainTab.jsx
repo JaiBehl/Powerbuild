@@ -11,9 +11,11 @@ import CalorieSection from './CalorieSection';
 
 export default function TrainTab({db,patch,date,setDate,scheduled,session,updateSession,start,showManual,setShowManual,manualType,setManualType,changeDate}){
   const [newExerciseName,setNewExerciseName]=useState('');
+  const [editingExerciseId,setEditingExerciseId]=useState(null);
+  const [exerciseDraft,setExerciseDraft]=useState(null);
   const [updateFuture,setUpdateFuture]=useState(false);
   const [exerciseError,setExerciseError]=useState('');
-  useEffect(()=>{setUpdateFuture(false);setExerciseError('');},[session?.id]);
+  useEffect(()=>{setUpdateFuture(false);setExerciseError('');setEditingExerciseId(null);setExerciseDraft(null);},[session?.id]);
   const units=unitName(db.settings.units),available=activeWorkoutNames(db),selectedManual=available.includes(manualType)?manualType:available[0]||'';
   const allSets=session?.exercises.flatMap(e=>e.sets)||[];
   const completed=allSets.filter(x=>x.done).length;
@@ -26,12 +28,34 @@ export default function TrainTab({db,patch,date,setDate,scheduled,session,update
   const addExercise=()=>{if(!newExerciseName.trim()||!session)return;changeExercise(value=>addSessionExercise(value,session.id,newExerciseName,updateFuture,db.exerciseLibrary?.find(e=>e.name.toLowerCase()===newExerciseName.trim().toLowerCase())));setNewExerciseName('');};
   const editExercise=(ei)=>{
     const ex=session.exercises[ei];
-    const name=prompt('Exercise name',ex.name);if(name===null||!name.trim())return;
-    const range=prompt('Rep range',ex.range||'8–12');if(range===null)return;
-    const target=prompt('Target / effort',ex.target||'1–2 RIR');if(target===null)return;
-    changeExercise(value=>editSessionExercise(value,session.id,ex.id,{name:name.trim(),range:range.trim()||'8–12',target:target.trim()||'1–2 RIR'},updateFuture));
+    if(editingExerciseId===ex.id){setEditingExerciseId(null);setExerciseDraft(null);return;}
+    setEditingExerciseId(ex.id);
+    setExerciseDraft({name:ex.name,range:ex.range||'8–12',target:ex.target||'1–2 RIR',resistance:isBodyweight(ex)?'bodyweight':'external'});
+    setExerciseError('');
   };
-  const changeResistance=(ex,changes)=>{if(ex.sets.some(s=>s.done||Number(s.weight)>0||Number(s.reps)>0)&&!confirm('Change how this exercise interprets weight? Existing numbers will be retained as '+(changes.resistance==='bodyweight'?'added weight':'external load')+'. A recovery copy will be saved.'))return;changeExercise(value=>editSessionExercise(value,session.id,ex.id,changes,updateFuture),{checkpoint:'Before changing exercise resistance'});};
+  const saveExercise=(ex)=>{
+    if(!exerciseDraft)return;
+    const name=exerciseDraft.name.trim();
+    if(!name){setExerciseError('Enter an exercise name.');return;}
+    const changes={
+      name,
+      range:exerciseDraft.range.trim()||'8–12',
+      target:exerciseDraft.target.trim()||'1–2 RIR',
+      resistance:exerciseDraft.resistance,
+    };
+    const changingResistance=changes.resistance!==(isBodyweight(ex)?'bodyweight':'external');
+    if(changingResistance&&ex.sets.some(v=>v.done||Number(v.weight)>0||Number(v.reps)>0)&&
+      !confirm('Change how this exercise interprets weight? Existing numbers will be retained as '+
+        (changes.resistance==='bodyweight'?'added weight':'external load')+'. A recovery copy will be saved.'))return;
+    try{
+      const next=normalizeProgram(editSessionExercise(db,session.id,ex.id,changes,updateFuture),{newEntryDate:new Date().toISOString()});
+      const applied=patch(()=>next,changingResistance?{checkpoint:'Before changing exercise resistance'}:undefined);
+      if(applied===false)return;
+      setEditingExerciseId(null);
+      setExerciseDraft(null);
+      setExerciseError('');
+    }catch(e){setExerciseError(e.message);}
+  };
   const removeExercise=(ei)=>{
     const ex=session.exercises[ei];
     if(confirm('Remove '+ex.name+' from this session'+(updateFuture?' and future '+session.type+' workouts':'')+'?'))changeExercise(value=>removeSessionExercise(value,session.id,ex.id,updateFuture));
@@ -47,7 +71,22 @@ export default function TrainTab({db,patch,date,setDate,scheduled,session,update
       {exerciseError&&<p className="error" role="alert">{exerciseError}</p>}
       <p className="muted">Volume counts external load and added weight only; bodyweight-only reps remain logged without a guessed tonnage.</p><p className="muted">Set RPE: 10 = no reps left, 9 = about 1, 8 = about 2, 7 = about 3. Record actual set effort, not the prescribed target. Blank RPE stays unknown.</p>
       </CalorieSection>
-      {session.exercises.map((e,ei)=><CalorieSection key={e.id??ei} collapseKey={'exercise:'+(e.templateId||e.id||e.name)} title={e.name} description={e.range+' reps · '+e.target+(isBodyweight(e)?' · Bodyweight + added weight':'')} summary={e.sets.filter(v=>v.done).length+' / '+e.sets.length+' sets'} className="train-exercise-section"><div className="exhead"><span className="muted">Exercise controls</span><div className="exactions"><button className="iconbtn subtle" title="Add a set" onClick={()=>editEx(ei,x=>({...x,sets:[...x.sets,{weight:isBodyweight(x)?0:'',reps:'',rpe:'',done:false,tag:''}]}))}><Plus size={18}/></button><button className="iconbtn subtle" title="Edit exercise" onClick={()=>editExercise(ei)}><Pencil size={15}/></button><button className="iconbtn subtle" title="Remove exercise" onClick={()=>removeExercise(ei)}><Trash2 size={15}/></button></div></div><ResistanceFields resistance={e.resistance} defaults={false} onChange={changes=>changeResistance(e,changes)}/><PreviousPerformance db={db} name={e.name} date={date} units={units} resistance={isBodyweight(e)?'bodyweight':'external'}/><div className="settable"><div className="setrow headings"><span>SET</span><span>{isBodyweight(e)?'ADDED WEIGHT':'WEIGHT'} ({units})</span><span>REPS</span><span>RPE</span><span>DONE</span><span></span></div>{e.sets.map((v,si)=><div className={'setrow '+(v.done?'isdone':'')} key={si}><span className="setnum">{si+1}{v.tag&&<small>{v.tag}</small>}</span><input type="number" min="0" step={units==='kg'?'0.5':'2.5'} aria-label={(isBodyweight(e)?'Added weight':'Weight')+' set '+(si+1)+' ('+units+')'} placeholder={isBodyweight(e)?'0':'—'} value={toDisplayWeight(v.weight,units,1)} onChange={ev=>setCell(ei,si,'weight',fromDisplayWeight(ev.target.value,units))}/><input type="number" min="0" step="1" placeholder="—" value={v.reps} onChange={ev=>setCell(ei,si,'reps',ev.target.value)}/><input type="number" min="1" max="10" step="0.5" placeholder="—" value={v.rpe} onChange={ev=>setCell(ei,si,'rpe',ev.target.value)}/><button className={'checkbtn '+(v.done?'checked':'')} onClick={()=>setCell(ei,si,'done',!v.done)} title="Mark set completed"><Check size={18}/></button><button className="iconbtn subtle" title="Remove set" onClick={()=>editEx(ei,x=>({...x,sets:x.sets.filter((_,i)=>i!==si)}))}><Trash2 size={15}/></button></div>)}</div></CalorieSection>)}
+      {session.exercises.map((e,ei)=><CalorieSection key={e.id??ei} collapseKey={'exercise:'+(e.templateId||e.id||e.name)} title={e.name} description={e.range+' reps · '+e.target} summary={e.sets.filter(v=>v.done).length+' / '+e.sets.length+' sets'} className="train-exercise-section"><div className="exhead"><span className="muted">Exercise controls</span><div className="exactions"><button className="iconbtn subtle" title="Add a set" onClick={()=>editEx(ei,x=>({...x,sets:[...x.sets,{weight:isBodyweight(x)?0:'',reps:'',rpe:'',done:false,tag:''}]}))}><Plus size={18}/></button><button className="iconbtn subtle" title="Edit exercise" onClick={()=>editExercise(ei)}><Pencil size={15}/></button><button className="iconbtn subtle" title="Remove exercise" onClick={()=>removeExercise(ei)}><Trash2 size={15}/></button></div></div>
+      {editingExerciseId===e.id&&exerciseDraft&&<div className="inline-exercise-editor">
+        <div className="between"><strong>Edit exercise</strong><span className="muted">Changes are saved only when you select Save.</span></div>
+        <div className="formgrid">
+          <label>Exercise name<input aria-label="Edit exercise name" value={exerciseDraft.name} onChange={ev=>setExerciseDraft(d=>({...d,name:ev.target.value}))}/></label>
+          <label>Rep range<input aria-label="Edit exercise rep range" value={exerciseDraft.range} onChange={ev=>setExerciseDraft(d=>({...d,range:ev.target.value}))}/></label>
+          <label>Target / effort<input aria-label="Edit exercise target" value={exerciseDraft.target} onChange={ev=>setExerciseDraft(d=>({...d,target:ev.target.value}))}/></label>
+        </div>
+        <ResistanceFields resistance={exerciseDraft.resistance} defaults={false} onChange={changes=>setExerciseDraft(d=>({...d,...changes}))}/>
+        <div className="actions">
+          <button type="button" className="primary" onClick={()=>saveExercise(e)}>Save exercise</button>
+          <button type="button" className="secondary" onClick={()=>{setEditingExerciseId(null);setExerciseDraft(null);setExerciseError('');}}>Cancel</button>
+        </div>
+        {exerciseError&&<p className="error" role="alert">{exerciseError}</p>}
+      </div>}
+      <PreviousPerformance db={db} name={e.name} date={date} units={units} resistance={isBodyweight(e)?'bodyweight':'external'}/><div className="settable"><div className="setrow headings"><span>SET</span><span>{isBodyweight(e)?'ADDED WEIGHT':'WEIGHT'} ({units})</span><span>REPS</span><span>RPE</span><span>DONE</span><span></span></div>{e.sets.map((v,si)=><div className={'setrow '+(v.done?'isdone':'')} key={si}><span className="setnum">{si+1}{v.tag&&<small>{v.tag}</small>}</span><input type="number" min="0" step={units==='kg'?'0.5':'2.5'} aria-label={(isBodyweight(e)?'Added weight':'Weight')+' set '+(si+1)+' ('+units+')'} placeholder={isBodyweight(e)?'0':'—'} value={toDisplayWeight(v.weight,units,1)} onChange={ev=>setCell(ei,si,'weight',fromDisplayWeight(ev.target.value,units))}/><input type="number" min="0" step="1" placeholder="—" value={v.reps} onChange={ev=>setCell(ei,si,'reps',ev.target.value)}/><input type="number" min="1" max="10" step="0.5" placeholder="—" value={v.rpe} onChange={ev=>setCell(ei,si,'rpe',ev.target.value)}/><button className={'checkbtn '+(v.done?'checked':'')} onClick={()=>setCell(ei,si,'done',!v.done)} title="Mark set completed"><Check size={18}/></button><button className="iconbtn subtle" title="Remove set" onClick={()=>editEx(ei,x=>({...x,sets:x.sets.filter((_,i)=>i!==si)}))}><Trash2 size={15}/></button></div>)}</div></CalorieSection>)}
       <CalorieSection title="Add exercise" description={updateFuture?"Add an exercise to this session and future "+session.type+" workouts.":"Add an exercise to this session only."} summary={session.exercises.length+" current exercises"}><div className="manual"><input list="saved-exercise-names" aria-label="New exercise name" placeholder="Exercise name" value={newExerciseName} onChange={e=>setNewExerciseName(e.target.value)} onKeyDown={e=>{if(e.key==='Enter')addExercise()}}/><datalist id="saved-exercise-names">{(db.exerciseLibrary||[]).filter(e=>!e.archived).map(e=><option key={e.id} value={e.name}/>)}</datalist><button className="secondary" onClick={addExercise}><Plus size={16}/> Add exercise</button></div></CalorieSection>
       <CalorieSection title="Session notes" description="Record fatigue, technique, recovery and other details for this workout." summary={session.notes?.trim()?session.notes.trim().split(/\s+/).length+' words':'No notes yet'}><textarea placeholder="Sleep, fatigue, technique, soreness, sticking points..." value={session.notes||''} onChange={e=>updateSession(s=>({...s,notes:e.target.value}))}/><div className="actions"><button className="primary" onClick={()=>updateSession(s=>({...s,finished:!s.finished}))}><Check size={17}/>{session.finished?'Reopen session':'Finish workout'}</button><button className="danger" onClick={()=>{if(confirm('Delete this workout and all its logged sets?'))patch(p=>({...p,sessions:p.sessions.filter(s=>s.id!==session.id)}))}}><Trash2 size={16}/> Delete workout</button></div></CalorieSection>
     </>}
