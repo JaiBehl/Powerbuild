@@ -1,0 +1,52 @@
+import {test,expect} from '@playwright/test';
+import {seed,makeDb,makeSession,readDb,card} from '../fixtures.js';
+
+test('compact previous workout summary expands without cluttering the set logger',async({page})=>{
+ const old=makeSession('Push A','2026-10-29');
+ old.finished=true;
+ old.exercises[0].sets[0]={...old.exercises[0].sets[0],weight:185,reps:6,rpe:8,done:true};
+ old.exercises[0].sets[1]={...old.exercises[0].sets[1],weight:175,reps:5,rpe:8,done:true};
+ const current=makeSession('Push A','2026-10-30');
+ await seed(page,makeDb({sessions:[old,current]}));
+ await page.getByLabel('Workout date').fill('2026-10-30');
+ const ex=card(page,'Barbell bench press');
+ const previous=ex.locator('details.previous-performance');
+ await expect(previous.locator('summary')).toContainText('Previous');
+ await expect(previous.locator('summary')).toContainText('10/29/2026');
+ await expect(previous.locator('summary')).toContainText('185 lb × 6');
+ await expect(previous.locator('summary')).toContainText('+1 sets');
+ await expect(previous.locator('.previous-performance-sets')).toBeHidden();
+ await expect(ex.getByRole('switch',{name:'Bodyweight exercise'})).toHaveCount(0);
+ await previous.locator('summary').click();
+ await expect(previous.locator('.previous-performance-sets')).toContainText('175 lb × 5');
+ await previous.locator('summary').click();
+ await expect(previous.locator('.previous-performance-sets')).toBeHidden();
+});
+
+test('bodyweight checkbox is editor-only and unsaved changes do not touch logged sets',async({page})=>{
+ const session=makeSession('Push A','2026-10-30');
+ session.exercises[0].sets[0]={...session.exercises[0].sets[0],weight:185,reps:6,rpe:8,done:true};
+ await seed(page,makeDb({sessions:[session]}));
+ await page.getByLabel('Workout date').fill('2026-10-30');
+ const ex=card(page,'Barbell bench press');
+ await expect(ex.getByRole('switch',{name:'Bodyweight exercise'})).toHaveCount(0);
+ await ex.getByTitle('Edit exercise',{exact:true}).click();
+ const editor=ex.locator('.inline-exercise-editor');
+ await expect(editor.getByRole('switch',{name:'Bodyweight exercise'})).not.toBeChecked();
+ await editor.getByLabel('Edit exercise name').fill('Temporary edited name');
+ await editor.getByRole('switch',{name:'Bodyweight exercise'}).check();
+ await editor.getByRole('button',{name:'Cancel'}).click();
+ await expect(editor).toHaveCount(0);
+ let db=await readDb(page);
+ expect(db.sessions[0].exercises[0].name).toBe('Barbell bench press');
+ expect(db.sessions[0].exercises[0].resistance||'external').toBe('external');
+ expect(db.sessions[0].exercises[0].sets[0].weight).toBe(185);
+ await ex.getByTitle('Edit exercise',{exact:true}).click();
+ await ex.locator('.inline-exercise-editor').getByLabel('Edit exercise name').fill('Custom flat barbell press');
+ await ex.locator('.inline-exercise-editor').getByRole('button',{name:'Save exercise'}).click();
+ await expect(card(page,'Custom flat barbell press')).toBeVisible();
+ db=await readDb(page);
+ expect(db.sessions[0].exercises[0].name).toBe('Custom flat barbell press');
+ expect(db.sessions[0].exercises[0].sets[0].weight).toBe(185);
+ expect(db.templates['Push A'][0][0]).toBe('Barbell bench press');
+});
