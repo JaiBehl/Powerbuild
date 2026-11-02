@@ -13,9 +13,9 @@ This README is the product manual and the handoff for a fresh AI development con
 | Hosting | Existing Vercel project `powerbuild-flexible-goals`, team/dashboard slug `power-build` |
 | Backend | Supabase project `zgbldcmahkokmkfqeljh`; Auth and the account-snapshot table/RPC described below |
 | Source reviewed through | [8758a2c9a550acad4376d58772c467ba4046a03d](https://github.com/JaiBehl/Powerbuild/commit/8758a2c9a550acad4376d58772c467ba4046a03d) |
-| Release work | [PR #29](https://github.com/JaiBehl/Powerbuild/pull/29): reusable workouts/exercises, saved whole-program schedules, and bodyweight/weighted calisthenics; follows maintenance PR #28 and records PRs #26–#27 |
-| Date | October 31, 2026, UTC |
-| Validation | 124 unit/integration + 70 Chromium browser tests, zero failures; production build; [complete source gate](https://github.com/JaiBehl/Powerbuild/actions/runs/41201029796) |
+| Release work | November 2, 2026: compact Train previous-session reference and editor-only bodyweight toggle; preceding [PR #29](https://github.com/JaiBehl/Powerbuild/pull/29) added reusable workouts/exercises, schedules and calisthenics |
+| Date | November 2, 2026, America/Los_Angeles |
+| Validation | Prior [complete source gate](https://github.com/JaiBehl/Powerbuild/actions/runs/41201029796) passed; new UI change requires its own PR full CI and deploy verification (do not treat the prior gate as proof for this change) |
 
 The source baseline identifies code actually reviewed and tested. Documentation-only or merge commits may be newer. Fetch current `main`, inspect commits since that baseline, and check open PRs before changing anything. Current source governs implemented behavior; the latest explicit user instruction governs desired behavior.
 
@@ -57,7 +57,7 @@ Source access is still required for edits. Current workouts, foods, goals and pr
 
 ### Bodyweight and weighted calisthenics
 
-- Toggle **Bodyweight exercise** in the exercise editor, each workout-template row or the current session. Bodyweight mode logs **added weight**; zero is bodyweight only. Default added load is reusable; individual sets can vary it. External-load exercises keep their normal weight fields. Both modes convert correctly between lb/kg while storing pounds.
+- Toggle **Bodyweight exercise** inside the **exercise editor** (pencil button in Train), saved exercise definition editor, or workout-template editor—not as a standalone checkbox in the active set logger. Session edits use Save/Cancel; the resistance warning and recovery checkpoint protect existing records. Bodyweight mode logs **added weight**; zero is bodyweight only. Default added load is reusable; individual sets can vary it. External-load exercises keep their normal weight fields. Both modes convert correctly between lb/kg while storing pounds.
 - The exercise library includes Push-up, Pull-up, Chin-up, Dip, Inverted row and Bodyweight squat. Unambiguous calisthenic names seed bodyweight defaults for future templates; ambiguous “Pull-up or lat pulldown” stays external until explicitly chosen. Existing logged sets retain their prior interpretation. Switching a populated session asks before changing the meaning of its weights and saves recovery; applying mode changes to future templates remains explicit.
 - Absolute strength records includes **Bodyweight exercise records**: most bodyweight-only reps, heaviest added load and best added load at each rep count, all-time/recent, with dated bodyweight context. These sets do not become external-load 1RMs or relative lift/BW ratios. Previous performance matches the resistance mode and labels BW + added weight. External-load volume counts added weight only, without guessing how much body mass a movement displaces.
 - JSON/program snapshots retain mode/default added load. Sets CSV appends Resistance and Load basis columns; its Weight field means added load for bodyweight exercises. No assistance-load calculator or movement-specific effective-mass model is included.
@@ -69,7 +69,7 @@ Source access is still required for edits. Current workouts, foods, goals and pr
 - Each exercise logs weight, reps, optional RPE, done flag and Top/Backoff tag; add/remove sets. Overview shows completed/total sets, completed volume and finished status.
 - Add any exercise; edit name, rep range or effort; remove an exercise. By default these affect only this session. The explicit future-template checkbox also updates the matching template. Ambiguous older links are rejected instead of changing the wrong exercise.
 - New unsaved exercises start at three sets, 8–12 reps, 1–2 RIR; choosing a saved exercise uses its defaults. Individual set-count changes affect the session, not the future template.
-- Previous finished session appears beside the current sets, using movement aliases and current units. It excludes the current/future dates and does not overwrite current inputs.
+- Previous finished session appears as a **compact, expandable one-line reference** above the set table. The row shows the date, workout, first completed set and number of other sets; expanding shows every recorded set and RPE. It uses movement aliases and current units, excludes the current/future dates, and never overwrites the current workout.
 - Notes save as typed. Finish/reopen changes status; delete requires confirmation and creates a recovery copy. Finishing does not manually advance the date-based rotation.
 
 ### Schedule and default program
