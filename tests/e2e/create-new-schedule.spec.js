@@ -1,0 +1,72 @@
+import {test,expect} from '@playwright/test';
+import {seed,makeDb,makeSession,readDb,openTab,card} from '../fixtures.js';
+
+test('Create new schedule starts blank and saves separately without changing the active plan or historical workouts',async({page})=>{
+ const old=makeSession('Push A','2026-10-29'),initial=makeDb({sessions:[old]});
+ await seed(page,initial);
+ await openTab(page,'Schedule');
+ let editor=card(page,'Schedule editor');
+ await editor.getByLabel('Schedule name',{exact:true}).fill('Existing active plan');
+ await editor.getByRole('button',{name:'Save entire schedule',exact:true}).click();
+ expect((await readDb(page)).savedSchedules.length).toBe(1);
+ await page.getByRole('button',{name:'Create new schedule',exact:true}).click();
+ editor=card(page,'Schedule editor');
+ await expect(editor.getByLabel('Schedule name',{exact:true})).toBeEmpty();
+ await expect(editor.getByLabel('Rotation slot 1',{exact:true})).toHaveValue('');
+ await expect(editor.getByLabel('Monday',{exact:true})).not.toBeChecked();
+ await expect(editor).toContainText('New blank schedule ready');
+ await editor.getByLabel('Monday',{exact:true}).check();
+ await editor.getByLabel('Wednesday',{exact:true}).check();
+ await editor.getByLabel('Rotation slot 1',{exact:true}).selectOption('Push B');
+ await editor.getByRole('button',{name:'Add rotation slot',exact:true}).click();
+ await editor.getByLabel('Rotation slot 2',{exact:true}).selectOption('Legs A');
+ await editor.getByLabel('Schedule name',{exact:true}).fill('New strength rotation');
+ await editor.getByLabel('Schedule description',{exact:true}).fill('Synthetic saved new plan');
+ await editor.getByRole('button',{name:'Save entire schedule',exact:true}).click();
+ let db=await readDb(page);
+ expect(db.savedSchedules.length).toBe(2);
+ expect(db.savedSchedules.map(s=>s.name)).toEqual(['Existing active plan','New strength rotation']);
+ expect(db.savedSchedules[1].snapshot.settings.workoutCycle).toEqual(['Push B','Legs A']);
+ expect(db.savedSchedules[1].snapshot.settings.schedule).toEqual([1,3]);
+ expect(db.settings).toEqual(initial.settings);
+ expect(db.sessions[0].exercises).toEqual(old.exercises);
+ await page.reload();
+ await openTab(page,'Schedule');
+ await expect(card(page,'Saved schedules')).toContainText('New strength rotation');
+ await page.getByRole('button',{name:'Load schedule New strength rotation',exact:true}).click();
+ editor=card(page,'Schedule editor');
+ await editor.getByRole('button',{name:'Apply schedule',exact:true}).click();
+ db=await readDb(page);
+ expect(db.settings.workoutCycle).toEqual(['Push B','Legs A']);
+ expect(db.settings.schedule).toEqual([1,3]);
+ expect(db.sessions[0].exercises).toEqual(old.exercises);
+});
+
+test('new fixed-weekday schedule can be created from a minimized editor on a phone',async({page})=>{
+ await page.setViewportSize({width:390,height:844});
+ await seed(page);
+ await openTab(page,'Schedule');
+ let editor=card(page,'Schedule editor');
+ await editor.getByRole('button',{name:'Minimize Schedule editor',exact:true}).click();
+ await expect(editor.getByRole('button',{name:'Expand Schedule editor',exact:true})).toBeVisible();
+ await page.getByRole('button',{name:'Create new schedule',exact:true}).click();
+ editor=card(page,'Schedule editor');
+ await expect(editor.getByRole('button',{name:'Minimize Schedule editor',exact:true})).toBeVisible();
+ // Use the directly labelled controls after React remounts the editor from its
+ // minimized state; the section itself is re-keyed to open the blank draft.
+ const type=page.getByRole('combobox',{name:'Schedule type',exact:true});
+ await expect(type).toBeVisible();
+ await type.selectOption('weekdays');
+ await expect(page.getByRole('combobox',{name:'Monday workout',exact:true})).toHaveValue('');
+ await page.getByRole('combobox',{name:'Tuesday workout',exact:true}).selectOption('Pull A');
+ await page.getByRole('combobox',{name:'Friday workout',exact:true}).selectOption('Legs B');
+ await page.getByRole('textbox',{name:'Schedule name',exact:true}).fill('New fixed plan');
+ await page.getByRole('button',{name:'Save entire schedule',exact:true}).click();
+ const db=await readDb(page);
+ expect(db.savedSchedules.length).toBe(1);
+ expect(db.savedSchedules[0].snapshot.settings.scheduleMode).toBe('weekdays');
+ expect(db.savedSchedules[0].snapshot.settings.weekdayWorkouts['2']).toBe('Pull A');
+ expect(db.savedSchedules[0].snapshot.settings.weekdayWorkouts['5']).toBe('Legs B');
+ expect(db.settings.scheduleMode||'rotation').toBe('rotation');
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1)).toBe(true);
+});
