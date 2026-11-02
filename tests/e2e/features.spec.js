@@ -3,7 +3,7 @@ import {seed,makeDb,makeSession,readDb,card,DAY,openTab} from '../fixtures.js';
 test('previous performance appears beside current sets without pre-filling them',async({page})=>{
  const old=makeSession('Push B','2026-10-29');old.finished=true;old.exercises.find(e=>e.name==='Touch-and-go bench press').sets[0]={weight:180,reps:5,rpe:8,done:true};
  await seed(page,makeDb({sessions:[old,makeSession()]}));await page.getByLabel('Workout date').fill(DAY);
- await expect(card(page,'Barbell bench press')).toContainText('2026-10-29');await expect(card(page,'Barbell bench press')).toContainText('180 lb × 5 @ 8 RPE');
+ await expect(card(page,'Barbell bench press').locator('.previous-performance summary')).toContainText('10/29/2026');await expect(card(page,'Barbell bench press').locator('.previous-performance summary')).toContainText('180 lb × 5 @ 8 RPE');
  expect((await readDb(page)).sessions.find(s=>s.date===DAY).exercises[0].sets[0].weight).toBe('');
 });
 test('goal add, edit and remove remain functional',async({page})=>{
