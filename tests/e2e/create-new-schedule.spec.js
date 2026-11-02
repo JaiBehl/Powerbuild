@@ -52,12 +52,16 @@ test('new fixed-weekday schedule can be created from a minimized editor on a pho
  await page.getByRole('button',{name:'Create new schedule',exact:true}).click();
  editor=card(page,'Schedule editor');
  await expect(editor.getByRole('button',{name:'Minimize Schedule editor',exact:true})).toBeVisible();
- await editor.getByLabel('Schedule type',{exact:true}).selectOption('weekdays');
- await expect(editor.getByLabel('Monday workout',{exact:true})).toHaveValue('');
- await editor.getByLabel('Tuesday workout',{exact:true}).selectOption('Pull A');
- await editor.getByLabel('Friday workout',{exact:true}).selectOption('Legs B');
- await editor.getByLabel('Schedule name',{exact:true}).fill('New fixed plan');
- await editor.getByRole('button',{name:'Save entire schedule',exact:true}).click();
+ // Use the directly labelled controls after React remounts the editor from its
+ // minimized state; the section itself is re-keyed to open the blank draft.
+ const type=page.getByRole('combobox',{name:'Schedule type',exact:true});
+ await expect(type).toBeVisible();
+ await type.selectOption('weekdays');
+ await expect(page.getByRole('combobox',{name:'Monday workout',exact:true})).toHaveValue('');
+ await page.getByRole('combobox',{name:'Tuesday workout',exact:true}).selectOption('Pull A');
+ await page.getByRole('combobox',{name:'Friday workout',exact:true}).selectOption('Legs B');
+ await page.getByRole('textbox',{name:'Schedule name',exact:true}).fill('New fixed plan');
+ await page.getByRole('button',{name:'Save entire schedule',exact:true}).click();
  const db=await readDb(page);
  expect(db.savedSchedules.length).toBe(1);
  expect(db.savedSchedules[0].snapshot.settings.scheduleMode).toBe('weekdays');
