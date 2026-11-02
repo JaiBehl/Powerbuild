@@ -333,10 +333,54 @@
   .train-exercise-section .settable{margin-left:-6px;margin-right:-6px}
 }
 
-.previous-performance{margin:6px 0 14px;padding:11px 13px;background:#112033;border-left:3px solid #537fba;border-radius:6px}
-.previous-performance small{display:block;color:#89a9d1;font-size:10px;letter-spacing:.06em}
-.previous-performance span{display:block;margin-top:5px;color:#aebfd6;font-size:12px}
-.previous-performance p{font-size:13px;line-height:1.6;margin:6px 0 0}
+/* Compact previous finished set preview; full set details expand on demand. */
+.previous-performance{
+  min-width:0;
+  margin:7px 0 9px;
+  padding:0;
+  border:1px solid #2b4059;
+  border-radius:7px;
+  background:#132239;
+  color:#aebfd6;
+}
+.previous-performance summary{
+  display:flex;align-items:center;flex-wrap:wrap;gap:5px 11px;
+  padding:7px 10px;
+  cursor:pointer;font-size:11px;line-height:1.45;
+  list-style:none;
+}
+.previous-performance summary::-webkit-details-marker{display:none}
+.previous-performance summary:before{content:'▸';color:#8fb7ed;font-size:12px}
+.previous-performance[open] summary:before{content:'▾'}
+.previous-performance summary:focus-visible{outline:2px solid #89b6ff;outline-offset:2px;border-radius:6px}
+.previous-performance-label{color:#8faed2;font-size:10px;text-transform:uppercase;letter-spacing:.04em;font-weight:650}
+.previous-performance-date{color:#aebfd6}
+.previous-performance summary strong{font-weight:600;color:#d1e3f9;font-size:11px;white-space:normal}
+.previous-performance .previous-performance-sets{
+  padding:8px 12px 10px;
+  margin:0;
+  border-top:1px solid #2b4059;
+  font-size:12px;line-height:1.55;color:#cedef3;
+}
+.inline-exercise-editor{
+  margin:0 0 9px;
+  padding:12px;
+  background:#162840;
+  border:1px solid #395574;
+  border-radius:9px;
+}
+.inline-exercise-editor .between{align-items:center;gap:12px}
+.inline-exercise-editor .between strong{font-size:13px}
+.inline-exercise-editor .formgrid{margin:12px 0}
+.inline-exercise-editor .resistance-fields{margin:5px 0 11px}
+.inline-exercise-editor .resistance-fields>.muted{margin-top:5px;font-size:11px}
+.inline-exercise-editor .actions{margin-top:9px}
+@media(max-width:520px){
+  .previous-performance summary{gap:4px 8px;padding:6px 9px}
+  .previous-performance summary strong{flex-basis:100%;padding-left:15px}
+  .inline-exercise-editor{padding:10px}
+}
+
 
 .records-scroll{overflow-x:auto;margin:14px 0 20px}
 .records-table{width:100%;border-collapse:collapse;font-size:13px;text-align:left}
