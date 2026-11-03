@@ -42,6 +42,8 @@ Source access is still required for edits. Current workouts, foods, goals and pr
 
 ### Training library
 
+- **Delete permanently** is available for exercise definitions, workout templates and saved schedules. The confirmation previews its scope and requires typing the exact name; a recovery copy must succeed before removal. Workout deletions turn active references into Rest. Dated logs and independent saved-program/application snapshots stay intact; this is library deletion, not erasure of every historical record or old backup. Exercise deletion suppression survives reload, backups and cloud normalization, so templates/history/default calisthenics do not silently recreate the entry. Explicitly creating a new definition with that name is allowed.
+
 - **Archive all unused** previews and archives every unarchived exercise outside the active rotation/fixed-weekday schedule, with confirmation and a recovery copy. Stable exercise links and resolved names protect used exercises; rest/empty schedules have no used exercises. Archived definitions remain recoverable; saved programs and dated logs are not changed.
 
 - **Exercise library / Exercise editor** keep reusable definitions with default sets, rep ranges, effort, creation/update dates, duplication, archive and 10-version edit history. Existing template and historical names seed the catalog without inventing original dates. New exercises created through the workout/session editors enter the same catalog.
@@ -267,6 +269,7 @@ First-device migration: export backups on the device with existing data, sign in
 | `cardio[]` | `{id,name,durationMinutes,calories}` |
 | `savedFoods` | Per-one-serving `{id,name,meal,calories,protein,carbs,fat}` |
 | `calorieSettings` | Defaults for baseline, demographics, weight mode, activity, macro rates and manual overrides |
+| `deletedExerciseIds`, `deletedExerciseNames` | Suppress automatic reseeding of permanently removed catalog definitions; profile-scoped, backup/cloud preserved, cleared on reset |
 | `exerciseLibrary` | Reusable `{id,name,sets,range,target,kind,resistance,defaultAddedWeight,createdAt,updatedAt,archived,revisions}` definitions; template row `[6]` stores `{exerciseId,resistance,defaultAddedWeight}`; session `libraryExerciseId` links new sessions |
 | `savedSchedules`, `scheduleLog` | Named program snapshots with templates/exercises and up to 10 prior versions; last 100 applied schedule snapshots |
 | `workoutMeta` | Workout name → `{id,name,description,createdAt,updatedAt,archived,revisions}`; up to 10 previous template versions |
@@ -326,6 +329,7 @@ Explicit correction updates records owned by the same import ID. Optional remova
 | `src/ScheduleEditor.jsx`, `src/scheduleLibrary.js` | Rotation/fixed-day editor, program snapshot library, restoration and application log |
 | `src/TrainTab.jsx`, `src/workoutOperations.js` | Workout UI, explicit template edits and stable identity matching |
 | `src/ExerciseLibrary.jsx`, `src/exerciseLibrary.js`, `src/libraryCore.js` | Exercise catalog/editor, migration, linked template updates, archive, revisions and shared library helpers |
+| `src/libraryDeletion.js` | Scoped permanent library deletion, typed confirmation and schedule reference cleanup |
 | `src/WorkoutLibrary.jsx`, `src/programLibrary.js` | Reusable workout library/editor, stable identity, rename/duplicate/archive and version restore |
 | `src/ScheduleTab.jsx` | Weekly calendar and current rotation/fixed-weekday preview |
 | `src/ProgressTab.jsx` | Goal summaries, charts and all-years histories |

@@ -42,6 +42,8 @@ function normalizeDb(x={},options={}){
     calorieSettings:normalizeCalorieSettings(x.calorieSettings||{}),
     workoutMeta:x.workoutMeta,
     exerciseLibrary:x.exerciseLibrary,
+    deletedExerciseIds:Array.isArray(x.deletedExerciseIds)?x.deletedExerciseIds:[],
+    deletedExerciseNames:Array.isArray(x.deletedExerciseNames)?x.deletedExerciseNames:[],
     savedSchedules:Array.isArray(x.savedSchedules)?x.savedSchedules:[],
     scheduleLog:Array.isArray(x.scheduleLog)?x.scheduleLog:[],
     templates:normalizeTemplates(x.templates&&typeof x.templates==='object'&&!Array.isArray(x.templates)?x.templates:cloneTemplates()),
