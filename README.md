@@ -42,6 +42,8 @@ Source access is still required for edits. Current workouts, foods, goals and pr
 
 ### Training library
 
+- If cloud sync removes a workout while its editor is open, the stale draft remains visible with a notice and no invalid Select in Train action. Reload resets it; saving cannot silently recreate a deleted template. A synthetic cloud regression covers this concurrent-deletion case.
+
 - **Delete permanently** is available for exercise definitions, workout templates and saved schedules. The confirmation previews its scope and requires typing the exact name; a recovery copy must succeed before removal. Workout deletions turn active references into Rest. Dated logs and independent saved-program/application snapshots stay intact; this is library deletion, not erasure of every historical record or old backup. Exercise deletion suppression survives reload, backups and cloud normalization, so templates/history/default calisthenics do not silently recreate the entry. Explicitly creating a new definition with that name is allowed.
 
 - **Archive all unused** previews and archives every unarchived exercise outside the active rotation/fixed-weekday schedule, with confirmation and a recovery copy. Stable exercise links and resolved names protect used exercises; rest/empty schedules have no used exercises. Archived definitions remain recoverable; saved programs and dated logs are not changed.
