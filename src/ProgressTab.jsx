@@ -1,3 +1,4 @@
+import StrengthProjection from './StrengthProjection';
 import WorkoutPoint from './WorkoutPoint';
 import WeeklyReview from './WeeklyReview';
 import {rollingWeightAverage} from './trends';
@@ -16,6 +17,7 @@ export default function ProgressTab({db,patch,date,setDate,setTab,weightEntry,se
   const touchChartPoint=(event,day)=>{const now=Date.now();if(lastChartTap.current?.day===day&&now-lastChartTap.current.at<450){event.preventDefault();openChartWorkout(day);lastChartTap.current=null;}else lastChartTap.current={day,at:now};};
   const goals=Array.isArray(db.strengthGoals)?db.strengthGoals:[];
   const [chartRange,setChartRange]=useState('6M');
+  const [showProjection,setShowProjection]=useState(false);
   const [workoutYear,setWorkoutYear]=useState('all');
   const [workoutSearch,setWorkoutSearch]=useState('');
   const [visibleWorkoutCount,setVisibleWorkoutCount]=useState(30);
@@ -116,7 +118,8 @@ export default function ProgressTab({db,patch,date,setDate,setTab,weightEntry,se
         </div>
         <span className="trend-caption">{displayChartData.length} logged {displayChartData.length===1?'date':'dates'} · Double-click or double-tap a dot to open its workout</span>
       </div>
-      {displayChartData.length?<div className="chart trend-chart">
+      <label className="weekpick"><input type="checkbox" checked={showProjection} onChange={e=>setShowProjection(e.target.checked)}/> Show projected 1RM</label>
+      {showProjection?<StrengthProjection key={chartLift} points={chartData} db={db} units={units} openWorkout={openChartWorkout} onTouch={touchChartPoint}/>:displayChartData.length?<div className="chart trend-chart">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={displayChartData} margin={{top:14,right:18,bottom:8,left:0}}>
             <CartesianGrid vertical={false} stroke="#2a3b52" strokeDasharray="3 7"/>
