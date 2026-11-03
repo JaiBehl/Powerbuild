@@ -66,6 +66,8 @@ Source access is still required for edits. Current workouts, foods, goals and pr
 
 ### Train
 
+- Removing an active-session exercise always checkpoints its sets. If future-template permission is on but the row was removed/renamed or is ambiguous, the logger explains the failed link and offers an explicit **Remove from this session only** fallback. It never guesses which template row to remove. Failed recovery/persistence patches remain visible instead of being treated as successful edits.
+
 - Date picker, previous/next day and Today; scheduled-workout/rest label. Date is shared with Progress and nutrition.
 - Start the scheduled workout or any active saved workout manually, including on rest days. The model is one session per date.
 - Each exercise logs weight, reps, optional RPE, done flag and Top/Backoff tag; add/remove sets. Overview shows completed/total sets, completed volume and finished status.
