@@ -12,10 +12,10 @@ This README is the product manual and the handoff for a fresh AI development con
 | Site | [powerbuild-flexible-goals.vercel.app](https://powerbuild-flexible-goals.vercel.app) |
 | Hosting | Existing Vercel project `powerbuild-flexible-goals`, team/dashboard slug `power-build` |
 | Backend | Supabase project `zgbldcmahkokmkfqeljh`; Auth and the account-snapshot table/RPC described below |
-| Source reviewed through | [8758a2c9a550acad4376d58772c467ba4046a03d](https://github.com/JaiBehl/Powerbuild/commit/8758a2c9a550acad4376d58772c467ba4046a03d) |
-| Release work | November 2, 2026: added an explicit Create new schedule workflow to Schedule, building independent blank plans that require deliberate Save and Apply actions. Previous release: compact Train logger and editor-only bodyweight toggle ([PR #30](https://github.com/JaiBehl/Powerbuild/pull/30)). |
-| Date | November 2, 2026, America/Los_Angeles |
-| Validation | [PR #30 regression gate](https://github.com/JaiBehl/Powerbuild/actions/runs/41546461514) passed; Create new schedule feature includes desktop/mobile browser regressions and must pass its own GitHub CI before release. |
+| Source reviewed through | [a658e6f16f74e6cfb5f86550563aa71a24efa166](https://github.com/JaiBehl/Powerbuild/commit/a658e6f16f74e6cfb5f86550563aa71a24efa166) |
+| Release work | [PR #32](https://github.com/JaiBehl/Powerbuild/pull/32): bulk archive outside active schedules, permanent library deletion, chart-to-workout navigation, safe active-session removal, dated strength scenarios and a concurrent-deletion editor fix. Follows compact logger PR #30 and blank schedule creation PR #31. |
+| Date | November 3, 2026, America/Los_Angeles |
+| Validation | 135 unit/integration + 84 Chromium browser tests and production build passed; [complete source gate](https://github.com/JaiBehl/Powerbuild/actions/runs/41618152319). Stage gates below passed sequentially before each next implementation. |
 
 The source baseline identifies code actually reviewed and tested. Documentation-only or merge commits may be newer. Fetch current `main`, inspect commits since that baseline, and check open PRs before changing anything. Current source governs implemented behavior; the latest explicit user instruction governs desired behavior.
 
@@ -396,7 +396,7 @@ The original audit read all 34 files at `03d6258633b7376b184a3b7e86bdd201cf18c62
 | Persistent maintenance weigh-in connection | 98 unit/integration + 56 browser tests and production build [passed](https://github.com/JaiBehl/Powerbuild/actions/runs/41134846082) before weekly goal pace was added |
 | Weekly goal pace and combined regression gate | 99 unit/integration + 58 browser tests and production build [passed](https://github.com/JaiBehl/Powerbuild/actions/runs/41135348021) |
 
-Current source gate: **124 unit/integration + 70 browser tests, zero failures**, plus a production build. Sequential stages passed before the next began:
+Previous program-library source gate: **124 unit/integration + 70 browser tests, zero failures**, plus a production build. Its sequential stages passed before the next began:
 
 | Stage | Evidence |
 | --- | --- |
@@ -415,8 +415,26 @@ GitHub `main` is the established Vercel production source; repo root, Vite, `npm
 
 Live backend ownership/RPC metadata was inspected; private payloads and production records were not used for tests. No schema/auth/hosting changes are required by this release.
 
+## November 3 maintenance release
+
+All requested changes and an independent bug audit passed the full regression/build gates sequentially:
+
+| Stage | Evidence |
+| --- | --- |
+| Bulk archive outside active schedules | 126 unit/integration + 75 browser [passed](https://github.com/JaiBehl/Powerbuild/actions/runs/41614867591) |
+| Active-session removal with stale future links | 126 + 76 [passed](https://github.com/JaiBehl/Powerbuild/actions/runs/41615394781) |
+| Chart point navigation, desktop/touch/keyboard | 126 + 79 [passed](https://github.com/JaiBehl/Powerbuild/actions/runs/41615912054) |
+| Confirmed permanent library deletion and reload suppression | 129 + 80 [passed](https://github.com/JaiBehl/Powerbuild/actions/runs/41616491487) |
+| Research-informed strength scenarios | 134 + 83 [passed](https://github.com/JaiBehl/Powerbuild/actions/runs/41617272722) |
+| Unsupported resistance guard and release smoke markers | 135 + 83 [passed](https://github.com/JaiBehl/Powerbuild/actions/runs/41617659365) |
+| Independent concurrent-deletion audit fix and complete gate | 135 + 84 [passed](https://github.com/JaiBehl/Powerbuild/actions/runs/41618152319) |
+
+The bug audit examined active-session template matching and recovery failures, catalog reseeding after deletion, current schedule reference integrity, stale editor behavior under cloud refresh, and strength date/unit/resistance boundaries. Confirmed fixes are recorded above; no speculative redesign was performed. The cloud scenario uses the isolated synthetic backend and performs no production database/auth operation. Dependency versions, schema, auth and hosting configuration are unchanged. Local unit/build checks and complete GitHub Chromium gates passed; the workspace lacks a local browser. Production verification is checked separately after merge, not inferred from PR preview success. No real Notes/email/account data is in the public code or fixtures.
+
 ## Remaining boundaries
 
+- Strength projection is an illustrative, assumption-dependent scenario, not a validated personal prediction; sparse data, old anchors, changing technique/programs and future energy balance limit it. Experience presets are editable assumptions; phase filtering requires actual dated weight history.
+- Permanent deletion is scoped to the selected library definition and its edit history, not independent workout logs, program/application snapshots or existing backups. Recovery restoration can deliberately bring it back.
 - One session per date; saving a weigh-in replaces that date's prior measurements.
 - Libraries retain archived entries; edit history keeps 10 prior versions per definition/program, and the schedule application log keeps 100 plans. Limits are 500 workouts, 500 saved schedules, 10,000 exercise definitions, 200 exercises/workout and 100 sets/exercise.
 - Existing sessions without an explicit resistance mode retain external-load interpretation. Ambiguous variants need an explicit bodyweight toggle. Added-load records do not estimate effective body mass, assistance, 1RM or relative resistance.
@@ -467,3 +485,6 @@ The README PR check flags application/configuration/test changes without a compa
 | [#27](https://github.com/JaiBehl/Powerbuild/pull/27) | Rename Absolute strength records, show bodyweight percentages for each absolute PR and preserve saved collapse preferences |
 | [#28](https://github.com/JaiBehl/Powerbuild/pull/28) | Keep maintenance bodyweight connected to new weigh-ins across dates; show calculator/source dates and signed weekly goal pace in Bodyweight goal |
 | [#29](https://github.com/JaiBehl/Powerbuild/pull/29) | Reusable workout/exercise libraries, editable and saved complete schedules, bodyweight and weighted calisthenics with honest records and portable backups |
+| [#30](https://github.com/JaiBehl/Powerbuild/pull/30) | Compact previous-session reference and editor-only bodyweight toggle |
+| [#31](https://github.com/JaiBehl/Powerbuild/pull/31) | Create independent blank schedules with separate Save and Apply actions |
+| [#32](https://github.com/JaiBehl/Powerbuild/pull/32) | Bulk archive, scoped permanent deletion, chart navigation, active-session removal, dated strength scenarios and concurrent-deletion guard |
