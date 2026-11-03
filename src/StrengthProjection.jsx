@@ -6,10 +6,10 @@ import {isoToday} from './data';
 import {formatWeight,toDisplayWeight} from './units';
 import WorkoutPoint from './WorkoutPoint';
 const timestamp=date=>dayNumber(date)*86400000;
-export default function StrengthProjection({points,db,units,openWorkout,onTouch}){
+export default function StrengthProjection({points,exercise,db,units,openWorkout,onTouch}){
  const valid=points.filter(p=>isISODate(p.date)&&p.date<=isoToday()&&Number.isFinite(p.value)&&p.value>0).sort((a,b)=>a.date.localeCompare(b.date)),anchor=valid.at(-1)?.date||isoToday();
  const [target,setTarget]=useState(()=>addCalendarDays(anchor,90)),[start,setStart]=useState(()=>valid[0]?.date||anchor),[end,setEnd]=useState(()=>addCalendarDays(anchor,180)),[phase,setPhase]=useState('all'),[experience,setExperience]=useState('custom'),[halfLife,setHalfLife]=useState(26),[pace,setPace]=useState(100);
- const model=useMemo(()=>fitStrengthProjection(points,{weights:db.weights,phase,asOf:isoToday(),halfLifeWeeks:halfLife===''?NaN:halfLife,pacePercent:pace===''?NaN:pace}),[points,db.weights,phase,halfLife,pace]);
+ const model=useMemo(()=>fitStrengthProjection(points,{weights:db.weights,phase,exercise,asOf:isoToday(),halfLifeWeeks:halfLife===''?NaN:halfLife,pacePercent:pace===''?NaN:pace}),[points,exercise,db.weights,phase,halfLife,pace]);
  const historical=historicalValue(valid,target),prediction=!historical&&!model.error?model.predict(target):null;
  const rangeValid=isISODate(start)&&isISODate(end)&&start<end;
  const data=useMemo(()=>{if(!rangeValid)return [];const dates=new Map(valid.filter(p=>p.date>=start&&p.date<=end).map(p=>[p.date,{date:p.date,time:timestamp(p.date),value:toDisplayWeight(p.value,units,2)}]));

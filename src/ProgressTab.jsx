@@ -119,7 +119,7 @@ export default function ProgressTab({db,patch,date,setDate,setTab,weightEntry,se
         <span className="trend-caption">{displayChartData.length} logged {displayChartData.length===1?'date':'dates'} · Double-click or double-tap a dot to open its workout</span>
       </div>
       <label className="weekpick"><input type="checkbox" checked={showProjection} onChange={e=>setShowProjection(e.target.checked)}/> Show projected 1RM</label>
-      {showProjection?<StrengthProjection key={chartLift} points={chartData} db={db} units={units} openWorkout={openChartWorkout} onTouch={touchChartPoint}/>:displayChartData.length?<div className="chart trend-chart">
+      {showProjection?<StrengthProjection key={chartLift} exercise={chartLift} points={chartData} db={db} units={units} openWorkout={openChartWorkout} onTouch={touchChartPoint}/>:displayChartData.length?<div className="chart trend-chart">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={displayChartData} margin={{top:14,right:18,bottom:8,left:0}}>
             <CartesianGrid vertical={false} stroke="#2a3b52" strokeDasharray="3 7"/>
