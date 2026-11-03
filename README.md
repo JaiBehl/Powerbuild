@@ -42,6 +42,8 @@ Source access is still required for edits. Current workouts, foods, goals and pr
 
 ### Training library
 
+- **Archive all unused** previews and archives every unarchived exercise outside the active rotation/fixed-weekday schedule, with confirmation and a recovery copy. Stable exercise links and resolved names protect used exercises; rest/empty schedules have no used exercises. Archived definitions remain recoverable; saved programs and dated logs are not changed.
+
 - **Exercise library / Exercise editor** keep reusable definitions with default sets, rep ranges, effort, creation/update dates, duplication, archive and 10-version edit history. Existing template and historical names seed the catalog without inventing original dates. New exercises created through the workout/session editors enter the same catalog.
 - Workout templates and Train can reuse saved exercises. Exercise renames update linked future templates and add an old-label link for progress continuity; existing session names/sets are not rewritten. Reloading resolves historical labels to their renamed definitions without recreating obsolete catalog entries. Applying new default prescriptions to linked templates is explicit. Per-workout overrides remain possible, and changing an exercise name directly in a template detaches its old catalog link.
 

@@ -1,3 +1,4 @@
+import {scheduledWorkoutNames} from './activeSchedule.js';
 import {resistanceConfig,calisthenicExercises} from './resistance.js';
 import {libraryId,validLibraryName} from './libraryCore.js';
 import {normalizeTemplates,replaceWorkoutRows} from './workoutOperations.js';
@@ -34,3 +35,12 @@ export function saveExerciseDefinition(db,{id,name,sets=3,range='8–12',target=
 export function duplicateExerciseDefinition(db,id){const old=db.exerciseLibrary.find(e=>e.id===id);if(!old)throw Error('Exercise no longer exists.');const base=old.name.slice(0,90);let name=base+' copy',i=2;while(db.exerciseLibrary.some(e=>key(e.name)===key(name)))name=base+' copy '+i++;return saveExerciseDefinition(db,{...old,id:undefined,name});}
 export function archiveExerciseDefinition(db,id,archived=true){if(!db.exerciseLibrary.some(e=>e.id===id))throw Error('Exercise no longer exists.');return {...db,exerciseLibrary:db.exerciseLibrary.map(e=>e.id===id?{...e,archived,updatedAt:new Date().toISOString()}:e)};}
 export function restoreExerciseRevision(db,id,index,applyToWorkouts=false){const e=db.exerciseLibrary.find(e=>e.id===id),r=e?.revisions?.[index];if(!r)throw Error('Revision no longer exists.');return saveExerciseDefinition(db,{...r.data,id,applyToWorkouts});}
+
+export function unusedScheduleExercises(db){
+ const names=new Set(scheduledWorkoutNames(db.settings));
+ const rows=Object.entries(db.templates||{}).filter(([name])=>names.has(name)).flatMap(([,rows])=>rows);
+ const ids=new Set(rows.map(row=>row[6]?.exerciseId).filter(Boolean));
+ const usedNames=new Set(rows.map(row=>key(resolveExerciseName(row[0],db.exerciseAliases))));
+ return (db.exerciseLibrary||[]).filter(e=>!e.archived&&!ids.has(e.id)&&!usedNames.has(key(resolveExerciseName(e.name,db.exerciseAliases))));
+}
+export function archiveUnusedScheduleExercises(db){const ids=new Set(unusedScheduleExercises(db).map(e=>e.id)),now=new Date().toISOString();return {...db,exerciseLibrary:db.exerciseLibrary.map(e=>ids.has(e.id)?{...e,archived:true,updatedAt:now}:e)};}
