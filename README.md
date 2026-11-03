@@ -99,6 +99,8 @@ Exact rep/effort prescriptions live in `src/data.js`; profiles can override temp
 
 ### Progress
 
+- Estimated 1RM trend points open their original workout date on double-click or double-tap, with Enter/Space keyboard access. Hover still shows the exact value; opening a date never starts or replaces a workout.
+
 - Overview of finished sessions, completed sets, latest weight and target.
 - Optional strength goals for any exercise, with individual target weight/deadline; add/edit/remove in Settings. New profiles start with none. Eligible original-profile migrations retain the older 405/315/225-lb squat/touch-and-go bench/supported OHP goals; these are not universal defaults.
 - Set-based strength chart and separate raw-weight/seven-day-average chart. Independent 3M/6M/1Y/All controls, default 6M, measured back from the latest point in that series. Tooltips show full dates and units.

@@ -1,8 +1,9 @@
+import WorkoutPoint from './WorkoutPoint';
 import WeeklyReview from './WeeklyReview';
 import {rollingWeightAverage} from './trends';
 import PersonalRecords from './PersonalRecords';
 import {exerciseNames,resolveExerciseName} from './exerciseCatalog';
-import React,{useMemo,useState} from 'react';
+import React,{useMemo,useState,useRef} from 'react';
 import {LineChart,Line,XAxis,YAxis,Tooltip,ResponsiveContainer,CartesianGrid} from 'recharts';
 import {Plus,Trash2} from 'lucide-react';
 import CalorieSection from './CalorieSection';
@@ -10,6 +11,9 @@ import {fromDisplayWeight,toDisplayWeight,unitName} from './units';
 
 export default function ProgressTab({db,patch,date,setDate,setTab,weightEntry,setWeightEntry,history,chartLift,setChartLift,chartData,finished,latestWeight}){
   const units=unitName(db.settings.units);
+  const lastChartTap=useRef(null);
+  const openChartWorkout=day=>{if(!db.sessions.some(s=>s.date===day))return;setDate(day);setTab('today');};
+  const touchChartPoint=(event,day)=>{const now=Date.now();if(lastChartTap.current?.day===day&&now-lastChartTap.current.at<450){event.preventDefault();openChartWorkout(day);lastChartTap.current=null;}else lastChartTap.current={day,at:now};};
   const goals=Array.isArray(db.strengthGoals)?db.strengthGoals:[];
   const [chartRange,setChartRange]=useState('6M');
   const [workoutYear,setWorkoutYear]=useState('all');
@@ -110,7 +114,7 @@ export default function ProgressTab({db,patch,date,setDate,setTab,weightEntry,se
         <div className="trend-range" role="group" aria-label="Chart date range">
           {['3M','6M','1Y','All'].map(range=><button type="button" key={range} aria-pressed={chartRange===range} className={chartRange===range?'selected':''} onClick={()=>setChartRange(range)}>{range}</button>)}
         </div>
-        <span className="trend-caption">{displayChartData.length} logged {displayChartData.length===1?'date':'dates'} · Hover for exact values</span>
+        <span className="trend-caption">{displayChartData.length} logged {displayChartData.length===1?'date':'dates'} · Double-click or double-tap a dot to open its workout</span>
       </div>
       {displayChartData.length?<div className="chart trend-chart">
         <ResponsiveContainer width="100%" height="100%">
@@ -119,7 +123,7 @@ export default function ProgressTab({db,patch,date,setDate,setTab,weightEntry,se
             <XAxis dataKey="date" tickFormatter={formatAxisDate} interval="preserveStartEnd" minTickGap={42} tickMargin={12} tick={{fill:'#94aac6',fontSize:11}} axisLine={false} tickLine={false}/>
             <YAxis domain={['auto','auto']} tickCount={5} width={48} tickFormatter={v=>Math.round(v).toLocaleString()} tick={{fill:'#94aac6',fontSize:11}} axisLine={false} tickLine={false}/>
             <Tooltip labelFormatter={formatTooltipDate} formatter={v=>[Number(v).toLocaleString('en-US',{maximumFractionDigits:1})+' '+units,'Estimated 1RM']} contentStyle={{background:'#17283f',border:'1px solid #416086',borderRadius:12,color:'#eaf0fc',boxShadow:'0 10px 25px #080e1a80'}} labelStyle={{color:'#eaf0fc',fontWeight:700,marginBottom:5}} itemStyle={{color:'#9fc1ff'}} cursor={{stroke:'#5778a4',strokeDasharray:'4 4'}}/>
-            <Line type="linear" dataKey="value" stroke="#84b2ff" strokeWidth={2.5} dot={displayChartData.length===1?{r:4}:false} activeDot={{r:5,stroke:'#dceaff',strokeWidth:2,fill:'#639dff'}} isAnimationActive={false} name="Estimated 1RM"/>
+            <Line type="linear" dataKey="value" stroke="#84b2ff" strokeWidth={2.5} dot={<WorkoutPoint openWorkout={openChartWorkout} onTouch={touchChartPoint}/>} activeDot={<WorkoutPoint active openWorkout={openChartWorkout} onTouch={touchChartPoint}/>} isAnimationActive={false} name="Estimated 1RM"/>
           </LineChart>
         </ResponsiveContainer>
       </div>:<p className="empty">Complete qualifying loaded sets for a strength trend. Bodyweight exercise records appear in Absolute strength records below.</p>}
