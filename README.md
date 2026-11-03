@@ -12,10 +12,10 @@ This README is the product manual and the handoff for a fresh AI development con
 | Site | [powerbuild-flexible-goals.vercel.app](https://powerbuild-flexible-goals.vercel.app) |
 | Hosting | Existing Vercel project `powerbuild-flexible-goals`, team/dashboard slug `power-build` |
 | Backend | Supabase project `zgbldcmahkokmkfqeljh`; Auth and the account-snapshot table/RPC described below |
-| Source reviewed through | [8758a2c9a550acad4376d58772c467ba4046a03d](https://github.com/JaiBehl/Powerbuild/commit/8758a2c9a550acad4376d58772c467ba4046a03d) |
-| Release work | November 2, 2026: added an explicit Create new schedule workflow to Schedule, building independent blank plans that require deliberate Save and Apply actions. Previous release: compact Train logger and editor-only bodyweight toggle ([PR #30](https://github.com/JaiBehl/Powerbuild/pull/30)). |
-| Date | November 2, 2026, America/Los_Angeles |
-| Validation | [PR #30 regression gate](https://github.com/JaiBehl/Powerbuild/actions/runs/41546461514) passed; Create new schedule feature includes desktop/mobile browser regressions and must pass its own GitHub CI before release. |
+| Source reviewed through | [a658e6f16f74e6cfb5f86550563aa71a24efa166](https://github.com/JaiBehl/Powerbuild/commit/a658e6f16f74e6cfb5f86550563aa71a24efa166) |
+| Release work | [PR #32](https://github.com/JaiBehl/Powerbuild/pull/32): bulk archive outside active schedules, permanent library deletion, chart-to-workout navigation, safe active-session removal, dated strength scenarios and a concurrent-deletion editor fix. Follows compact logger PR #30 and blank schedule creation PR #31. |
+| Date | November 3, 2026, America/Los_Angeles |
+| Validation | 135 unit/integration + 84 Chromium browser tests and production build passed; [complete source gate](https://github.com/JaiBehl/Powerbuild/actions/runs/41618152319). Stage gates below passed sequentially before each next implementation. |
 
 The source baseline identifies code actually reviewed and tested. Documentation-only or merge commits may be newer. Fetch current `main`, inspect commits since that baseline, and check open PRs before changing anything. Current source governs implemented behavior; the latest explicit user instruction governs desired behavior.
 
@@ -42,6 +42,12 @@ Source access is still required for edits. Current workouts, foods, goals and pr
 
 ### Training library
 
+- If cloud sync removes a workout while its editor is open, the stale draft remains visible with a notice and no invalid Select in Train action. Reload resets it; saving cannot silently recreate a deleted template. A synthetic cloud regression covers this concurrent-deletion case.
+
+- **Delete permanently** is available for exercise definitions, workout templates and saved schedules. The confirmation previews its scope and requires typing the exact name; a recovery copy must succeed before removal. Workout deletions turn active references into Rest. Dated logs and independent saved-program/application snapshots stay intact; this is library deletion, not erasure of every historical record or old backup. Exercise deletion suppression survives reload, backups and cloud normalization, so templates/history/default calisthenics do not silently recreate the entry. Explicitly creating a new definition with that name is allowed.
+
+- **Archive all unused** previews and archives every unarchived exercise outside the active rotation/fixed-weekday schedule, with confirmation and a recovery copy. Stable exercise links and resolved names protect used exercises; rest/empty schedules have no used exercises. Archived definitions remain recoverable; saved programs and dated logs are not changed.
+
 - **Exercise library / Exercise editor** keep reusable definitions with default sets, rep ranges, effort, creation/update dates, duplication, archive and 10-version edit history. Existing template and historical names seed the catalog without inventing original dates. New exercises created through the workout/session editors enter the same catalog.
 - Workout templates and Train can reuse saved exercises. Exercise renames update linked future templates and add an old-label link for progress continuity; existing session names/sets are not rewritten. Reloading resolves historical labels to their renamed definitions without recreating obsolete catalog entries. Applying new default prescriptions to linked templates is explicit. Per-workout overrides remain possible, and changing an exercise name directly in a template detaches its old catalog link.
 
@@ -63,6 +69,8 @@ Source access is still required for edits. Current workouts, foods, goals and pr
 - JSON/program snapshots retain mode/default added load. Sets CSV appends Resistance and Load basis columns; its Weight field means added load for bodyweight exercises. No assistance-load calculator or movement-specific effective-mass model is included.
 
 ### Train
+
+- Removing an active-session exercise always checkpoints its sets. If future-template permission is on but the row was removed/renamed or is ambiguous, the logger explains the failed link and offers an explicit **Remove from this session only** fallback. It never guesses which template row to remove. Failed recovery/persistence patches remain visible instead of being treated as successful edits.
 
 - Date picker, previous/next day and Today; scheduled-workout/rest label. Date is shared with Progress and nutrition.
 - Start the scheduled workout or any active saved workout manually, including on rest days. The model is one session per date.
@@ -94,6 +102,13 @@ Browse previous/current/next week, open dates in Train, see finished indicators 
 Exact rep/effort prescriptions live in `src/data.js`; profiles can override templates. Push A bench, Legs A squat and Push B supported OHP have explicit strength Top/Backoff tags, generally 3–5 top / 4–6 backoff. The default deadlift is Romanian on Legs B; conventional deadlift may be custom or historical.
 
 ### Progress
+
+- **Show projected 1RM** opens a separate dated scenario inside Estimated 1RM trend, with exact target date, custom start/end timeline, bodyweight-phase history filter, experience scenario, editable gain-rate half-life and starting-pace adjustment. Logged values remain distinct from the dashed illustrative scenario; only logged dots open workouts. Projection choices are transient UI state, never written over logs/goals/backups.
+- The fit uses the median pairwise slope (pairs >=7 days apart) of the latest <=24 qualifying dates within 90 days of the newest log, requiring 4 dates spanning 21 days. Future-dated sets are excluded. Bodyweight/assisted movements cannot project a 1RM from added load. Canonical pounds are fit before unit conversion. Projection is anchored at the last observed value and integrates an exponentially decaying rate: `anchor + slope * paceMultiplier * tau * (1 - exp(-days/tau))`, `tau = halfLifeWeeks*7/ln(2)`. Flat/declining trends are retained; nonpositive/nonfinite predictions are unavailable, not fabricated. Future horizon is capped at 365 days; historical dates return exact logged values or labelled interpolation inside the recorded range, never backward extrapolation. Start/end use a true numeric calendar axis.
+- Experience half-life presets (returning 8, novice 13, intermediate 26, advanced 52 weeks; custom default 26) are **editable illustrative assumptions**, not validated research coefficients or a lifetime strength ceiling. The bulk/cut/maintenance selector fits the user's own phase-matched history; it never applies an invented universal energy multiplier. Phase classification uses valid same-day weight means over >=14 days in the prior 35 days, with a weigh-in within 7 days; ±0.1% weekly change is the product's stable-weight threshold. Sparse phase data produces guidance, not a hidden fallback. Pace adjustment 0–200% is an explicit user scenario. Stale anchors, technique/RPE changes and changing programs limit interpretation.
+- Evidence reviewed November 3, 2026: [Pelland et al., 2026](https://pubmed.ncbi.nlm.nih.gov/41343037/) supports diminishing dose returns, not a personal time-course equation; [Swinton et al., 2024](https://doi.org/10.1007/s40279-024-02006-3) found limited extra predictive value for training status in its population model; [Murphy & Koehler, 2022](https://pubmed.ncbi.nlm.nih.gov/34623696/) found energy deficits impaired lean-mass gains without a statistically significant between-condition strength effect; [Helms et al., 2023](https://doi.org/10.1186/s40798-023-00651-y) found mixed small-study strength results across surplus conditions, with faster gain predominantly increasing fat. These do not validate individual experience/bulk/cut gain multipliers. The UI and formulas therefore describe an exploratory scenario, not a research-validated prediction.
+
+- Estimated 1RM trend points open their original workout date on double-click or double-tap, with Enter/Space keyboard access. Hover still shows the exact value; opening a date never starts or replaces a workout.
 
 - Overview of finished sessions, completed sets, latest weight and target.
 - Optional strength goals for any exercise, with individual target weight/deadline; add/edit/remove in Settings. New profiles start with none. Eligible original-profile migrations retain the older 405/315/225-lb squat/touch-and-go bench/supported OHP goals; these are not universal defaults.
@@ -261,6 +276,7 @@ First-device migration: export backups on the device with existing data, sign in
 | `cardio[]` | `{id,name,durationMinutes,calories}` |
 | `savedFoods` | Per-one-serving `{id,name,meal,calories,protein,carbs,fat}` |
 | `calorieSettings` | Defaults for baseline, demographics, weight mode, activity, macro rates and manual overrides |
+| `deletedExerciseIds`, `deletedExerciseNames` | Suppress automatic reseeding of permanently removed catalog definitions; profile-scoped, backup/cloud preserved, cleared on reset |
 | `exerciseLibrary` | Reusable `{id,name,sets,range,target,kind,resistance,defaultAddedWeight,createdAt,updatedAt,archived,revisions}` definitions; template row `[6]` stores `{exerciseId,resistance,defaultAddedWeight}`; session `libraryExerciseId` links new sessions |
 | `savedSchedules`, `scheduleLog` | Named program snapshots with templates/exercises and up to 10 prior versions; last 100 applied schedule snapshots |
 | `workoutMeta` | Workout name → `{id,name,description,createdAt,updatedAt,archived,revisions}`; up to 10 previous template versions |
@@ -320,8 +336,10 @@ Explicit correction updates records owned by the same import ID. Optional remova
 | `src/ScheduleEditor.jsx`, `src/scheduleLibrary.js` | Rotation/fixed-day editor, program snapshot library, restoration and application log |
 | `src/TrainTab.jsx`, `src/workoutOperations.js` | Workout UI, explicit template edits and stable identity matching |
 | `src/ExerciseLibrary.jsx`, `src/exerciseLibrary.js`, `src/libraryCore.js` | Exercise catalog/editor, migration, linked template updates, archive, revisions and shared library helpers |
+| `src/libraryDeletion.js` | Scoped permanent library deletion, typed confirmation and schedule reference cleanup |
 | `src/WorkoutLibrary.jsx`, `src/programLibrary.js` | Reusable workout library/editor, stable identity, rename/duplicate/archive and version restore |
 | `src/ScheduleTab.jsx` | Weekly calendar and current rotation/fixed-weekday preview |
+| `src/StrengthProjection.jsx`, `src/strengthProjection.js`, `src/WorkoutPoint.jsx` | Dated strength scenarios, transparent empirical fit/assumptions and accessible original-workout chart navigation |
 | `src/ProgressTab.jsx` | Goal summaries, charts and all-years histories |
 | `src/exerciseCatalog.js`, `src/ExerciseAliases.jsx` | Canonical movement resolution, shared selectors/history and alias editor |
 | `src/resistance.js`, `src/ResistanceFields.jsx` | Resistance modes, calisthenic defaults and shared bodyweight/added-load controls |
@@ -378,7 +396,7 @@ The original audit read all 34 files at `03d6258633b7376b184a3b7e86bdd201cf18c62
 | Persistent maintenance weigh-in connection | 98 unit/integration + 56 browser tests and production build [passed](https://github.com/JaiBehl/Powerbuild/actions/runs/41134846082) before weekly goal pace was added |
 | Weekly goal pace and combined regression gate | 99 unit/integration + 58 browser tests and production build [passed](https://github.com/JaiBehl/Powerbuild/actions/runs/41135348021) |
 
-Current source gate: **124 unit/integration + 70 browser tests, zero failures**, plus a production build. Sequential stages passed before the next began:
+Previous program-library source gate: **124 unit/integration + 70 browser tests, zero failures**, plus a production build. Its sequential stages passed before the next began:
 
 | Stage | Evidence |
 | --- | --- |
@@ -387,7 +405,7 @@ Current source gate: **124 unit/integration + 70 browser tests, zero failures**,
 | Editable rotation/fixed weekdays and saved whole programs | 116 + 66 [passed](https://github.com/JaiBehl/Powerbuild/actions/runs/41200280742) |
 | Bodyweight/added load and final combined audit | 124 + 70 [passed](https://github.com/JaiBehl/Powerbuild/actions/runs/41201029796) |
 
-New coverage includes creation/edit/rename/revision/archive, linked prescriptions, stable workout identities, original-log preservation, profile isolation, future-template permission, repeating/rest/fixed schedules, immutable program snapshots, rename collisions, repeat-safe restore, calisthenic zero/added loads, kg conversion, mode-separated records/previous performance, all-profile backup restoration, CSV semantics, account snapshot preservation, and phone width. The production smoke now requires the new libraries, schedule editor and bodyweight/added-load controls. Local unit/build checks passed; the complete Chromium gate ran in GitHub Actions because this workspace could not launch a local browser. Synthetic tests do not inspect the user's real browser or real account payloads.
+New coverage includes creation/edit/rename/revision/archive, linked prescriptions, stable workout identities, original-log preservation, profile isolation, future-template permission, repeating/rest/fixed schedules, immutable program snapshots, rename collisions, repeat-safe restore, calisthenic zero/added loads, kg conversion, mode-separated records/previous performance, all-profile backup restoration, CSV semantics, account snapshot preservation, and phone width. The production smoke requires the libraries, schedule editor, bodyweight/added-load controls, bulk archive, permanent deletion, session-removal fallback and projected 1RM controls. Local unit/build checks passed; the complete Chromium gate ran in GitHub Actions because this workspace could not launch a local browser. Synthetic tests do not inspect the user's real browser or real account payloads.
 
 Earlier release coverage remains in the suite: maintenance weigh-in connection and weekly goal pace, bodyweight percentages and independent relative rankings, date cutoffs, estimate provenance, calorie/food/cardio isolation, cloud conflicts, historical imports and recovery.
 
@@ -397,8 +415,26 @@ GitHub `main` is the established Vercel production source; repo root, Vite, `npm
 
 Live backend ownership/RPC metadata was inspected; private payloads and production records were not used for tests. No schema/auth/hosting changes are required by this release.
 
+## November 3 maintenance release
+
+All requested changes and an independent bug audit passed the full regression/build gates sequentially:
+
+| Stage | Evidence |
+| --- | --- |
+| Bulk archive outside active schedules | 126 unit/integration + 75 browser [passed](https://github.com/JaiBehl/Powerbuild/actions/runs/41614867591) |
+| Active-session removal with stale future links | 126 + 76 [passed](https://github.com/JaiBehl/Powerbuild/actions/runs/41615394781) |
+| Chart point navigation, desktop/touch/keyboard | 126 + 79 [passed](https://github.com/JaiBehl/Powerbuild/actions/runs/41615912054) |
+| Confirmed permanent library deletion and reload suppression | 129 + 80 [passed](https://github.com/JaiBehl/Powerbuild/actions/runs/41616491487) |
+| Research-informed strength scenarios | 134 + 83 [passed](https://github.com/JaiBehl/Powerbuild/actions/runs/41617272722) |
+| Unsupported resistance guard and release smoke markers | 135 + 83 [passed](https://github.com/JaiBehl/Powerbuild/actions/runs/41617659365) |
+| Independent concurrent-deletion audit fix and complete gate | 135 + 84 [passed](https://github.com/JaiBehl/Powerbuild/actions/runs/41618152319) |
+
+The bug audit examined active-session template matching and recovery failures, catalog reseeding after deletion, current schedule reference integrity, stale editor behavior under cloud refresh, and strength date/unit/resistance boundaries. Confirmed fixes are recorded above; no speculative redesign was performed. The cloud scenario uses the isolated synthetic backend and performs no production database/auth operation. Dependency versions, schema, auth and hosting configuration are unchanged. Local unit/build checks and complete GitHub Chromium gates passed; the workspace lacks a local browser. Production verification is checked separately after merge, not inferred from PR preview success. No real Notes/email/account data is in the public code or fixtures.
+
 ## Remaining boundaries
 
+- Strength projection is an illustrative, assumption-dependent scenario, not a validated personal prediction; sparse data, old anchors, changing technique/programs and future energy balance limit it. Experience presets are editable assumptions; phase filtering requires actual dated weight history.
+- Permanent deletion is scoped to the selected library definition and its edit history, not independent workout logs, program/application snapshots or existing backups. Recovery restoration can deliberately bring it back.
 - One session per date; saving a weigh-in replaces that date's prior measurements.
 - Libraries retain archived entries; edit history keeps 10 prior versions per definition/program, and the schedule application log keeps 100 plans. Limits are 500 workouts, 500 saved schedules, 10,000 exercise definitions, 200 exercises/workout and 100 sets/exercise.
 - Existing sessions without an explicit resistance mode retain external-load interpretation. Ambiguous variants need an explicit bodyweight toggle. Added-load records do not estimate effective body mass, assistance, 1RM or relative resistance.
@@ -449,3 +485,6 @@ The README PR check flags application/configuration/test changes without a compa
 | [#27](https://github.com/JaiBehl/Powerbuild/pull/27) | Rename Absolute strength records, show bodyweight percentages for each absolute PR and preserve saved collapse preferences |
 | [#28](https://github.com/JaiBehl/Powerbuild/pull/28) | Keep maintenance bodyweight connected to new weigh-ins across dates; show calculator/source dates and signed weekly goal pace in Bodyweight goal |
 | [#29](https://github.com/JaiBehl/Powerbuild/pull/29) | Reusable workout/exercise libraries, editable and saved complete schedules, bodyweight and weighted calisthenics with honest records and portable backups |
+| [#30](https://github.com/JaiBehl/Powerbuild/pull/30) | Compact previous-session reference and editor-only bodyweight toggle |
+| [#31](https://github.com/JaiBehl/Powerbuild/pull/31) | Create independent blank schedules with separate Save and Apply actions |
+| [#32](https://github.com/JaiBehl/Powerbuild/pull/32) | Bulk archive, scoped permanent deletion, chart navigation, active-session removal, dated strength scenarios and concurrent-deletion guard |

@@ -15,7 +15,8 @@ export default function TrainTab({db,patch,date,setDate,scheduled,session,update
   const [exerciseDraft,setExerciseDraft]=useState(null);
   const [updateFuture,setUpdateFuture]=useState(false);
   const [exerciseError,setExerciseError]=useState('');
-  useEffect(()=>{setUpdateFuture(false);setExerciseError('');setEditingExerciseId(null);setExerciseDraft(null);},[session?.id]);
+  const [removalFallback,setRemovalFallback]=useState(null);
+  useEffect(()=>{setUpdateFuture(false);setExerciseError('');setEditingExerciseId(null);setExerciseDraft(null);setRemovalFallback(null);},[session?.id]);
   const units=unitName(db.settings.units),available=activeWorkoutNames(db),selectedManual=available.includes(manualType)?manualType:available[0]||'';
   const allSets=session?.exercises.flatMap(e=>e.sets)||[];
   const completed=allSets.filter(x=>x.done).length;
@@ -24,7 +25,7 @@ export default function TrainTab({db,patch,date,setDate,scheduled,session,update
   const totalVolume=toDisplayWeight(totalVolumeLb,units,0);
   const editEx=(ei,fn)=>updateSession(s=>({...s,exercises:s.exercises.map((e,i)=>i===ei?fn(e):e)}));
   const setCell=(ei,si,key,value)=>updateSession(s=>({...s,exercises:s.exercises.map((e,i)=>i!==ei?e:{...e,sets:e.sets.map((v,j)=>j!==si?v:{...v,[key]:value})})}));
-  const changeExercise=(fn,options)=>{try{const next=normalizeProgram(fn(db),{newEntryDate:new Date().toISOString()});patch(()=>next,options);setExerciseError('');}catch(e){setExerciseError(e.message);}};
+  const changeExercise=(fn,options)=>{try{const next=normalizeProgram(fn(db),{newEntryDate:new Date().toISOString()});if(patch(()=>next,options)===false)return false;setExerciseError('');return true;}catch(e){setExerciseError(e.message);}};
   const addExercise=()=>{if(!newExerciseName.trim()||!session)return;changeExercise(value=>addSessionExercise(value,session.id,newExerciseName,updateFuture,db.exerciseLibrary?.find(e=>e.name.toLowerCase()===newExerciseName.trim().toLowerCase())));setNewExerciseName('');};
   const editExercise=(ei)=>{
     const ex=session.exercises[ei];
@@ -58,7 +59,9 @@ export default function TrainTab({db,patch,date,setDate,scheduled,session,update
   };
   const removeExercise=(ei)=>{
     const ex=session.exercises[ei];
-    if(confirm('Remove '+ex.name+' from this session'+(updateFuture?' and future '+session.type+' workouts':'')+'?'))changeExercise(value=>removeSessionExercise(value,session.id,ex.id,updateFuture));
+    if(!confirm('Remove '+ex.name+' from this session'+(updateFuture?' and future '+session.type+' workouts':'')+'?'))return;
+    try{const next=normalizeProgram(removeSessionExercise(db,session.id,ex.id,updateFuture));if(patch(()=>next,{checkpoint:'Before removing session exercise'})===false)return;setRemovalFallback(null);setExerciseError('');if(editingExerciseId===ex.id){setEditingExerciseId(null);setExerciseDraft(null);}}
+    catch(error){setExerciseError(error.message);if(updateFuture)setRemovalFallback({id:ex.id,name:ex.name});}
   };
 
   return <>
@@ -68,7 +71,7 @@ export default function TrainTab({db,patch,date,setDate,scheduled,session,update
       <div className="summary"><div className="metric"><small>SESSION</small><strong>{session.type}</strong></div><div className="metric"><small>SETS COMPLETED</small><strong>{completed}<span> / {total}</span></strong></div><div className="metric"><small>EXTERNAL-LOAD VOLUME</small><strong>{Number(totalVolume||0).toLocaleString()} <span>{units}</span></strong></div><div className="metric"><small>STATUS</small><strong>{session.finished?'Finished':'In progress'}</strong></div></div>
       <label className="weekpick"><input type="checkbox" checked={updateFuture} onChange={e=>setUpdateFuture(e.target.checked)}/> Apply exercise changes to future sessions</label>
       <p className="muted">Off: exercise changes affect this session only. On: also update the matching {session.type} template.</p>
-      {exerciseError&&<p className="error" role="alert">{exerciseError}</p>}
+      {exerciseError&&<p className="error" role="alert">{exerciseError}</p>}{removalFallback&&<div className="actions"><p className="muted">The future template could not be updated. You can still remove {removalFallback.name} from this session.</p><button className="secondary" onClick={()=>{if(changeExercise(value=>removeSessionExercise(value,session.id,removalFallback.id,false),{checkpoint:'Before removing unlinked session exercise'}))setRemovalFallback(null);}}>Remove from this session only</button><button className="textbtn" onClick={()=>{setRemovalFallback(null);setExerciseError('');}}>Cancel removal</button></div>}
       <p className="muted">Volume counts external load and added weight only; bodyweight-only reps remain logged without a guessed tonnage.</p><p className="muted">Set RPE: 10 = no reps left, 9 = about 1, 8 = about 2, 7 = about 3. Record actual set effort, not the prescribed target. Blank RPE stays unknown.</p>
       </CalorieSection>
       {session.exercises.map((e,ei)=><CalorieSection key={e.id??ei} collapseKey={'exercise:'+(e.templateId||e.id||e.name)} title={e.name} description={e.range+' reps · '+e.target} summary={e.sets.filter(v=>v.done).length+' / '+e.sets.length+' sets'} className="train-exercise-section"><div className="exhead"><span className="muted">Exercise controls</span><div className="exactions"><button className="iconbtn subtle" title="Add a set" onClick={()=>editEx(ei,x=>({...x,sets:[...x.sets,{weight:isBodyweight(x)?0:'',reps:'',rpe:'',done:false,tag:''}]}))}><Plus size={18}/></button><button className="iconbtn subtle" title="Edit exercise" onClick={()=>editExercise(ei)}><Pencil size={15}/></button><button className="iconbtn subtle" title="Remove exercise" onClick={()=>removeExercise(ei)}><Trash2 size={15}/></button></div></div>

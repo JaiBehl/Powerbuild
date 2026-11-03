@@ -1,3 +1,4 @@
+import {deleteWorkoutDefinition} from '../../src/libraryDeletion.js';
 import {test,expect} from '@playwright/test';
 import {seed,readDb} from '../fixtures.js';
 import {fakeBackend,login,syncActive,saveWeight} from '../cloud-fixtures.js';
@@ -54,3 +55,5 @@ test('two devices starting the same date show a conflict rather than hide a dupl
   expect(backend.row.payload.profileData.test.sessions.length).toBe(1);expect((await readDb(p)).sessions.length).toBe(1);expect((await readDb(q)).sessions.length).toBe(1);
  }finally{backend.release();await a.close();await b.close();}
 });
+
+test('remote workout deletion preserves a stale editor draft without invalid navigation or recreation',async({page,context})=>{const backend=fakeBackend();await backend.install(context);await seed(page);await login(page);await page.getByRole('button',{name:'Upload this device',exact:true}).click();await syncActive(page);await page.locator('nav').getByRole('button',{name:'Library',exact:true}).click();await page.getByRole('button',{name:'Edit workout Push A',exact:true}).click();await expect(page.getByRole('button',{name:'Select in Train',exact:true})).toBeVisible();const remote=structuredClone(backend.row);const db=remote.payload.profileData.test;remote.payload.profileData.test=deleteWorkoutDefinition(db,db.workoutMeta['Push A'].id);remote.revision++;backend.row=remote;await page.evaluate(()=>document.dispatchEvent(new Event('visibilitychange')));await expect.poll(async()=>!!(await readDb(page)).templates['Push A'],{timeout:15000}).toBe(false);await expect(page.getByRole('button',{name:'Select in Train',exact:true})).toHaveCount(0);await expect(page.getByText('This workout was removed on another device.',{exact:false})).toBeVisible();await page.getByRole('button',{name:'Save workout',exact:true}).click();await expect(page.getByRole('alert')).toContainText('no longer exists');expect((await readDb(page)).templates['Push A']).toBeUndefined();await page.getByRole('button',{name:'Reload saved workout',exact:true}).click();await expect(page.getByLabel('Workout name',{exact:true})).toHaveValue('');});

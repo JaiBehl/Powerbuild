@@ -1,3 +1,4 @@
+import {scheduledWorkoutNames} from './activeSchedule.js';
 import {resistanceConfig,calisthenicExercises} from './resistance.js';
 import {libraryId,validLibraryName} from './libraryCore.js';
 import {normalizeTemplates,replaceWorkoutRows} from './workoutOperations.js';
@@ -7,9 +8,10 @@ export function normalizeExerciseLibrary(db,{newEntryDate=null}={}){
  const list=structuredClone(Array.isArray(db.exerciseLibrary)?db.exerciseLibrary:[]).map(e=>({...e,...resistanceConfig(e,e.name)})),byId=new Map(list.map(e=>[e.id,e])),byName=new Map(list.map(e=>[key(e.name),e]));
  const ensure=(name,sets,range,target,kind,requestedId,source={})=>{
   let e=byId.get(requestedId)||byName.get(key(name))||byName.get(key(resolveExerciseName(name,db.exerciseAliases)));
+  if(!e&&((db.deletedExerciseIds||[]).includes(requestedId)||(db.deletedExerciseNames||[]).includes(key(name))||(db.deletedExerciseNames||[]).includes(key(resolveExerciseName(name,db.exerciseAliases)))))return null;
   if(!e){e={id:'exercise:'+encodeURIComponent(key(name)),name,sets:Math.max(1,Math.min(100,Number(sets)||3)),range:range||'8–12',target:target||'1–2 RIR',kind:kind||'accessory',...resistanceConfig(source,name),createdAt:newEntryDate,updatedAt:newEntryDate,archived:false,revisions:[]};list.push(e);byId.set(e.id,e);byName.set(key(name),e);}return e;
  };
- const templates=Object.fromEntries(Object.entries(normalizeTemplates(db.templates||{})).map(([name,rows])=>[name,rows.map(row=>{const next=structuredClone(row),config=next[6]&&typeof next[6]==='object'?next[6]:{};const e=ensure(row[0],row[1],row[2],row[3],row[4],config.exerciseId,config);next[6]={...config,...resistanceConfig(Object.hasOwn(config,'resistance')?config:e,row[0]),exerciseId:e.id};return next;})]));
+ const templates=Object.fromEntries(Object.entries(normalizeTemplates(db.templates||{})).map(([name,rows])=>[name,rows.map(row=>{const next=structuredClone(row),config=next[6]&&typeof next[6]==='object'?next[6]:{};const e=ensure(row[0],row[1],row[2],row[3],row[4],config.exerciseId,config);next[6]={...config,...resistanceConfig(Object.hasOwn(config,'resistance')?config:e,row[0])};if(e)next[6].exerciseId=e.id;else delete next[6].exerciseId;return next;})]));
  for(const s of db.sessions||[])for(const e of s.exercises||[])ensure(e.name,e.sets?.length,e.range,e.target,e.kind,e.libraryExerciseId,e);
  for(const name of calisthenicExercises)ensure(name,3,'8–12','1–2 RIR','accessory');
  return {...db,templates,exerciseLibrary:list};
@@ -24,7 +26,7 @@ export function saveExerciseDefinition(db,{id,name,sets=3,range='8–12',target=
  const entry=old?{...old,...clean,updatedAt:now,revisions:[...(old.revisions||[]),{at:now,data:Object.fromEntries(Object.entries(old).filter(([k])=>k!=='revisions'))}].slice(-10)}:{...clean,id:libraryId(),createdAt:now,updatedAt:now,archived:false,revisions:[]};
  if(!old&&next.exerciseLibrary.length>=10000)throw Error('Exercise library limit reached.');
  let aliases=next.exerciseAliases||{};if(old&&old.name!==name){aliases={...aliases};if(resolveExerciseName(name,aliases)===resolveExerciseName(old.name,aliases))delete aliases[exerciseNameKey(name)];aliases=setExerciseAlias(aliases,old.name,name);}
- next={...next,exerciseAliases:aliases,exerciseLibrary:old?next.exerciseLibrary.map(e=>e.id===id?entry:e):[...next.exerciseLibrary,entry]};
+ next={...next,deletedExerciseNames:(next.deletedExerciseNames||[]).filter(n=>n!==key(name)),exerciseAliases:aliases,exerciseLibrary:old?next.exerciseLibrary.map(e=>e.id===id?entry:e):[...next.exerciseLibrary,entry]};
  if(old)for(const [type,rows] of Object.entries(next.templates)){
   const updated=rows.map(row=>{if(row[6]?.exerciseId!==id)return row;const r=structuredClone(row);r[0]=name;if(applyToWorkouts){r[1]=sets;r[2]=clean.range;r[3]=clean.target;r[4]=clean.kind;r[6]={...r[6],...mode};}return r;});
   if(JSON.stringify(rows)!==JSON.stringify(updated))next=replaceWorkoutRows(next,type,updated);
@@ -34,3 +36,12 @@ export function saveExerciseDefinition(db,{id,name,sets=3,range='8–12',target=
 export function duplicateExerciseDefinition(db,id){const old=db.exerciseLibrary.find(e=>e.id===id);if(!old)throw Error('Exercise no longer exists.');const base=old.name.slice(0,90);let name=base+' copy',i=2;while(db.exerciseLibrary.some(e=>key(e.name)===key(name)))name=base+' copy '+i++;return saveExerciseDefinition(db,{...old,id:undefined,name});}
 export function archiveExerciseDefinition(db,id,archived=true){if(!db.exerciseLibrary.some(e=>e.id===id))throw Error('Exercise no longer exists.');return {...db,exerciseLibrary:db.exerciseLibrary.map(e=>e.id===id?{...e,archived,updatedAt:new Date().toISOString()}:e)};}
 export function restoreExerciseRevision(db,id,index,applyToWorkouts=false){const e=db.exerciseLibrary.find(e=>e.id===id),r=e?.revisions?.[index];if(!r)throw Error('Revision no longer exists.');return saveExerciseDefinition(db,{...r.data,id,applyToWorkouts});}
+
+export function unusedScheduleExercises(db){
+ const names=new Set(scheduledWorkoutNames(db.settings));
+ const rows=Object.entries(db.templates||{}).filter(([name])=>names.has(name)).flatMap(([,rows])=>rows);
+ const ids=new Set(rows.map(row=>row[6]?.exerciseId).filter(Boolean));
+ const usedNames=new Set(rows.map(row=>key(resolveExerciseName(row[0],db.exerciseAliases))));
+ return (db.exerciseLibrary||[]).filter(e=>!e.archived&&!ids.has(e.id)&&!usedNames.has(key(resolveExerciseName(e.name,db.exerciseAliases))));
+}
+export function archiveUnusedScheduleExercises(db){const ids=new Set(unusedScheduleExercises(db).map(e=>e.id)),now=new Date().toISOString();return {...db,exerciseLibrary:db.exerciseLibrary.map(e=>ids.has(e.id)?{...e,archived:true,updatedAt:now}:e)};}
