@@ -77,9 +77,17 @@ export function moveSessionExercise(db,sessionId,exerciseId,direction,updateFutu
   const first=targetTemplate(rows,session.exercises[from]);
   const second=targetTemplate(rows,neighbor);
   if(first===second)throw Error('Both exercises refer to one template entry. Reorder this session only.');
-  const reordered=[...rows];
-  [reordered[first],reordered[second]]=[reordered[second],reordered[first]];
-  next=replaceWorkoutRows({...db,templates},type,reordered);
+  // If the reusable template already places this pair in the desired order,
+  // do not undo that relationship just because this session was reordered
+  // separately on an earlier day.
+  const alreadyOrdered=direction===1?first>second:first<second;
+  if(!alreadyOrdered){
+   const reordered=[...rows];
+   const [moving]=reordered.splice(first,1);
+   const adjustedNeighbor=second-(first<second?1:0);
+   reordered.splice(direction===1?adjustedNeighbor+1:adjustedNeighbor,0,moving);
+   next=replaceWorkoutRows({...db,templates},type,reordered);
+  }
  }
  return {
   ...next,
