@@ -5,7 +5,7 @@ test('Workout editor searches saved exercises before opening the native dropdown
   await seed(page);
   await openTab(page,'Library');
   const editor=card(page,'Workout editor');
-  const search=editor.getByRole('searchbox',{name:'Search saved exercise to add'});
+  const search=editor.getByRole('searchbox',{name:'Search exercise options'});
   const picker=editor.getByLabel('Saved exercise to add',{exact:true});
   await expect(search).toBeVisible();
   const before=(await picker.locator('option').allTextContents()).length;
@@ -42,7 +42,7 @@ test('chart and both strength record selectors share searchable filtering and se
   await openTab(page,'Progress');
 
   const chart=card(page,'Estimated 1RM trend');
-  const chartSearch=chart.getByRole('searchbox',{name:'Search exercise to chart'});
+  const chartSearch=chart.getByRole('searchbox',{name:'Search exercise options'});
   const chartSelect=chart.getByLabel('Select exercise to chart');
   await chartSearch.fill('bench');
   await expect(chartSelect.locator('option',{hasText:'Barbell back squat'})).toHaveCount(0);
@@ -51,8 +51,8 @@ test('chart and both strength record selectors share searchable filtering and se
 
   const absolute=card(page,'Absolute strength records');
   const relative=card(page,'Relative strength records');
-  const absSearch=absolute.getByRole('searchbox',{name:'Search records exercise'});
-  const relSearch=relative.getByRole('searchbox',{name:'Search relative records exercise'});
+  const absSearch=absolute.getByRole('searchbox',{name:'Search exercise options'});
+  const relSearch=relative.getByRole('searchbox',{name:'Search exercise options'});
   await absSearch.fill('squat');
   const absSelect=absolute.getByLabel('Exercise for records',{exact:true});
   await expect(absSelect.locator('option',{hasText:'Barbell back squat'})).toHaveCount(1);
@@ -70,7 +70,7 @@ test('exercise search menus fit mobile widths and remain keyboard selectable',as
   await seed(page);
   await openTab(page,'Library');
   const editor=card(page,'Workout editor');
-  const search=editor.getByRole('searchbox',{name:'Search saved exercise to add'});
+  const search=editor.getByRole('searchbox',{name:'Search exercise options'});
   await search.fill('lateral');
   await expect(editor.getByLabel('Saved exercise to add').locator('option',{hasText:'Cable lateral raise'})).toHaveCount(1);
   await editor.getByLabel('Saved exercise to add').focus();
