@@ -6,7 +6,7 @@ import {Minus,Plus} from 'lucide-react';
 // The heading, short description and right-side metric remain visible while
 // the section is minimized. Keep content mounted to preserve any draft edits.
 export default function CalorieSection({
-  title,description,summary,children,className='',defaultCollapsed=false,collapseKey,
+  title,description,summary,children,className='',defaultCollapsed=false,collapseKey,headerActions,
 }){
   const scope=useContext(PanelScopeContext),key=panelKey(scope,collapseKey??title);
   const [state,setState]=useState(()=>({key,value:readPanelCollapsed(key,defaultCollapsed)}));
@@ -26,6 +26,7 @@ export default function CalorieSection({
         <h2>{title}</h2>
         {description&&<p className="muted calorie-section-description">{description}</p>}
       </div>
+      {headerActions&&<div className="calorie-section-header-actions">{headerActions}</div>}
       {summary!==undefined&&summary!==null&&<div className="calorie-section-stat">{summary}</div>}
     </div>
     <div className="calorie-section-content" hidden={collapsed}>{children}</div>

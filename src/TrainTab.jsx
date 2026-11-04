@@ -2,9 +2,9 @@ import ResistanceFields from './ResistanceFields';
 import {isBodyweight} from './resistance';
 import {activeWorkoutNames,normalizeProgram} from './programLibrary';
 import PreviousPerformance from './PreviousPerformance';
-import {addSessionExercise,editSessionExercise,removeSessionExercise} from './workoutOperations';
+import {addSessionExercise,editSessionExercise,removeSessionExercise,moveSessionExercise} from './workoutOperations';
 import React,{useState,useEffect} from 'react';
-import {Dumbbell,Plus,Trash2,Check,ChevronLeft,ChevronRight,Pencil} from 'lucide-react';
+import {Dumbbell,Plus,Trash2,Check,ChevronLeft,ChevronRight,ArrowUp,ArrowDown,Pencil} from 'lucide-react';
 import {cycle,workouts,isoToday} from './data';
 import {fromDisplayWeight,toDisplayWeight,unitName} from './units';
 import CalorieSection from './CalorieSection';
@@ -57,6 +57,10 @@ export default function TrainTab({db,patch,date,setDate,scheduled,session,update
       setExerciseError('');
     }catch(e){setExerciseError(e.message);}
   };
+  const moveExercise=(exerciseId,direction)=>{
+    if(!session)return;
+    changeExercise(value=>moveSessionExercise(value,session.id,exerciseId,direction,updateFuture));
+  };
   const removeExercise=(ei)=>{
     const ex=session.exercises[ei];
     if(!confirm('Remove '+ex.name+' from this session'+(updateFuture?' and future '+session.type+' workouts':'')+'?'))return;
@@ -70,11 +74,11 @@ export default function TrainTab({db,patch,date,setDate,scheduled,session,update
       <CalorieSection title="Session overview" description="Track session type, sets completed, external-load volume and workout status." summary={completed+' / '+total+' sets · '+(session.finished?'Finished':'In progress')}>
       <div className="summary"><div className="metric"><small>SESSION</small><strong>{session.type}</strong></div><div className="metric"><small>SETS COMPLETED</small><strong>{completed}<span> / {total}</span></strong></div><div className="metric"><small>EXTERNAL-LOAD VOLUME</small><strong>{Number(totalVolume||0).toLocaleString()} <span>{units}</span></strong></div><div className="metric"><small>STATUS</small><strong>{session.finished?'Finished':'In progress'}</strong></div></div>
       <label className="weekpick"><input type="checkbox" checked={updateFuture} onChange={e=>setUpdateFuture(e.target.checked)}/> Apply exercise changes to future sessions</label>
-      <p className="muted">Off: exercise changes affect this session only. On: also update the matching {session.type} template.</p>
+      <p className="muted">Off: exercise edits and order changes affect this session only. On: also update the matching {session.type} template; existing workout logs stay unchanged.</p>
       {exerciseError&&<p className="error" role="alert">{exerciseError}</p>}{removalFallback&&<div className="actions"><p className="muted">The future template could not be updated. You can still remove {removalFallback.name} from this session.</p><button className="secondary" onClick={()=>{if(changeExercise(value=>removeSessionExercise(value,session.id,removalFallback.id,false),{checkpoint:'Before removing unlinked session exercise'}))setRemovalFallback(null);}}>Remove from this session only</button><button className="textbtn" onClick={()=>{setRemovalFallback(null);setExerciseError('');}}>Cancel removal</button></div>}
       <p className="muted">Volume counts external load and added weight only; bodyweight-only reps remain logged without a guessed tonnage.</p><p className="muted">Set RPE: 10 = no reps left, 9 = about 1, 8 = about 2, 7 = about 3. Record actual set effort, not the prescribed target. Blank RPE stays unknown.</p>
       </CalorieSection>
-      {session.exercises.map((e,ei)=><CalorieSection key={e.id??ei} collapseKey={'exercise:'+(e.templateId||e.id||e.name)} title={e.name} description={e.range+' reps · '+e.target} summary={e.sets.filter(v=>v.done).length+' / '+e.sets.length+' sets'} className="train-exercise-section"><div className="exhead"><span className="muted">Exercise controls</span><div className="exactions"><button className="iconbtn subtle" title="Add a set" onClick={()=>editEx(ei,x=>({...x,sets:[...x.sets,{weight:isBodyweight(x)?0:'',reps:'',rpe:'',done:false,tag:''}]}))}><Plus size={18}/></button><button className="iconbtn subtle" title="Edit exercise" onClick={()=>editExercise(ei)}><Pencil size={15}/></button><button className="iconbtn subtle" title="Remove exercise" onClick={()=>removeExercise(ei)}><Trash2 size={15}/></button></div></div>
+      {session.exercises.map((e,ei)=><CalorieSection key={e.id??ei} collapseKey={'exercise:'+(e.templateId||e.id||e.name)} title={e.name} description={e.range+' reps · '+e.target} summary={e.sets.filter(v=>v.done).length+' / '+e.sets.length+' sets'} className="train-exercise-section" headerActions={<div className="train-order-controls" role="group" aria-label={'Reorder '+e.name}><button type="button" className="iconbtn subtle" title="Move exercise up" aria-label={'Move '+e.name+' up'} disabled={ei===0} onClick={()=>moveExercise(e.id,-1)}><ArrowUp size={16}/></button><button type="button" className="iconbtn subtle" title="Move exercise down" aria-label={'Move '+e.name+' down'} disabled={ei===session.exercises.length-1} onClick={()=>moveExercise(e.id,1)}><ArrowDown size={16}/></button></div>}><div className="exhead"><span className="muted">Exercise controls</span><div className="exactions"><button className="iconbtn subtle" title="Add a set" onClick={()=>editEx(ei,x=>({...x,sets:[...x.sets,{weight:isBodyweight(x)?0:'',reps:'',rpe:'',done:false,tag:''}]}))}><Plus size={18}/></button><button className="iconbtn subtle" title="Edit exercise" onClick={()=>editExercise(ei)}><Pencil size={15}/></button><button className="iconbtn subtle" title="Remove exercise" onClick={()=>removeExercise(ei)}><Trash2 size={15}/></button></div></div>
       {editingExerciseId===e.id&&exerciseDraft&&<div className="inline-exercise-editor">
         <div className="between"><strong>Edit exercise</strong><span className="muted">Changes are saved only when you select Save.</span></div>
         <div className="formgrid">

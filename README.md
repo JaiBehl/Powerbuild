@@ -12,10 +12,10 @@ This README is the product manual and the handoff for a fresh AI development con
 | Site | [powerbuild-flexible-goals.vercel.app](https://powerbuild-flexible-goals.vercel.app) |
 | Hosting | Existing Vercel project `powerbuild-flexible-goals`, team/dashboard slug `power-build` |
 | Backend | Supabase project `zgbldcmahkokmkfqeljh`; Auth and the account-snapshot table/RPC described below |
-| Source reviewed through | [438aff5a1b9c97670beb59c3c00eaeb3b36c72c4](https://github.com/JaiBehl/Powerbuild/commit/438aff5a1b9c97670beb59c3c00eaeb3b36c72c4) (feature branch; production commit to be verified after merge) |
-| Release work | Searchable exercise dropdowns in Workout editor and Progress (charts and personal records), preserving the existing native dropdowns and all selected workout data. Follows [PR #32](https://github.com/JaiBehl/Powerbuild/pull/32). |
+| Source reviewed through | [fc7896570a7fb36123a40566ceb4653cddf48bbb](https://github.com/JaiBehl/Powerbuild/commit/fc7896570a7fb36123a40566ceb4653cddf48bbb) (session reorder feature branch; production confirmation pending) |
+| Release work | Exercise order can be adjusted mid-session with persistent up/down arrow controls, including on collapsed cards. Optional future-template order updates preserve stable exercise links and save revision history. |
 | Date | November 3, 2026, America/Los_Angeles |
-| Validation | Prior [source gate](https://github.com/JaiBehl/Powerbuild/actions/runs/41618152319) passed. New searchable-exercise change requires its own unit, production-build, mobile and browser-regression CI checks before release. |
+| Validation | New unit and Playwright tests cover order changes, logged sets, existing history, template opt-in, legacy ambiguous links, minimized cards and mobile width. Full GitHub CI and Vercel production readiness to be verified on release; previous gates do not prove this change. |
 
 The source baseline identifies code actually reviewed and tested. Documentation-only or merge commits may be newer. Fetch current `main`, inspect commits since that baseline, and check open PRs before changing anything. Current source governs implemented behavior; the latest explicit user instruction governs desired behavior.
 
@@ -34,6 +34,7 @@ Source access is still required for edits. Current workouts, foods, goals and pr
 - Calculate maintenance independently of goals. Keep uncapped goal/deadline arithmetic, manual calorie/macro overrides and warnings for impossible or expired goals.
 - Store weights in pounds and convert only at input/display/export boundaries. Saved-food edits must never change previously logged nutrition.
 - Workout exercise edits affect the session by default. Updating future templates requires explicit permission, reset for each workout; match stable identity, not position.
+- During a workout, each exercise has visible **Move up / Move down** arrow buttons in its card header (including while minimized). The entire exercise and its logged sets, RPE, bodyweight mode and notes move together without changing historical sessions. Order changes affect only that dated session by default. If **Apply exercise changes to future sessions** is explicitly selected, the corresponding pair of linked exercises is reordered in the reusable template by stable ID or a uniquely matched legacy name; existing archived/logged sessions are unchanged. Unlinked/ambiguous template matches produce a clear error and do not partially change the session.
 - Supported seated barbell OHP means upright back support. The legacy bench goal is touch-and-go. Keep paused/incline/standing variations distinct unless the user explicitly links names.
 - Goals are editable data. Earlier chats included a January 12, 2027 weight deadline and later bulk/cut plans; fresh code defaults use April 12, 2027. Do not impose past plans or fresh defaults on an existing profile.
 - This repository is public. Never commit personal workout/food backups, Notes ZIPs, account emails, real auth tokens or secret/service-role keys. Test with synthetic data.
@@ -79,6 +80,7 @@ Source access is still required for edits. Current workouts, foods, goals and pr
 - Each exercise logs weight, reps, optional RPE, done flag and Top/Backoff tag; add/remove sets. Overview shows completed/total sets, completed volume and finished status.
 - Add any exercise; edit name, rep range or effort; remove an exercise. By default these affect only this session. The explicit future-template checkbox also updates the matching template. Ambiguous older links are rejected instead of changing the wrong exercise.
 - New unsaved exercises start at three sets, 8–12 reps, 1–2 RIR; choosing a saved exercise uses its defaults. Individual set-count changes affect the session, not the future template.
+- **Reorder exercises mid-session** using the small up/down arrows in each exercise header. These work on expanded or minimized cards and save automatically. The top/bottom movement button is disabled. Completed sets and pending edits remain attached to the same exercise. The existing optional future-template checkbox extends valid linked order changes to the saved workout template, without rewriting past logs.
 - Previous finished session appears as a **compact, expandable one-line reference** above the set table. The row shows the date, workout, first completed set and number of other sets; expanding shows every recorded set and RPE. It uses movement aliases and current units, excludes the current/future dates, and never overwrites the current workout.
 - Notes save as typed. Finish/reopen changes status; delete requires confirmation and creates a recovery copy. Finishing does not manually advance the date-based rotation.
 
