@@ -15,10 +15,13 @@ export default function CalorieSection({
   const toggle=()=>{const value=!collapsed;savePanelCollapsed(key,value);setState({key,value});};
   useEffect(()=>{
     if(!revealToken)return;
-    // A user clicked Edit/Create/Load: reopen a previously minimized editor,
-    // bring it into view and focus the first editable field on desktop/mobile.
+    // First expand the editor. A previously hidden input cannot receive focus
+    // until React commits the expanded DOM.
     savePanelCollapsed(key,false);
     setState({key,value:false});
+  },[revealToken,key]);
+  useEffect(()=>{
+    if(!revealToken||collapsed)return;
     const frame=requestAnimationFrame(()=>{
       const section=sectionRef.current;
       if(!section)return;
@@ -27,7 +30,7 @@ export default function CalorieSection({
       input?.focus({preventScroll:true});
     });
     return ()=>cancelAnimationFrame(frame);
-  },[revealToken,key]);
+  },[revealToken,key,collapsed]);
   return <section ref={sectionRef} className={'panel calorie-section '+className+(collapsed?' calorie-section-collapsed':'')}>
     <div className="calorie-section-header">
       <button
