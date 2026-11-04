@@ -39,10 +39,11 @@ test('exercise order controls work while cards are minimized on phone and may up
  expect(db.sessions.find(s=>s.id===current.id).exercises[1].name).toBe('Barbell bench press');
  expect(db.templates['Push A'][0][0]).toBe('Barbell bench press');
  await page.getByLabel('Apply exercise changes to future sessions',{exact:true}).check();
- await bench.getByRole('button',{name:'Move Barbell bench press up'}).click();
+ await bench.getByRole('button',{name:'Move Barbell bench press down'}).click();
  db=await readDb(page);
  expect(db.templates['Push A'][0][0]).toBe('Supported seated barbell OHP');
- expect(db.templates['Push A'][1][0]).toBe('Barbell bench press');
+ expect(db.templates['Push A'][1][0]).toBe('Incline machine or DB press');
+ expect(db.templates['Push A'][2][0]).toBe('Barbell bench press');
  expect(db.sessions.find(s=>s.id===historical.id).exercises[0].name).toBe('Barbell bench press');
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1)).toBe(true);
 });
