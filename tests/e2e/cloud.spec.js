@@ -22,9 +22,80 @@ test('same-value conflict preserves copies before using cloud',async({page,conte
  await saveWeight(page,'2026-10-30',185);await expect(page.getByRole('button',{name:'Use cloud data',exact:true})).toBeVisible({timeout:15000});
  await expect(page.getByRole('button',{name:'Download this device copy',exact:true})).toBeVisible();await page.getByRole('button',{name:'Use cloud data',exact:true}).click();await syncActive(page);
  await expect.poll(async()=> (await readDb(page)).weights[0].weight).toBe(190);
- const copies=await page.evaluate(uid=>JSON.parse(localStorage.getItem('powerbuild-recovery-v1:account:'+uid)),backend.uid);
+ const copies=await accountRecoveryCopies(page,backend.uid);
  expect(copies.some(p=>p.data.profileData.test.weights[0]?.weight===185)).toBe(true);expect(copies.some(p=>p.data.profileData.test.weights[0]?.weight===190)).toBe(true);
 });
+async function accountRecoveryCopies(page,uid){
+ return page.evaluate(async id=>{
+  const {loadAccountSync}=await import('/src/accountSyncStorage.js');
+  return (await loadAccountSync(id)).recoveries;
+ },uid);
+}
+
+test('phone sync migrates legacy copies and combines edits despite localStorage quota',async({page,context})=>{
+ const backend=fakeBackend();await backend.install(context);
+ await page.setViewportSize({width:390,height:844});
+ await seed(page);
+ const base=await page.evaluate(()=>{
+  const profileState=JSON.parse(localStorage.getItem('powerbuild-profiles-v1'));
+  const profileData={test:JSON.parse(localStorage.getItem('powerbuild-tracker-v1:profile:test'))};
+  return {profileState,profileData};
+ });
+ const remote=structuredClone(base);
+ remote.profileData.test.weights=[{date:'2026-10-29',weight:180}];
+ backend.row={payload:remote,revision:2};
+ await page.evaluate(({id,base})=>{
+  localStorage.setItem('powerbuild-cloud-last-v1:'+id,JSON.stringify(base));
+  localStorage.setItem('powerbuild-recovery-v1:account:'+id,JSON.stringify([
+   {id:'legacy',label:'Existing recovery',createdAt:'2026-10-29T00:00:00Z',data:base},
+  ]));
+ },{id:backend.uid,base});
+ await saveWeight(page,'2026-10-30',185);
+ await page.addInitScript(()=>{
+  const setItem=Storage.prototype.setItem;
+  Storage.prototype.setItem=function(key,value){
+   if(this===localStorage&&/^powerbuild-(cloud-last-v1:|recovery-v1:account:)/.test(key)){
+    throw new DOMException('The quota has been exceeded.','QuotaExceededError');
+   }
+   setItem.call(this,key,value);
+  };
+ });
+ await page.reload();await login(page);await syncActive(page);
+ await expect.poll(()=>backend.row.payload.profileData.test.weights.length).toBe(2);
+ expect((await readDb(page)).weights.map(entry=>entry.weight).sort()).toEqual([180,185]);
+ expect(await page.evaluate(id=>[
+  localStorage.getItem('powerbuild-cloud-last-v1:'+id),
+  localStorage.getItem('powerbuild-recovery-v1:account:'+id),
+ ],backend.uid)).toEqual([null,null]);
+ await page.reload();await syncActive(page);
+ await page.getByRole('button',{name:'Account recovery copies (3)',exact:true}).click();
+ await expect(page.getByText('Existing recovery',{exact:false})).toBeVisible();
+ expect((await readDb(page)).weights.map(entry=>entry.weight).sort()).toEqual([180,185]);
+});
+
+test('failed recovery storage keeps the device and cloud copies intact',async({page,context})=>{
+ const backend=fakeBackend();await backend.install(context);
+ await seed(page);await login(page);
+ await page.getByRole('button',{name:'Upload this device',exact:true}).click();await syncActive(page);
+ const remote=structuredClone(backend.row);
+ remote.payload.profileData.test.weights=[{date:'2026-10-29',weight:180}];
+ remote.revision++;backend.row=remote;
+ await page.evaluate(()=>{
+  const put=IDBObjectStore.prototype.put;
+  IDBObjectStore.prototype.put=function(value,key){
+   if(this.transaction.db.name==='powerbuild-cloud-sync'&&String(key).startsWith('recovery:')){
+    this.transaction.abort();return;
+   }
+   return put.call(this,value,key);
+  };
+  document.dispatchEvent(new Event('visibilitychange'));
+ });
+ await expect(page.locator('.cloud-error')).toContainText('Could not save account recovery copies');
+ await expect(page.getByRole('button',{name:'Download this device copy',exact:true})).toBeVisible();
+ expect((await readDb(page)).weights).toEqual([]);
+ expect(backend.row).toEqual(remote);
+});
+
 test('offline edits survive reload and upload on retry; sign-out preserves local data',async({page,context})=>{
  const backend=fakeBackend();await backend.install(context);await seed(page);await login(page);await page.getByRole('button',{name:'Upload this device',exact:true}).click();await syncActive(page);
  backend.offline=true;await saveWeight(page,'2026-10-30',185);await expect(page.getByRole('button',{name:'Retry sync',exact:true})).toBeVisible({timeout:15000});await page.reload();
