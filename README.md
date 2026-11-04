@@ -12,10 +12,10 @@ This README is the product manual and the handoff for a fresh AI development con
 | Site | [powerbuild-flexible-goals.vercel.app](https://powerbuild-flexible-goals.vercel.app) |
 | Hosting | Existing Vercel project `powerbuild-flexible-goals`, team/dashboard slug `power-build` |
 | Backend | Supabase project `zgbldcmahkokmkfqeljh`; Auth and the account-snapshot table/RPC described below |
-| Source reviewed through | [c306910a63e1222d0dd0cd2ad2bc389e2cd40c61](https://github.com/JaiBehl/Powerbuild/commit/c306910a63e1222d0dd0cd2ad2bc389e2cd40c61) plus the set-input fix in this change |
-| Release work | Train keeps negative or non-finite numbers out of saved sets, so editing a workout cannot make an otherwise valid backup fail validation. Existing stored values are untouched. |
+| Source reviewed through | [5895d0652a4ac7d137483af65d3c8aeb0c04e532](https://github.com/JaiBehl/Powerbuild/commit/5895d0652a4ac7d137483af65d3c8aeb0c04e532) plus the account storage fix in this change |
+| Release work | Cloud sync uses IndexedDB for account checkpoints and recovery copies, so those copies no longer compete for the profile storage quota. Existing account copies migrate on sign-in or reload. |
 | Date | November 4, 2026, America/Los_Angeles |
-| Validation | [Previous main regression and production smoke](https://github.com/JaiBehl/Powerbuild/actions/runs/41750375377) passed. This fix adds a browser regression for rejected negative values, valid zero/blank entries and backup validation. |
+| Validation | [Previous main regression and production smoke](https://github.com/JaiBehl/Powerbuild/actions/runs/41812151958) passed. The quota fix has local unit and build coverage. The browser suite exercises legacy migration with separate edits at a simulated quota limit and verifies that an aborted recovery write preserves both copies. |
 
 The source baseline identifies code actually reviewed and tested. Documentation-only or merge commits may be newer. Fetch current `main`, inspect commits since that baseline, and check open PRs before changing anything. Current source governs implemented behavior; the latest explicit user instruction governs desired behavior.
 
@@ -260,6 +260,7 @@ First-device migration: export backups on the device with existing data, sign in
 - Three-way merge compares the last known common snapshot, this device and cloud. Independent edits combine; record arrays match unique dates first, then IDs when safe. Incompatible independent starts on the same workout date require a choice, preserving the one-session-per-date model. Deletions are respected. Same-value conflicts or opaque concurrent template/set-array changes require explicit choice.
 - Without a common base, divergent copies require a choice. Choosing one version saves recovery copies first. Download both versions or restore an account copy from the sidebar; all-profile file import accepts those downloads.
 - Retry rechecks remote state/revision before saving; offline edits stay local and survive reload. Background updates preserve current UI. Obsolete session responses cannot reactivate sync or replace later local edits.
+- Account checkpoints and up to five recent account recovery copies use the browser’s IndexedDB. On the next account check, existing copies move there before their old storage entries are removed. Both recovery copies commit together before a merge or a conflict choice can replace data. If device storage still fails, Cloud Sync offers a device backup download and retry. Profile and workspace recovery copies use their existing storage.
 - Applying all-profile data attempts rollback if a storage write fails and retains recovery copies. No server-side revision archive is maintained.
 - Sign-out retains local data. On shared browsers, profiles are not password-protected and cached data is not account-isolated; review which data is present before uploading to another account.
 - Editing a loaded page can continue offline, but no service worker/PWA asset cache guarantees a fresh offline page load.
@@ -295,9 +296,9 @@ Fresh defaults: start `2026-10-12`, 180 → 160 lb, weight deadline `2027-04-12`
 | --- | --- |
 | `powerbuild-profiles-v1` | Profile list/active ID |
 | `powerbuild-tracker-v1:profile:<id>` | One normalized profile database |
-| `powerbuild-cloud-last-v1:<auth-user-id>` | Last accepted/uploaded common account snapshot |
+| IndexedDB `powerbuild-cloud-sync`, `base:<auth-user-id>` | Last accepted/uploaded common account snapshot. Imports legacy `powerbuild-cloud-last-v1:<auth-user-id>`. |
 | `powerbuild-recovery-v1:profile:<id>` | Device profile versions |
-| `powerbuild-recovery-v1:account:<auth-user-id>` | Device account sync versions |
+| IndexedDB `powerbuild-cloud-sync`, `recovery:<auth-user-id>` | Device account sync versions. Imports legacy `powerbuild-recovery-v1:account:<auth-user-id>`. |
 | `powerbuild-recovery-v1:workspace` | All-profile recovery, including deleted profiles |
 | `powerbuild-panel-state-v1` | Device-only collapsed flags by profile/tab/panel |
 | `powerbuild-tracker-v1`, `powerbuild-app-v1` | Legacy migration sources |
@@ -357,7 +358,7 @@ Explicit correction updates records owned by the same import ID. Optional remova
 | `src/CardioLog.jsx` | Dated custom cardio CRUD |
 | `src/SettingsTab.jsx` | Defaults, units, schedule, optional goals and backup/recovery controls |
 | `src/ProfileSwitcher.jsx`, `src/profiles.js` | Profile UI, keys, loading/saving and all-profile write rollback |
-| `src/cloudSync.jsx`, `src/syncMerge.js` | Auth, revision syncing, three-way merge, retry, account recovery and snapshot validation |
+| `src/cloudSync.jsx`, `src/syncMerge.js`, `src/accountSyncStorage.js` | Auth, revision syncing, three-way merge, retry, IndexedDB account recovery and snapshot validation |
 | `src/historicalImport.js`, `src/HistoricalImportPanel.jsx` | Historical validation/normalization, preview, merge/correction/removal |
 | `src/recovery.js`, `src/RecoveryPanel.jsx`, `src/backupSafety.js` | Bounded snapshots, recovery UI, deletion detection and backup validation |
 | `src/CalorieSection.jsx`, `src/panelScope.js`, `src/panelState.js` | Shared mounted collapsible cards and device preference persistence |

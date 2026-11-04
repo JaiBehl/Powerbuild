@@ -2,39 +2,54 @@ import React,{useCallback,useEffect,useRef,useState} from 'react';
 import {createClient} from '@supabase/supabase-js';
 import {Cloud,CloudOff,CheckCircle2,AlertTriangle,LogOut} from 'lucide-react';
 import {loadProfileDb} from './profiles';
-import {saveRecoveryPoint,listRecoveryPoints} from './recovery';
+import {loadAccountSync,saveAccountBase,saveAccountRecoveries} from './accountSyncStorage';
 import {mergeCloudSnapshots,stableStringify,validCloudSnapshot} from './syncMerge';
 const url=import.meta.env.VITE_SUPABASE_URL,key=import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 const supabase=url&&key?createClient(url,key):null;
-const lastSyncKey=id=>'powerbuild-cloud-last-v1:'+id;
 const parse=value=>{try{return JSON.parse(value);}catch{return null;}};
 const download=(name,data)=>{const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'})),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
 export function useCloudSync({db,profileState,applySnapshot}){
- const [user,setUser]=useState(null),[status,setStatus]=useState(supabase?'checking':'unconfigured'),[error,setError]=useState(''),[message,setMessage]=useState(''),[remote,setRemote]=useState(null),[conflicts,setConflicts]=useState([]),[refresh,setRefresh]=useState(0),[recoveryVersion,setRecoveryVersion]=useState(0);
+ const [user,setUser]=useState(null),[status,setStatus]=useState(supabase?'checking':'unconfigured'),[error,setError]=useState(''),[message,setMessage]=useState(''),[remote,setRemote]=useState(null),[conflicts,setConflicts]=useState([]),[refresh,setRefresh]=useState(0),[recoveries,setRecoveries]=useState([]);
  const owner=useRef(null),revision=useRef(0),base=useRef(null),busy=useRef(null),apply=useRef(applySnapshot);apply.current=applySnapshot;
  const snapshot={profileState,profileData:Object.fromEntries(profileState.profiles.map(p=>[p.id,p.id===profileState.activeProfileId?db:loadProfileDb(p.id,()=>({}))]))};
  const json=stableStringify(snapshot),current=useRef(json);current.current=json;
- const backup=useCallback((id,label,payload)=>{saveRecoveryPoint('account:'+id,label,payload);setRecoveryVersion(v=>v+1);},[]);
- const receive=useCallback((row,id,initial=false)=>{
-  if(owner.current!==id)return;
+ const backup=useCallback(async(id,copies,active)=>{
+  let points;
+  try{points=await saveAccountRecoveries(id,copies);}
+  catch{throw Error('Could not save account recovery copies on this device. Download your device copy before retrying.');}
+  if(active())setRecoveries(points);
+ },[]);
+ const remember=useCallback(async(id,payload,version)=>{
+  revision.current=Number(version);base.current=payload;
+  try{await saveAccountBase(id,payload,revision.current);}
+  catch{throw Error('Could not save the sync checkpoint on this device. Download your device copy before retrying.');}
+ },[]);
+ const receive=useCallback(async(row,id,active,initial=false)=>{
+  if(!active())return;
   if(!validCloudSnapshot(row?.payload))throw Error('Cloud data format is invalid. Local data was left untouched.');
-  const remoteJson=stableStringify(row.payload),local=parse(current.current),known=base.current||parse(localStorage.getItem(lastSyncKey(id)));
-  if(remoteJson===current.current){
-   revision.current=Number(row.revision);base.current=row.payload;localStorage.setItem(lastSyncKey(id),remoteJson);setRemote(null);setConflicts([]);setStatus('synced');return;
+  const before=current.current,remoteJson=stableStringify(row.payload),local=parse(before),known=base.current;
+  if(remoteJson===before){
+   await remember(id,row.payload,row.revision);
+   if(active()){setRemote(null);setConflicts([]);setStatus('synced');}
+   return;
   }
   const result=known?mergeCloudSnapshots(known,local,row.payload):null;
   if(result&&!result.conflicts.length){
-   backup(id,'Device before combining cloud changes',local);backup(id,'Cloud before combining device changes',row.payload);
-   revision.current=Number(row.revision);base.current=row.payload;localStorage.setItem(lastSyncKey(id),remoteJson);
-   current.current=stableStringify(result.snapshot);apply.current(result.snapshot,{preserveUi:!initial});
-   setRemote(null);setConflicts([]);setError('');setMessage('Combined separate device changes.');setStatus('synced');
-  }else{revision.current=Number(row.revision);setRemote(row);setConflicts(result?.conflicts||[]);setStatus(known?'conflict':'choose');setError('');}
- },[backup]);
+   await backup(id,[['Device before combining cloud changes',local],['Cloud before combining device changes',row.payload]],active);
+   if(!active())return;
+   if(current.current!==before)throw Error('Device data changed during the cloud check. Sync will retry.');
+   apply.current(result.snapshot,{preserveUi:!initial});current.current=stableStringify(result.snapshot);
+   await remember(id,row.payload,row.revision);
+   if(active()){
+    setRemote(null);setConflicts([]);setError('');setMessage('Combined separate device changes.');setStatus('synced');
+   }
+  }else{setRemote(row);setConflicts(result?.conflicts||[]);setStatus(known?'conflict':'choose');setError('');}
+ },[backup,remember]);
  useEffect(()=>{
   if(!supabase)return;
   const {data:{subscription}}=supabase.auth.onAuthStateChange((_event,session)=>{
    const id=session?.user?.id||null;
-   if(owner.current!==id){owner.current=id;revision.current=0;base.current=null;busy.current=null;setRemote(null);setConflicts([]);}
+   if(owner.current!==id){owner.current=id;revision.current=0;base.current=null;busy.current=null;setRemote(null);setConflicts([]);setRecoveries([]);}
    setUser(session?.user||null);
   });
   return ()=>subscription.unsubscribe();
@@ -42,40 +57,59 @@ export function useCloudSync({db,profileState,applySnapshot}){
  useEffect(()=>{
   if(!supabase)return;if(!user){setStatus('signed-out');return;}
   const id=user.id;let canceled=false;setStatus('checking');setError('');
+  const active=()=>!canceled&&owner.current===id;
   (async()=>{try{
+   const account=await loadAccountSync(id);
+   if(!active())return;
+   base.current??=account.base;setRecoveries(account.recoveries);
    const {data,error}=await supabase.from('powerbuild_cloud_state').select('payload,revision').eq('user_id',id).maybeSingle();
    if(canceled||owner.current!==id)return;if(error)throw error;
    if(!data){revision.current=0;setRemote(null);setStatus('empty');return;}
-   receive(data,id,true);
+   await receive(data,id,active,true);
   }catch(e){if(!canceled&&owner.current===id){setError('Could not check cloud data: '+e.message);setStatus('offline');}}})();
   return ()=>{canceled=true;};
  },[user?.id,refresh,receive]);
  const upload=useCallback(async expected=>{
   if(!supabase||!user||owner.current!==user.id||busy.current)return;
-  const id=user.id,task={id};busy.current=task;setStatus('saving');setError('');
+  const id=user.id,task={};busy.current=task;setStatus('saving');setError('');
+  const active=()=>owner.current===id&&busy.current===task;
   const content=current.current;
   try{
    const {data,error}=await supabase.rpc('powerbuild_save_state',{p_expected_revision:expected,p_payload:parse(content)});
    if(owner.current!==id||busy.current!==task)return;if(error)throw error;
-   revision.current=Number(data);base.current=parse(content);localStorage.setItem(lastSyncKey(id),content);setRemote(null);setConflicts([]);setStatus('synced');
+   await remember(id,parse(content),data);
+   if(active()){setRemote(null);setConflicts([]);setStatus('synced');}
   }catch(e){
    if(owner.current!==id||busy.current!==task)return;
    if(String(e.message).includes('SYNC_CONFLICT')){
-    try{const {data,error}=await supabase.from('powerbuild_cloud_state').select('payload,revision').eq('user_id',id).maybeSingle();if(owner.current!==id||busy.current!==task)return;if(error)throw error;if(data)receive(data,id);else{setStatus('empty');setRemote(null);}}
+    try{const {data,error}=await supabase.from('powerbuild_cloud_state').select('payload,revision').eq('user_id',id).maybeSingle();if(owner.current!==id||busy.current!==task)return;if(error)throw error;if(data)await receive(data,id,active);else{setStatus('empty');setRemote(null);}}
     catch(fetchError){if(owner.current===id&&busy.current===task){setError(fetchError.message);setStatus('offline');}}
-   }else{setError('Could not sync: '+e.message+'. Your data is still saved on this device.');setStatus('offline');}
+   }else{setError('Could not sync: '+e.message+'. You can download a device copy from this panel.');setStatus('offline');}
   }finally{if(busy.current===task)busy.current=null;}
- },[user?.id,receive]);
+ },[user?.id,receive,remember]);
  useEffect(()=>{
   if(status!=='synced'||!user||current.current===stableStringify(base.current))return;
-  const timer=setTimeout(()=>upload(revision.current),900);return ()=>clearTimeout(timer);
+  let timer;
+  const send=()=>{if(busy.current)timer=setTimeout(send,900);else upload(revision.current);};
+  timer=setTimeout(send,900);return ()=>clearTimeout(timer);
  },[json,status,user?.id,upload]);
  useEffect(()=>{
   if(!supabase||!user||status!=='synced')return;const id=user.id;let canceled=false;
-  const poll=async()=>{if(busy.current)return;try{
-   const {data,error}=await supabase.from('powerbuild_cloud_state').select('payload,revision').eq('user_id',id).maybeSingle();
-   if(canceled||owner.current!==id)return;if(error)throw error;if(data&&Number(data.revision)>revision.current)receive(data,id);
-  }catch(e){if(!canceled&&owner.current===id){setError('Cloud check failed: '+e.message+'. Local data is saved.');setStatus('offline');}}};
+  const poll=async()=>{
+   if(busy.current)return;
+   const active=()=>!canceled&&owner.current===id;
+   let task;
+   try{
+    const {data,error}=await supabase.from('powerbuild_cloud_state').select('payload,revision').eq('user_id',id).maybeSingle();
+    if(!active()||busy.current)return;
+    if(error)throw error;
+    if(data&&Number(data.revision)>revision.current){
+     task={};busy.current=task;
+     await receive(data,id,()=>active()&&busy.current===task);
+    }
+   }catch(e){if(active()&&(!busy.current||busy.current===task)){setError('Cloud check failed: '+e.message);setStatus('offline');}}
+   finally{if(task&&busy.current===task)busy.current=null;}
+  };
   const timer=setInterval(poll,12000),visible=()=>{if(document.visibilityState==='visible')poll();};
   document.addEventListener('visibilitychange',visible);return ()=>{canceled=true;clearInterval(timer);document.removeEventListener('visibilitychange',visible);};
  },[status,user?.id,receive]);
@@ -90,26 +124,54 @@ export function useCloudSync({db,profileState,applySnapshot}){
   if(error)setError(error.message);else setMessage('Confirmation email requested. Use the newest email link, then sign in.');
  }
  const signOut=async()=>{const {error}=await supabase.auth.signOut();if(error)setError(error.message);};
+ async function runRecoveryAction(action){
+  if(!user||owner.current!==user.id||busy.current)return;
+  const id=user.id,task={},before=current.current;
+  const active=()=>owner.current===id&&busy.current===task;
+  const ready=()=>{
+   if(!active())return false;
+   if(current.current!==before)throw Error('Device data changed while making recovery copies. Retry sync and review both copies again.');
+   return true;
+  };
+  busy.current=task;setStatus('checking');
+  try{await action(id,parse(before),active,ready);}
+  catch(e){if(active()){setError(e.message);setStatus('error');}}
+  finally{if(busy.current===task)busy.current=null;}
+ }
  const useCloud=()=>{
-  if(!user||!remote)return;try{
+  if(!remote)return;
+  return runRecoveryAction(async(id,local,active,ready)=>{
    if(!validCloudSnapshot(remote.payload))throw Error('Invalid cloud data.');
-   backup(user.id,'Device before choosing cloud copy',parse(current.current));backup(user.id,'Cloud copy chosen',remote.payload);
-   revision.current=Number(remote.revision);base.current=remote.payload;localStorage.setItem(lastSyncKey(user.id),stableStringify(remote.payload));
-   current.current=stableStringify(remote.payload);apply.current(remote.payload);setRemote(null);setConflicts([]);setError('');setStatus('synced');
-  }catch(e){setError(e.message);setStatus('error');}
+   await backup(id,[['Device before choosing cloud copy',local],['Cloud copy chosen',remote.payload]],active);
+   if(!ready())return;
+   apply.current(remote.payload);current.current=stableStringify(remote.payload);
+   await remember(id,remote.payload,remote.revision);
+   if(active()){setRemote(null);setConflicts([]);setError('');setStatus('synced');}
+  });
  };
  const useDevice=()=>{
-  if(!user)return;
   if(remote&&!confirm('Replace the cloud copy with this device data? Recovery copies of both versions will be saved first.'))return;
-  try{backup(user.id,'Device before choosing device copy',parse(current.current));if(remote)backup(user.id,'Cloud before choosing device copy',remote.payload);upload(remote?Number(remote.revision):0);}catch(e){setError(e.message);setStatus('error');}
+  return runRecoveryAction(async(id,local,active,ready)=>{
+   const copies=[['Device before choosing device copy',local]];
+   if(remote)copies.push(['Cloud before choosing device copy',remote.payload]);
+   await backup(id,copies,active);
+   if(!ready())return;
+   busy.current=null;
+   await upload(remote?Number(remote.revision):0);
+  });
  };
- const recoveries=user?listRecoveryPoints('account:'+user.id):[];
- const restore=id=>{
-  const point=recoveries.find(p=>p.id===id);if(!user||!point||!validCloudSnapshot(point.data))return;
+ const restore=pointId=>{
+  const point=recoveries.find(p=>p.id===pointId);
+  if(!point||!validCloudSnapshot(point.data))return;
   if(!confirm('Restore this account recovery copy on this device? It will sync after checking the cloud revision.'))return;
-  try{backup(user.id,'Before account recovery restore',parse(current.current));current.current=stableStringify(point.data);apply.current(point.data);setRemote(null);setConflicts([]);setError('');setRefresh(v=>v+1);}catch(e){setError(e.message);}
+  return runRecoveryAction(async(id,local,active,ready)=>{
+   await backup(id,[['Before account recovery restore',local]],active);
+   if(!ready())return;
+   apply.current(point.data);current.current=stableStringify(point.data);
+   setRemote(null);setConflicts([]);setError('');setRefresh(v=>v+1);
+  });
  };
- return {configured:!!supabase,user,status,error,message,conflicts,recoveries,recoveryVersion,restore,signIn,signOut,resendVerification,useCloud,useDevice,retry:()=>setRefresh(v=>v+1),downloadDevice:()=>download('powerbuild-device-account.json',parse(current.current)),downloadCloud:()=>remote&&download('powerbuild-cloud-account.json',remote.payload)};
+ return {configured:!!supabase,user,status,error,message,conflicts,recoveries,restore,signIn,signOut,resendVerification,useCloud,useDevice,retry:()=>setRefresh(v=>v+1),downloadDevice:()=>download('powerbuild-device-account.json',parse(current.current)),downloadCloud:()=>remote&&download('powerbuild-cloud-account.json',remote.payload)};
 }
 
 export function CloudPanel({cloud}){
@@ -134,7 +196,7 @@ export function CloudPanel({cloud}){
       {status==='checking'&&<p>Checking cloud data…</p>}
       {status==='empty'&&<><p>No cloud backup yet. On your Mac with existing logs, upload this device first.</p><button className="cloud-button" onClick={cloud.useDevice}>Upload this device</button></>}
       {(status==='choose'||status==='conflict')&&<><p><AlertTriangle size={14}/> {status==='choose'?'Cloud data and device data differ. Choose which to keep.':'Sync conflict: changes exist on multiple devices.'}</p>{cloud.conflicts.length>0&&<p>Conflicting values: {cloud.conflicts.slice(0,3).join(', ')}</p>}<button className="cloud-button" onClick={cloud.useCloud}>Use cloud data</button><button className="cloud-button cloud-secondary" onClick={cloud.useDevice}>Keep this device data</button><button className="cloud-link" onClick={cloud.downloadDevice}>Download this device copy</button><button className="cloud-link" onClick={cloud.downloadCloud}>Download cloud copy</button></>}
-      {(status==='offline'||status==='error')&&<button className="cloud-button" onClick={cloud.retry}>Retry sync</button>}
+      {(status==='offline'||status==='error')&&<><button className="cloud-button" onClick={cloud.retry}>Retry sync</button><button className="cloud-link" onClick={cloud.downloadDevice}>Download this device copy</button></>}
       <button className="cloud-link" onClick={()=>setShowRecovery(v=>!v)}>Account recovery copies ({cloud.recoveries.length})</button>
       {showRecovery&&<div className="cloud-recovery-list">{cloud.recoveries.map(point=><div key={point.id}><p>{point.label} · {new Date(point.createdAt).toLocaleString()}</p><button className="cloud-button cloud-secondary" onClick={()=>cloud.restore(point.id)}>Restore account copy</button></div>)}</div>}
       <button className="cloud-link cloud-signout" onClick={cloud.signOut}><LogOut size={13}/> Sign out</button>
