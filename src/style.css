@@ -468,3 +468,24 @@ main,.sidebar nav{min-width:0}.sidebar nav{max-width:100%}.records-scroll{max-wi
     max-width:100%;
   }
 }
+
+
+/* Move exercises while logging: controls stay available on collapsed cards. */
+.calorie-section-header-actions{display:flex;align-items:center;flex:0 0 auto;min-width:0}
+.train-order-controls{display:inline-flex;align-items:center;gap:3px}
+.train-order-controls .iconbtn{
+  min-width:32px;
+  min-height:32px;
+  padding:6px;
+  border:1px solid #3e5573;
+  border-radius:7px;
+  color:#bcd2ef;
+  background:#203650;
+}
+.train-order-controls .iconbtn:hover:not(:disabled){background:#345779;border-color:#6595ca;color:#f2f7ff}
+.train-order-controls .iconbtn:disabled{opacity:.32;cursor:not-allowed}
+.train-order-controls .iconbtn:focus-visible{outline:2px solid #8db7ff;outline-offset:2px}
+@media(max-width:720px){
+  .train-exercise-section .calorie-section-header-actions{margin-left:37px}
+  .train-exercise-section.calorie-section-collapsed .calorie-section-header-actions{margin-left:0}
+}
