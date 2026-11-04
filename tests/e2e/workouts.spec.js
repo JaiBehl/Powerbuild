@@ -1,4 +1,5 @@
 import {test,expect} from '@playwright/test';
+import {validateProfileDb} from '../../src/backupSafety.js';
 import {seed,makeDb,makeSession,readDb,card,DAY} from '../fixtures.js';
 test('session-only removal preserves template and survives reload',async({page})=>{
  const s=makeSession();await seed(page,makeDb({sessions:[s]}));await page.getByLabel('Workout date').fill(DAY);
@@ -39,3 +40,21 @@ test('permission to edit future templates resets when switching workouts',async(
 });
 
 test('an unlinked active exercise can be removed explicitly when future-template removal is blocked',async({page})=>{const s=makeSession();s.exercises[0].name='Synthetic session-only lift';delete s.exercises[0].templateId;const db=makeDb({sessions:[s]});await seed(page,db);await page.getByLabel('Workout date').fill(DAY);await page.getByLabel('Apply exercise changes to future sessions',{exact:true}).check();page.once('dialog',d=>d.accept());await card(page,'Synthetic session-only lift').getByTitle('Remove exercise',{exact:true}).click();await expect(page.getByRole('button',{name:'Remove from this session only',exact:true})).toBeVisible();expect((await readDb(page)).sessions[0].exercises.length).toBe(6);await page.getByRole('button',{name:'Remove from this session only',exact:true}).click();await expect(card(page,'Synthetic session-only lift')).toHaveCount(0);expect((await readDb(page)).templates['Push A'][0][0]).toBe('Barbell bench press');await page.reload();await page.getByLabel('Workout date').fill(DAY);await expect(card(page,'Synthetic session-only lift')).toHaveCount(0);});
+
+
+test('negative set numbers cannot invalidate a saved profile backup',async({page})=>{
+ const session=makeSession();
+ session.exercises[0].sets[0]={weight:185,reps:'6',rpe:'8',done:true,tag:'Top'};
+ await seed(page,makeDb({sessions:[session]}));
+ await page.getByLabel('Workout date').fill(DAY);
+ const bench=card(page,'Barbell bench press');
+ const fields=bench.locator('.setrow').nth(1).getByRole('spinbutton');
+ for(let i=0;i<3;i++)await fields.nth(i).fill('-5');
+ const backup=await readDb(page);
+ expect(backup.sessions[0].exercises[0].sets[0]).toEqual(session.exercises[0].sets[0]);
+ expect(()=>validateProfileDb(backup)).not.toThrow();
+ await fields.nth(0).fill('0');
+ await fields.nth(1).fill('');
+ await expect.poll(async()=> (await readDb(page)).sessions[0].exercises[0].sets[0])
+  .toMatchObject({weight:0,reps:'',rpe:'8',done:true,tag:'Top'});
+});
