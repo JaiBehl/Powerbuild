@@ -50,3 +50,39 @@ export function addSessionExercise(db,sessionId,name,updateFuture=false,definiti
  if(updateFuture){templates=normalizeTemplates(db.templates);const type=sessionTemplateName(db,session);templates={...templates,[type]:[...(templates[type]||[]),[exercise.name,definition?.sets||3,exercise.range,exercise.target,exercise.kind,templateId,{...config,...(definition?{exerciseId:definition.id}:{})}]]};next=replaceWorkoutRows({...db,templates:normalizeTemplates(db.templates)},type,templates[type]);}
  return {...next,templates,sessions:db.sessions.map(s=>s.id!==sessionId?s:{...s,exercises:[...s.exercises,exercise]})};
 }
+
+
+// Move one exercise within a dated workout without rewriting any sets or other
+// sessions. Opting into future-template changes uses stable template IDs, or a
+// uniquely matching legacy name; never assumes that a session index is a
+// template index.
+export function moveSessionExercise(db,sessionId,exerciseId,direction,updateFuture=false){
+ if(direction!==-1&&direction!==1)throw Error('Choose to move the exercise up or down.');
+ const session=db.sessions.find(s=>s.id===sessionId);
+ if(!session)throw Error('Workout session not found.');
+ const from=session.exercises.findIndex(e=>e.id===exerciseId);
+ if(from<0)throw Error('Exercise no longer exists.');
+ const to=from+direction;
+ if(to<0||to>=session.exercises.length)return db;
+ const neighbor=session.exercises[to];
+ const exercises=[...session.exercises];
+ [exercises[from],exercises[to]]=[exercises[to],exercises[from]];
+
+ let next=db;
+ if(updateFuture){
+  const templates=normalizeTemplates(db.templates);
+  const type=sessionTemplateName(db,session);
+  const rows=templates[type];
+  if(!rows)throw Error('This workout template no longer exists. Reorder this session only.');
+  const first=targetTemplate(rows,session.exercises[from]);
+  const second=targetTemplate(rows,neighbor);
+  if(first===second)throw Error('Both exercises refer to one template entry. Reorder this session only.');
+  const reordered=[...rows];
+  [reordered[first],reordered[second]]=[reordered[second],reordered[first]];
+  next=replaceWorkoutRows({...db,templates},type,reordered);
+ }
+ return {
+  ...next,
+  sessions:db.sessions.map(s=>s.id===sessionId?{...s,exercises}:s),
+ };
+}
