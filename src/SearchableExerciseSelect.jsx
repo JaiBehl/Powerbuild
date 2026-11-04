@@ -37,7 +37,7 @@ export default function SearchableExerciseSelect({
     <input
       type="search"
       autoComplete="off"
-      aria-label={'Search '+label.toLowerCase()}
+      aria-label="Search exercise options"
       placeholder={placeholder}
       value={query}
       onChange={event=>setQuery(event.target.value)}
