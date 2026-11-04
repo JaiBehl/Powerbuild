@@ -35,17 +35,27 @@ test('opted-in session reorder swaps linked workout template rows by identity an
  assert.equal(db.templates['Push A'][0][0],'Barbell bench press');
 });
 
-test('future template reorder resolves legacy names rather than using a session index',()=>{
+test('future template reorder resolves legacy names rather than relying on exercise position',()=>{
+ const s=makeSession();s.exercises.forEach(e=>delete e.templateId);
+ const db=makeDb({sessions:[s]});
+ const bench=s.exercises[0];
+ const next=moveSessionExercise(db,s.id,bench.id,1,true);
+ assert.equal(next.templates['Push A'][0][0],'Supported seated barbell OHP');
+ assert.equal(next.templates['Push A'][1][0],'Barbell bench press');
+ assert.equal(next.sessions[0].exercises[1].name,'Barbell bench press');
+ const duplicate=makeDb({sessions:[s]});
+ duplicate.templates['Push A'].push([...duplicate.templates['Push A'][0]]);
+ assert.throws(()=>moveSessionExercise(duplicate,s.id,bench.id,1,true),/uniquely linked/);
+ assert.equal(duplicate.sessions[0].exercises[0].name,'Barbell bench press');
+ assert.equal(duplicate.templates['Push A'][0][0],'Barbell bench press');
+});
+
+test('future reorder does not reverse template order already consistent with the moved session pair',()=>{
  const s=makeSession();s.exercises.reverse();s.exercises.forEach(e=>delete e.templateId);
  const db=makeDb({sessions:[s]});
  const bench=s.exercises.find(e=>e.name==='Barbell bench press');
  const next=moveSessionExercise(db,s.id,bench.id,-1,true);
- assert.equal(next.templates['Push A'][0][0],'Supported seated barbell OHP');
- assert.equal(next.templates['Push A'][1][0],'Barbell bench press');
  assert.equal(next.sessions[0].exercises.at(-2).name,'Barbell bench press');
- const duplicate=makeDb({sessions:[s]});
- duplicate.templates['Push A'].push([...duplicate.templates['Push A'][0]]);
- assert.throws(()=>moveSessionExercise(duplicate,s.id,bench.id,-1,true),/uniquely linked/);
- assert.equal(duplicate.sessions[0].exercises.at(-1).name,'Barbell bench press');
- assert.equal(duplicate.templates['Push A'][0][0],'Barbell bench press');
+ assert.deepEqual(next.templates,db.templates);
+ assert.equal(next.workoutMeta,undefined);
 });
