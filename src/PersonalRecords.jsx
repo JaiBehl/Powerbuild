@@ -1,5 +1,6 @@
 import React,{useMemo} from 'react';
 import CalorieSection from './CalorieSection';
+import SearchableExerciseSelect from './SearchableExerciseSelect';
 import {personalRecords} from './trainingStats';
 import {exerciseNames} from './exerciseCatalog';
 import {formatWeight,unitName} from './units';
@@ -22,7 +23,7 @@ const bwDisplay=(r,units,unweighted=false)=>r?<>{unweighted?'Bodyweight × '+r.r
 function BodyweightRecords({all,recent,units}){return <><h3>Bodyweight exercise records</h3><p className="muted">Bodyweight-only reps and added-load records are tracked separately. Added weight is not total resistance; no 1RM or lift/BW ratio is inferred.</p><div className="records-scroll"><table className="records-table" aria-label="Bodyweight records"><thead><tr><th>Record</th><th>All time</th><th>Last 90 days</th></tr></thead><tbody><tr><th>Most reps · bodyweight only</th><td>{bwDisplay(all.unweighted,units,true)}</td><td>{bwDisplay(recent.unweighted,units,true)}</td></tr><tr><th>Heaviest added weight</th><td>{bwDisplay(all.added,units)}</td><td>{bwDisplay(recent.added,units)}</td></tr></tbody></table></div>{Object.keys(all.repPRs).length>0&&<><h3>Best added load at each rep count</h3><div className="records-scroll"><table className="records-table"><thead><tr><th>Reps</th><th>All time</th><th>Last 90 days</th></tr></thead><tbody>{Object.keys(all.repPRs).map(Number).sort((a,b)=>a-b).map(reps=><tr key={reps}><th>{reps}</th><td>{bwDisplay(all.repPRs[reps],units)}</td><td>{bwDisplay(recent.repPRs[reps],units)}</td></tr>)}</tbody></table></div></>}</>;}
 function RecordControls({names,lift,setLift,date,setDate,relative=false}){
  const dateLabel=relative?'Relative records through date':'Records through date';
- return <div className="formgrid"><label>Exercise<select aria-label={relative?'Exercise for relative records':'Exercise for records'} value={lift} onChange={e=>setLift(e.target.value)}>{names.map(name=><option key={name}>{name}</option>)}</select></label><label>{dateLabel}<input aria-label={dateLabel} type="date" value={date} onChange={e=>setDate(e.target.value)}/></label></div>;
+ return <div className="formgrid"><SearchableExerciseSelect label={relative?'Relative records exercise':'Records exercise'} ariaLabel={relative?'Exercise for relative records':'Exercise for records'} value={lift} onChange={setLift} options={names}/><label>{dateLabel}<input aria-label={dateLabel} type="date" value={date} onChange={e=>setDate(e.target.value)}/></label></div>;
 }
 export default function PersonalRecords({db,date,setDate,lift,setLift}){
  const units=unitName(db.settings.units),result=useMemo(()=>personalRecords(db,lift,date),[db,lift,date]);

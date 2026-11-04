@@ -424,3 +424,47 @@ main,.sidebar nav{min-width:0}.sidebar nav{max-width:100%}.records-scroll{max-wi
   .schedule-creation-bar{gap:12px;padding:13px}
   .schedule-creation-bar button{width:100%;justify-content:center}
 }
+
+
+/* Scoped searchable exercise pickers: preserve native dropdown behavior on Mac
+   and touch devices, and filter the long option list before opening it. */
+.searchable-exercise-select{
+  display:grid;
+  grid-template-columns:minmax(0,1fr);
+  gap:6px;
+  min-width:0;
+  width:100%;
+  color:#b7c7dc;
+  font-size:12px;
+}
+.searchable-exercise-select>label{font-size:12px;color:#b7c7dc}
+.searchable-exercise-select>input[type="search"],
+.searchable-exercise-select>select{
+  box-sizing:border-box;
+  width:100%;
+  min-width:0;
+}
+.searchable-exercise-select>input[type="search"]{
+  padding-right:12px;
+}
+.searchable-exercise-select .exercise-search-count{
+  display:block;
+  margin:0;
+  color:#92a9c5;
+  font-size:11px;
+  line-height:1.4;
+}
+.actions>.searchable-exercise-select{
+  flex:1 1 245px;
+  max-width:350px;
+}
+.trend-lift-selector>.searchable-exercise-select{
+  width:min(350px,100%);
+}
+@media(max-width:600px){
+  .actions>.searchable-exercise-select,
+  .trend-lift-selector>.searchable-exercise-select{
+    width:100%;
+    max-width:100%;
+  }
+}

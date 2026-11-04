@@ -12,10 +12,10 @@ This README is the product manual and the handoff for a fresh AI development con
 | Site | [powerbuild-flexible-goals.vercel.app](https://powerbuild-flexible-goals.vercel.app) |
 | Hosting | Existing Vercel project `powerbuild-flexible-goals`, team/dashboard slug `power-build` |
 | Backend | Supabase project `zgbldcmahkokmkfqeljh`; Auth and the account-snapshot table/RPC described below |
-| Source reviewed through | [a658e6f16f74e6cfb5f86550563aa71a24efa166](https://github.com/JaiBehl/Powerbuild/commit/a658e6f16f74e6cfb5f86550563aa71a24efa166) |
-| Release work | [PR #32](https://github.com/JaiBehl/Powerbuild/pull/32): bulk archive outside active schedules, permanent library deletion, chart-to-workout navigation, safe active-session removal, dated strength scenarios and a concurrent-deletion editor fix. Follows compact logger PR #30 and blank schedule creation PR #31. |
+| Source reviewed through | [438aff5a1b9c97670beb59c3c00eaeb3b36c72c4](https://github.com/JaiBehl/Powerbuild/commit/438aff5a1b9c97670beb59c3c00eaeb3b36c72c4) (feature branch; production commit to be verified after merge) |
+| Release work | Searchable exercise dropdowns in Workout editor and Progress (charts and personal records), preserving the existing native dropdowns and all selected workout data. Follows [PR #32](https://github.com/JaiBehl/Powerbuild/pull/32). |
 | Date | November 3, 2026, America/Los_Angeles |
-| Validation | 135 unit/integration + 84 Chromium browser tests and production build passed; [complete source gate](https://github.com/JaiBehl/Powerbuild/actions/runs/41618152319). Stage gates below passed sequentially before each next implementation. |
+| Validation | Prior [source gate](https://github.com/JaiBehl/Powerbuild/actions/runs/41618152319) passed. New searchable-exercise change requires its own unit, production-build, mobile and browser-regression CI checks before release. |
 
 The source baseline identifies code actually reviewed and tested. Documentation-only or merge commits may be newer. Fetch current `main`, inspect commits since that baseline, and check open PRs before changing anything. Current source governs implemented behavior; the latest explicit user instruction governs desired behavior.
 
@@ -60,6 +60,8 @@ Source access is still required for edits. Current workouts, foods, goals and pr
 - Phone regression failures report the overflowing elements' layout bounds for diagnosis alongside screenshots/traces.
 - Inactive chart tooltips are removed from layout so their hidden boxes cannot create horizontal page scrolling; active tooltip behavior remains covered.
 
+
+**Searchable exercise selectors**: The Workout editor's “Saved exercise to add” menu, the Progress 1RM chart exercise picker, and the absolute/relative strength-record exercise menus now have a text search field directly above the native dropdown. Typing filters options without changing the current selection; clearing the search restores all options. The dropdowns remain keyboard accessible and work on mobile. Train's Add Exercise, Strength Goals, and exercise alias text fields already support type-to-search with native suggestions.
 
 ### Bodyweight and weighted calisthenics
 
