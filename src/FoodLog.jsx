@@ -2,12 +2,14 @@ import React,{useState} from 'react';
 import {Plus,Pencil,Save,Trash2,X,BookmarkPlus} from 'lucide-react';
 import ServingPicker from './ServingPicker';
 import CalorieSection from './CalorieSection';
+import useEditFocus from './useEditFocus';
 import {MEALS,NUTRIENTS,emptyFood,asNumber,sumFoods,formatAmount,normalizeMeal,makeLoggedFood,savedFoodFrom,portionOfLoggedFood} from './foodLibrary';
 
 export default function FoodLog({date,setDate,items=[],updateDayRecord,entry,setEntry,target,macros,onSaveToLibrary}){
   const [error,setError]=useState('');
   const [message,setMessage]=useState('');
   const [editingId,setEditingId]=useState(null);
+  const inlineEditorRef=useEditFocus(editingId);
   const [editDraft,setEditDraft]=useState(emptyFood());
   const logged=Array.isArray(items)?items:[];
   const totals=sumFoods(logged);
@@ -108,7 +110,7 @@ export default function FoodLog({date,setDate,items=[],updateDayRecord,entry,set
         return <div className="food-meal-group" key={meal}>
           <div className="food-meal-heading"><b>{meal}</b><span>{formatAmount(groupTotal.calories)} kcal</span></div>
           {foods.map(food=><div className="food-item" key={food.id}>
-            {editingId===food.id?<div className="food-edit-box">
+            {editingId===food.id?<div ref={inlineEditorRef} className="food-edit-box">
               <div className="formgrid food-entry-fields">
                 <label className="food-entry-name">Name<input value={editDraft.name} onChange={e=>setEditDraft(p=>({...p,name:e.target.value}))}/></label>
                 <label>Meal<select value={editDraft.meal} onChange={e=>setEditDraft(p=>({...p,meal:e.target.value}))}>{MEALS.map(option=><option key={option}>{option}</option>)}</select></label>
