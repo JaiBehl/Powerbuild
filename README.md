@@ -12,10 +12,10 @@ This README is the product manual and the handoff for a fresh AI development con
 | Site | [powerbuild-flexible-goals.vercel.app](https://powerbuild-flexible-goals.vercel.app) |
 | Hosting | Existing Vercel project `powerbuild-flexible-goals`, team/dashboard slug `power-build` |
 | Backend | Supabase project `zgbldcmahkokmkfqeljh`; Auth and the account-snapshot table/RPC described below |
-| Source reviewed through | [fc7896570a7fb36123a40566ceb4653cddf48bbb](https://github.com/JaiBehl/Powerbuild/commit/fc7896570a7fb36123a40566ceb4653cddf48bbb) (session reorder feature branch; production confirmation pending) |
-| Release work | Exercise order can be adjusted mid-session with persistent up/down arrow controls, including on collapsed cards. Optional future-template order updates preserve stable exercise links and save revision history. |
+| Source reviewed through | [8737418870ec4ea12de0fc0b01e19d8fe91cb38c](https://github.com/JaiBehl/Powerbuild/commit/8737418870ec4ea12de0fc0b01e19d8fe91cb38c) (edit-navigation feature branch; production confirmation pending) |
+| Release work | Edit actions now reveal and focus the correct editor for workout templates, exercise definitions, saved schedules, Train exercise cards, logged foods and Saved Foods. Minimized editors reopen on demand; selected draft fields persist until Save or Cancel. |
 | Date | November 3, 2026, America/Los_Angeles |
-| Validation | New unit and Playwright tests cover order changes, logged sets, existing history, template opt-in, legacy ambiguous links, minimized cards and mobile width. Full GitHub CI and Vercel production readiness to be verified on release; previous gates do not prove this change. |
+| Validation | New browser regression suite covers editor navigation from collapsed cards in Workout/Exercise libraries and Schedule, plus Train and nutrition inline editors on mobile. Full CI and Vercel production readiness must be confirmed before release. |
 
 The source baseline identifies code actually reviewed and tested. Documentation-only or merge commits may be newer. Fetch current `main`, inspect commits since that baseline, and check open PRs before changing anything. Current source governs implemented behavior; the latest explicit user instruction governs desired behavior.
 
@@ -29,6 +29,7 @@ Source access is still required for edits. Current workouts, foods, goals and pr
 
 - Preserve the restored original React/localhost UI: dark navy cards, POWERBUILD / STRENGTH × PHYSIQUE branding, readable set tables and sticky desktop sidebar. Respect requests to change only a named area.
 - Every main content panel minimizes independently. Keep its toggle, title, mini-description and useful summary/count visible while minimized; keep the hidden content mounted so minimizing does not discard a draft.
+- **Edit → editor navigation:** Choosing Edit, Duplicate or Create in the Workout and Exercise libraries immediately expands the corresponding editor card, scrolls it into view and focuses its first field. Loading, creating or reviewing a saved schedule jumps to Schedule editor the same way, including from a collapsed card. Train exercise pencil edits, logged-food pencil edits and Saved Foods pencil edits focus their inline form automatically. This is a navigation/focus improvement only: no edit is applied until Save and it does not rewrite other session or food data.
 - Panel state is remembered on the device by profile, tab and panel. Exercise cards use stable template/session identity. These preferences are separate from synced training data.
 - Separate Bodyweight goal, Baseline maintenance, Daily activity, Custom cardio, Daily calorie target, Macro targets, Food & meal log and Saved Foods cards. Saved Foods sits below the food log and its individual cards remain compact.
 - Calculate maintenance independently of goals. Keep uncapped goal/deadline arithmetic, manual calorie/macro overrides and warnings for impossible or expired goals.
