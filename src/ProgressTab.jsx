@@ -8,6 +8,7 @@ import React,{useMemo,useState,useRef} from 'react';
 import {LineChart,Line,XAxis,YAxis,Tooltip,ResponsiveContainer,CartesianGrid} from 'recharts';
 import {Plus,Trash2} from 'lucide-react';
 import CalorieSection from './CalorieSection';
+import SearchableExerciseSelect from './SearchableExerciseSelect';
 import {fromDisplayWeight,toDisplayWeight,unitName} from './units';
 
 export default function ProgressTab({db,patch,date,setDate,setTab,weightEntry,setWeightEntry,history,chartLift,setChartLift,chartData,finished,latestWeight}){
@@ -110,7 +111,7 @@ export default function ProgressTab({db,patch,date,setDate,setTab,weightEntry,se
 
       <p className="muted">Nuzzo 2024 population tables: flat barbell bench and leg press use separate curves; other loaded movements use the general curve. Bodyweight/assisted movements need total resistance and are excluded from predictions. RPE 8 adds 2 estimated reps in reserve. Predictions require RPE 7–10 and at most 10 total reps including reserve. Blank RPE assumes failure. These are approximate trends, not guaranteed maxes; use consistent technique and hard, low-rep sets. A single without RPE stays at its achieved load.</p>
 
-      <div className="trend-lift-selector"><select value={chartLift} aria-label="Select exercise to chart" onChange={e=>setChartLift(e.target.value)}>{exerciseNames(db).map(n=><option key={n}>{n}</option>)}</select></div>
+      <div className="trend-lift-selector"><SearchableExerciseSelect label="Exercise to chart" ariaLabel="Select exercise to chart" value={chartLift} onChange={setChartLift} options={exerciseNames(db)} placeholder="Search chart exercises…"/></div>
 
       <div className="trend-controls">
         <div className="trend-range" role="group" aria-label="Chart date range">
