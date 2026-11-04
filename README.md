@@ -12,10 +12,10 @@ This README is the product manual and the handoff for a fresh AI development con
 | Site | [powerbuild-flexible-goals.vercel.app](https://powerbuild-flexible-goals.vercel.app) |
 | Hosting | Existing Vercel project `powerbuild-flexible-goals`, team/dashboard slug `power-build` |
 | Backend | Supabase project `zgbldcmahkokmkfqeljh`; Auth and the account-snapshot table/RPC described below |
-| Source reviewed through | [8737418870ec4ea12de0fc0b01e19d8fe91cb38c](https://github.com/JaiBehl/Powerbuild/commit/8737418870ec4ea12de0fc0b01e19d8fe91cb38c) (edit-navigation feature branch; production confirmation pending) |
-| Release work | Edit actions now reveal and focus the correct editor for workout templates, exercise definitions, saved schedules, Train exercise cards, logged foods and Saved Foods. Minimized editors reopen on demand; selected draft fields persist until Save or Cancel. |
-| Date | November 3, 2026, America/Los_Angeles |
-| Validation | New browser regression suite covers editor navigation from collapsed cards in Workout/Exercise libraries and Schedule, plus Train and nutrition inline editors on mobile. Full CI and Vercel production readiness must be confirmed before release. |
+| Source reviewed through | [c306910a63e1222d0dd0cd2ad2bc389e2cd40c61](https://github.com/JaiBehl/Powerbuild/commit/c306910a63e1222d0dd0cd2ad2bc389e2cd40c61) plus the set-input fix in this change |
+| Release work | Train keeps negative or non-finite numbers out of saved sets, so editing a workout cannot make an otherwise valid backup fail validation. Existing stored values are untouched. |
+| Date | November 4, 2026, America/Los_Angeles |
+| Validation | [Previous main regression and production smoke](https://github.com/JaiBehl/Powerbuild/actions/runs/41750375377) passed. This fix adds a browser regression for rejected negative values, valid zero/blank entries and backup validation. |
 
 The source baseline identifies code actually reviewed and tested. Documentation-only or merge commits may be newer. Fetch current `main`, inspect commits since that baseline, and check open PRs before changing anything. Current source governs implemented behavior; the latest explicit user instruction governs desired behavior.
 
@@ -78,7 +78,7 @@ Source access is still required for edits. Current workouts, foods, goals and pr
 
 - Date picker, previous/next day and Today; scheduled-workout/rest label. Date is shared with Progress and nutrition.
 - Start the scheduled workout or any active saved workout manually, including on rest days. The model is one session per date.
-- Each exercise logs weight, reps, optional RPE, done flag and Top/Backoff tag; add/remove sets. Overview shows completed/total sets, completed volume and finished status.
+- Each exercise logs weight, reps, optional RPE, done flag and Top/Backoff tag; add/remove sets. Negative and non-finite set edits are ignored so backups remain valid. Zero and blank entries still work. Previously saved negative values can be corrected in Train; they are not rewritten automatically. Overview shows completed/total sets, completed volume and finished status.
 - Add any exercise; edit name, rep range or effort; remove an exercise. By default these affect only this session. The explicit future-template checkbox also updates the matching template. Ambiguous older links are rejected instead of changing the wrong exercise.
 - New unsaved exercises start at three sets, 8–12 reps, 1–2 RIR; choosing a saved exercise uses its defaults. Individual set-count changes affect the session, not the future template.
 - **Reorder exercises mid-session** using the small up/down arrows in each exercise header. These work on expanded or minimized cards and save automatically. The top/bottom movement button is disabled. Completed sets and pending edits remain attached to the same exercise. The existing optional future-template checkbox extends valid linked order changes to the saved workout template, without rewriting past logs.
@@ -339,7 +339,7 @@ Explicit correction updates records owned by the same import ID. Optional remova
 | `index.html`, `src/main.jsx` | Entry; app state, normalization/migration, profiles, dates, exports/imports, undo and persistence orchestration |
 | `src/data.js`, `src/dates.js` | Default program/settings, session factory, estimator compatibility export, strict dates and calendar arithmetic |
 | `src/ScheduleEditor.jsx`, `src/scheduleLibrary.js` | Rotation/fixed-day editor, program snapshot library, restoration and application log |
-| `src/TrainTab.jsx`, `src/workoutOperations.js` | Workout UI, explicit template edits and stable identity matching |
+| `src/TrainTab.jsx`, `src/workoutOperations.js` | Workout UI, backup-compatible set entry, explicit template edits and stable identity matching |
 | `src/ExerciseLibrary.jsx`, `src/exerciseLibrary.js`, `src/libraryCore.js` | Exercise catalog/editor, migration, linked template updates, archive, revisions and shared library helpers |
 | `src/libraryDeletion.js` | Scoped permanent library deletion, typed confirmation and schedule reference cleanup |
 | `src/WorkoutLibrary.jsx`, `src/programLibrary.js` | Reusable workout library/editor, stable identity, rename/duplicate/archive and version restore |
