@@ -1,6 +1,7 @@
 import React,{useState} from 'react';
 import {Plus,Pencil,Save,Trash2,X} from 'lucide-react';
 import CalorieSection from './CalorieSection';
+import useEditFocus from './useEditFocus';
 import ServingPicker from './ServingPicker';
 import {MEALS,NUTRIENTS,formatAmount,makeLoggedFood,normalizeMeal,savedFoodFrom} from './foodLibrary';
 
@@ -9,6 +10,7 @@ export default function SavedFoods({foods=[],date,onAddToLog,onEditFood,onDelete
   const [servingAmounts,setServingAmounts]=useState({});
   const [mealChoices,setMealChoices]=useState({});
   const [editingId,setEditingId]=useState(null);
+  const inlineEditorRef=useEditFocus(editingId);
   const [draft,setDraft]=useState({});
   const [message,setMessage]=useState('');
   const [error,setError]=useState('');
@@ -62,7 +64,7 @@ export default function SavedFoods({foods=[],date,onAddToLog,onEditFood,onDelete
         </label>
         {visible.length===0?<p className="empty">No saved foods match that search.</p>:<div className="saved-foods-list">
           {visible.map(food=><div className="saved-food-item" key={food.id}>
-            {editingId===food.id?<div className="saved-food-edit">
+            {editingId===food.id?<div ref={inlineEditorRef} className="saved-food-edit">
               <div className="formgrid food-entry-fields">
                 <label className="food-entry-name">Name<input value={draft.name||''} onChange={e=>setDraft(p=>({...p,name:e.target.value}))}/></label>
                 <label>Default meal<select value={draft.meal||'Other'} onChange={e=>setDraft(p=>({...p,meal:e.target.value}))}>{MEALS.map(meal=><option key={meal}>{meal}</option>)}</select></label>
