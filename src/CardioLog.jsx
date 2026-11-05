@@ -10,6 +10,9 @@ export default function CardioLog({date,setDate,entries,onChange,totalCalories,c
   useEffect(()=>{setDraft(emptyDraft)},[date]);
 
   const updateEntry=(id,key,value)=>{
+    if(key==='durationMinutes'||key==='calories'){
+      if(value!==''&&(!Number.isFinite(Number(value))||Number(value)<0))return;
+    }
     onChange(entries.map(item=>item.id===id?{...item,[key]:value}:item));
   };
 
@@ -19,7 +22,7 @@ export default function CardioLog({date,setDate,entries,onChange,totalCalories,c
     const name=draft.name.trim();
     const durationMinutes=Number(draft.durationMinutes);
     const calories=Number(draft.calories);
-    if(!name||durationMinutes<=0||calories<=0)return;
+    if(!name||!Number.isFinite(durationMinutes)||!Number.isFinite(calories)||durationMinutes<=0||calories<=0)return;
     const id=globalThis.crypto?.randomUUID?.()||`cardio-${Date.now()}-${Math.random().toString(36).slice(2,7)}`;
     onChange([...entries,{id,name,durationMinutes,calories}]);
     setDraft(emptyDraft);

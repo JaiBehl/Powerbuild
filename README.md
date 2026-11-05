@@ -12,10 +12,10 @@ This README is the product manual and the handoff for a fresh AI development con
 | Site | [powerbuild-flexible-goals.vercel.app](https://powerbuild-flexible-goals.vercel.app) |
 | Hosting | Existing Vercel project `powerbuild-flexible-goals`, team/dashboard slug `power-build` |
 | Backend | Supabase project `zgbldcmahkokmkfqeljh`; Auth and the account-snapshot table/RPC described below |
-| Source reviewed through | [5895d0652a4ac7d137483af65d3c8aeb0c04e532](https://github.com/JaiBehl/Powerbuild/commit/5895d0652a4ac7d137483af65d3c8aeb0c04e532) plus the account storage fix in this change |
-| Release work | Cloud sync uses IndexedDB for account checkpoints and recovery copies, so those copies no longer compete for the profile storage quota. Existing account copies migrate on sign-in or reload. |
-| Date | November 4, 2026, America/Los_Angeles |
-| Validation | [Previous main regression and production smoke](https://github.com/JaiBehl/Powerbuild/actions/runs/41812151958) passed. The quota fix has local unit and build coverage. The browser suite exercises legacy migration with separate edits at a simulated quota limit and verifies that an aborted recovery write preserves both copies. |
+| Source reviewed through | `695f58e` plus the cardio input guard in this change |
+| Release work | Custom cardio rejects negative and non-finite edits before persistence; valid zero and blank edits remain supported. Existing history is not rewritten. The preceding IndexedDB sync fix is on main. |
+| Date | November 5, 2026, America/Los_Angeles |
+| Validation | 139 local unit/integration tests and the production build pass. Two new desktop/mobile browser regressions cover invalid cardio edits, valid changes, reload, backup validation and preservation of food/other dates. The complete browser gate runs in GitHub Actions because local Chromium installation failed. Prior sync release: [main regression and production smoke passed](https://github.com/JaiBehl/Powerbuild/actions/runs/41813617715). New deployment is checked separately after merge. |
 
 The source baseline identifies code actually reviewed and tested. Documentation-only or merge commits may be newer. Fetch current `main`, inspect commits since that baseline, and check open PRs before changing anything. Current source governs implemented behavior; the latest explicit user instruction governs desired behavior.
 
@@ -200,6 +200,8 @@ Walking uses [Ludlow and Weyand (2016)](https://pubmed.ncbi.nlm.nih.gov/26679617
 
 For individual calibration, compare complete intake logs and weight averages over several consistent weeks, or enter a known total maintenance. Missing meals are not treated as zero intake, and short-term water/glycogen changes cannot identify TDEE. The app does not auto-fit maintenance from incomplete food history. Indirect calorimetry measures RMR, not total daily maintenance; doubly labelled water measures free-living expenditure. Neither measurement is available from app inputs. The existing 3,500-kcal/lb goal/deadline arithmetic is preserved as a rough static planning rule, **not** a validated dynamic weight-change forecast; it remains uncapped with guidance. No claim of exact or universally optimal predictions is made.
 
+Custom cardio numeric edits reject negative or non-finite values before saving; valid zero and blank edits remain available. Adding an entry requires a name and finite positive duration/calories. Previously saved invalid entries remain editable and are not silently rewritten. Synthetic desktop/phone tests validate backup round trips and preserve other dates and food snapshots.
+
 ## Development and repeatable tests
 
 Use Node **22+**; `.nvmrc` and CI select Node 24. The Supabase dependency requires Node >=22. Direct dependencies are pinned and `package-lock.json` is committed; use `npm ci`.
@@ -355,7 +357,7 @@ Explicit correction updates records owned by the same import ID. Optional remova
 | `src/CalorieTracker.jsx`, `src/nutrition.js`, `src/maintenance.js` | Nutrition cards, daily snapshots/defaults, persistent automatic weight source/provenance, weekly goal pace, RMR/net-activity models and maintenance override |
 | `src/strengthEstimation.js` | Shared exercise-specific population tables, RPE/RIR adjustment, prediction gates and achievement distinction |
 | `src/FoodLog.jsx`, `src/SavedFoods.jsx`, `src/ServingPicker.jsx`, `src/foodLibrary.js` | Foods, reusable templates, portions, validation and totals |
-| `src/CardioLog.jsx` | Dated custom cardio CRUD |
+| `src/CardioLog.jsx` | Dated custom cardio CRUD and finite nonnegative edit guards |
 | `src/SettingsTab.jsx` | Defaults, units, schedule, optional goals and backup/recovery controls |
 | `src/ProfileSwitcher.jsx`, `src/profiles.js` | Profile UI, keys, loading/saving and all-profile write rollback |
 | `src/cloudSync.jsx`, `src/syncMerge.js`, `src/accountSyncStorage.js` | Auth, revision syncing, three-way merge, retry, IndexedDB account recovery and snapshot validation |
