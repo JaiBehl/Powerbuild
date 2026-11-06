@@ -37,7 +37,9 @@ export function applySchedule(db,snapshot,{restoreWorkouts=true,name='Custom sch
   const savedMeta=copy.workoutMeta?.[savedName],existing=savedMeta?.id?workoutEntry(next,savedMeta.id):null;
   if(!restoreWorkouts){if(existing)mapping[savedName]=existing[0];else if(Object.hasOwn(next.templates,savedName)&&!next.workoutMeta[savedName].archived)mapping[savedName]=savedName;else throw Error('A saved workout is missing. Enable Restore workout templates to restore it.');continue;}
   let target=existing?.[0]||savedName;
-  if(!existing&&Object.hasOwn(next.templates,target)){const base=savedName.slice(0,80);let n=2;target=base+' restored';while(Object.hasOwn(next.templates,target))target=base+' restored '+n++;}
+  // Match saveWorkout's case-insensitive uniqueness rule when choosing a restore name.
+  const occupied=name=>Object.keys(next.templates).some(n=>n.trim().toLowerCase()===name.trim().toLowerCase());
+  if(!existing&&occupied(target)){const base=savedName.slice(0,80);let n=2;target=base+' restored';while(occupied(target))target=base+' restored '+n++;}
   // Snapshot prescriptions are independent. Normalize their links against the current exercise catalog.
   const restoredRows=rows.map(row=>{const r=structuredClone(row),oldId=r[6]?.exerciseId,def=next.exerciseLibrary.find(e=>e.id===oldId);if(def&&def.name!==r[0])r[6]={...r[6],exerciseId:undefined};return r;});
   next=saveWorkout(next,{id:existing?.[1].id,name:target,description:savedMeta?.description||'',rows:restoredRows});

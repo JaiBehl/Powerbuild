@@ -12,10 +12,10 @@ This README is the product manual and the handoff for a fresh AI development con
 | Site | [powerbuild-flexible-goals.vercel.app](https://powerbuild-flexible-goals.vercel.app) |
 | Hosting | Existing Vercel project `powerbuild-flexible-goals`, team/dashboard slug `power-build` |
 | Backend | Supabase project `zgbldcmahkokmkfqeljh`; Auth and the account-snapshot table/RPC described below |
-| Source reviewed through | `695f58e` plus the cardio input guard in this change |
-| Release work | Custom cardio rejects negative and non-finite edits before persistence; valid zero and blank edits remain supported. Existing history is not rewritten. The preceding IndexedDB sync fix is on main. |
-| Date | November 5, 2026, America/Los_Angeles |
-| Validation | 139 local unit/integration tests and the production build pass. Two new desktop/mobile browser regressions cover invalid cardio edits, valid changes, reload, backup validation and preservation of food/other dates. The complete browser gate runs in GitHub Actions because local Chromium installation failed. Prior sync release: [main regression and production smoke passed](https://github.com/JaiBehl/Powerbuild/actions/runs/41813617715). New deployment is checked separately after merge. |
+| Source reviewed through | `66db699` plus the saved-schedule restore collision fix in this change |
+| Release work | Saved schedules restore missing workout identities under an available name even when another workout uses the same name or restore suffix with different capitalization. Unrelated templates, saved snapshots and dated logs remain intact. |
+| Date | November 6, 2026, America/Los_Angeles |
+| Validation | The collision regression failed before the fix and passed afterward. 140 local unit/integration tests and the production build pass. A phone browser regression covers restore, reload, repeat application and preservation of unrelated workouts/history. Full browser gate runs in GitHub Actions because local browser dependency installation failed. [Previous main regression and production smoke passed](https://github.com/JaiBehl/Powerbuild/actions/runs/42007411016); this release is verified separately after merge. |
 
 The source baseline identifies code actually reviewed and tested. Documentation-only or merge commits may be newer. Fetch current `main`, inspect commits since that baseline, and check open PRs before changing anything. Current source governs implemented behavior; the latest explicit user instruction governs desired behavior.
 
@@ -86,6 +86,9 @@ Source access is still required for edits. Current workouts, foods, goals and pr
 - Notes save as typed. Finish/reopen changes status; delete requires confirmation and creates a recovery copy. Finishing does not manually advance the date-based rotation.
 
 ### Schedule and default program
+
+Restoring a saved schedule matches current workouts by stable identity. When a missing identity’s old name is occupied, it restores as `name restored`, `name restored 2`, and so on. Both the original name and generated suffixes use the same case-insensitive uniqueness rule as the Workout editor. Reapplying finds the restored identity without duplicating it. Unrelated workout prescriptions and dated logs are preserved. This does not resolve ambiguous duplicate workout identities, which still require correction before saving.
+
 
 Cycle: **Push A → Pull A → Legs A → Push B → Pull B → Legs B**, continuing across weeks. Fresh weekdays are Monday/Tuesday/Wednesday/Friday/Saturday. Schedule edits weekdays, start date, starting slot and the complete rotation. Settings also retains the rotation weekday/offset controls. Planned rotation advances on scheduled dates even if a workout is skipped. Dates before the start have no plan. Calendar arithmetic is date-only and timezone/DST independent.
 
@@ -341,7 +344,7 @@ Explicit correction updates records owned by the same import ID. Optional remova
 | --- | --- |
 | `index.html`, `src/main.jsx` | Entry; app state, normalization/migration, profiles, dates, exports/imports, undo and persistence orchestration |
 | `src/data.js`, `src/dates.js` | Default program/settings, session factory, estimator compatibility export, strict dates and calendar arithmetic |
-| `src/ScheduleEditor.jsx`, `src/scheduleLibrary.js` | Rotation/fixed-day editor, program snapshot library, restoration and application log |
+| `src/ScheduleEditor.jsx`, `src/scheduleLibrary.js` | Rotation/fixed-day editor, program snapshot library, restoration and application log; case-insensitive collision-safe snapshot restore |
 | `src/TrainTab.jsx`, `src/workoutOperations.js` | Workout UI, backup-compatible set entry, explicit template edits and stable identity matching |
 | `src/ExerciseLibrary.jsx`, `src/exerciseLibrary.js`, `src/libraryCore.js` | Exercise catalog/editor, migration, linked template updates, archive, revisions and shared library helpers |
 | `src/libraryDeletion.js` | Scoped permanent library deletion, typed confirmation and schedule reference cleanup |
