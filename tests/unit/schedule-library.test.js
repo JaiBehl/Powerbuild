@@ -8,3 +8,28 @@ test('applying without template restore preserves edits and missing identities r
 test('fixed programs, schedule edits and archives round trip with validated snapshots',()=>{let db=normalizeProgram(makeDb());const settings={...scheduleSettings(db.settings),scheduleMode:'weekdays',weekdayWorkouts:{1:'Push A',4:null,6:'Legs B'}};db=saveSchedule(db,{name:'Fixed synthetic',snapshot:captureSchedule(db,settings)});const id=db.savedSchedules[0].id;db=saveSchedule(db,{id,name:'Revised fixed',snapshot:captureSchedule(db,{...settings,weekdayWorkouts:{2:'Pull A'}})});db=restoreScheduleRevision(db,id,0);assert.equal(db.savedSchedules[0].name,'Fixed synthetic');db=archiveSchedule(db,id);assert.equal(db.savedSchedules[0].archived,true);db=archiveSchedule(db,id,false);db=applySchedule(db,db.savedSchedules[0].snapshot);assert.equal(scheduledWorkout('2026-11-02',db.settings),'Push A');assert.deepEqual(validateProfileDb(JSON.parse(JSON.stringify(db))),db);const bad=structuredClone(db);bad.savedSchedules[0].snapshot.settings.weekdayWorkouts[1]='Missing';assert.throws(()=>validateProfileDb(bad),/references/);});
 
 test('a loaded program cannot save duplicate stable workout identities after a rename',()=>{let db=normalizeProgram(makeDb());const snap=captureSchedule(db);db=saveWorkout(db,{id:db.workoutMeta['Push A'].id,name:'Renamed upper',rows:db.templates['Push A']});const merged={...db,templates:{...db.templates,...snap.templates},workoutMeta:{...db.workoutMeta,...snap.workoutMeta}};assert.throws(()=>captureSchedule(merged,{...db.settings,workoutCycle:['Push A','Renamed upper']}),/two names for the same workout/);});
+
+
+test('schedule restore handles case-insensitive name collisions without replacing unrelated workouts',async()=>{
+ const {deleteWorkoutDefinition}=await import('../../src/libraryDeletion.js');
+ let db=normalizeProgram(makeDb({sessions:[makeSession()]}));
+ db=saveSchedule(db,{name:'Synthetic saved plan'});
+ const snapshot=structuredClone(db.savedSchedules[0].snapshot),sessions=structuredClone(db.sessions);
+ db=deleteWorkoutDefinition(db,db.workoutMeta['Push A'].id);
+ db=saveWorkout(db,{name:'PUSH A',rows:[['Synthetic replacement lift',2,'5','2 RIR']]});
+ db=saveWorkout(db,{name:'PUSH A RESTORED',rows:[]});
+ const replacement=structuredClone(db.templates['PUSH A']),collision=structuredClone(db.workoutMeta['PUSH A RESTORED']);
+ db=applySchedule(db,snapshot);
+ assert.equal(db.settings.workoutCycle[0],'Push A restored 2');
+ assert.deepEqual(db.templates['PUSH A'],replacement);
+ assert.deepEqual(db.workoutMeta['PUSH A RESTORED'],collision);
+ assert.equal(db.workoutMeta['Push A restored 2'].id,snapshot.workoutMeta['Push A'].id);
+ assert.deepEqual(db.templates['Push A restored 2'],snapshot.templates['Push A']);
+ assert.deepEqual(db.sessions,sessions);
+ assert.deepEqual(db.savedSchedules[0].snapshot,snapshot);
+ const count=Object.keys(db.templates).length;
+ db=applySchedule(db,snapshot);
+ assert.equal(Object.keys(db.templates).length,count);
+ assert.equal(db.settings.workoutCycle[0],'Push A restored 2');
+ assert.doesNotThrow(()=>validateProfileDb(JSON.parse(JSON.stringify(db))));
+});
