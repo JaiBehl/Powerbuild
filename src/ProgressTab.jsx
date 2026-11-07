@@ -1,7 +1,7 @@
 import StrengthProjection from './StrengthProjection';
 import WorkoutPoint from './WorkoutPoint';
 import WeeklyReview from './WeeklyReview';
-import {rollingWeightAverage} from './trends';
+import {filterTrendRange,rollingWeightAverage} from './trends';
 import PersonalRecords from './PersonalRecords';
 import {exerciseNames,resolveExerciseName} from './exerciseCatalog';
 import React,{useMemo,useState,useRef} from 'react';
@@ -61,22 +61,12 @@ export default function ProgressTab({db,patch,date,setDate,setTab,weightEntry,se
       value:toDisplayWeight(entry.weight,units,1),
       average:toDisplayWeight(rollingWeightAverage(db.weights,entry.date).average,units,1),
     }));
-    if(!all.length||bodyweightRange==='All')return all;
-    const months={'3M':3,'6M':6,'1Y':12}[bodyweightRange]||6;
-    const latest=new Date(all[all.length-1].date+'T12:00:00');
-    latest.setMonth(latest.getMonth()-months);
-    const cutoff=[latest.getFullYear(),String(latest.getMonth()+1).padStart(2,'0'),String(latest.getDate()).padStart(2,'0')].join('-');
-    return all.filter(entry=>entry.date>=cutoff);
+    return filterTrendRange(all,bodyweightRange);
   },[allBodyweightLogs,units,bodyweightRange]);
   // Keep complete ISO dates for hover details; shorten only the axis tick labels.
   const displayChartData=useMemo(()=>{
     const all=chartData.map(x=>({...x,value:toDisplayWeight(x.value,units,1)}));
-    if(!all.length||chartRange==='All')return all;
-    const months={'3M':3,'6M':6,'1Y':12}[chartRange]||6;
-    const latest=new Date(all[all.length-1].date+'T12:00:00');
-    latest.setMonth(latest.getMonth()-months);
-    const cutoff=[latest.getFullYear(),String(latest.getMonth()+1).padStart(2,'0'),String(latest.getDate()).padStart(2,'0')].join('-');
-    return all.filter(x=>x.date>=cutoff);
+    return filterTrendRange(all,chartRange);
   },[chartData,units,chartRange]);
   const formatTooltipDate=(iso)=>{
     const date=new Date(String(iso)+'T12:00:00');

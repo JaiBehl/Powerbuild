@@ -1,6 +1,18 @@
 import {addCalendarDays,isISODate} from './dates.js';
 import {sumFoods} from './foodLibrary.js';
 const finite=value=>Number.isFinite(Number(value))?Number(value):0;
+// Series are sorted oldest to newest. Clamp the cutoff to the last day
+// of shorter months so calendar subtraction never rolls into the next month.
+export function filterTrendRange(points,range){
+ const latest=points.at(-1)?.date;
+ if(range==='All'||!isISODate(latest))return points;
+ const months={'3M':3,'6M':6,'1Y':12}[range]||6;
+ const cutoff=new Date(latest+'T12:00:00Z'),day=cutoff.getUTCDate();
+ cutoff.setUTCMonth(cutoff.getUTCMonth()-months+1,0);
+ cutoff.setUTCDate(Math.min(day,cutoff.getUTCDate()));
+ const first=cutoff.toISOString().slice(0,10);
+ return points.filter(point=>point.date>=first);
+}
 export function rollingWeightAverage(weights,asOf,days=7){
  if(!isISODate(asOf))return {average:null,days:0};
  const since=addCalendarDays(asOf,1-days),daily=new Map();
