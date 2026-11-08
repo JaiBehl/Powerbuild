@@ -59,3 +59,31 @@ test('future reorder does not reverse template order already consistent with the
  assert.deepEqual(next.templates,db.templates);
  assert.equal(next.workoutMeta,undefined);
 });
+
+test('an extra session-only exercise never inherits a same-name template link',()=>{
+ const session=makeSession();
+ const db=makeDb({sessions:[session]});
+ const added=addSessionExercise(db,session.id,session.exercises[0].name);
+ const saved=JSON.parse(JSON.stringify(added));
+ const extra=saved.sessions[0].exercises.at(-1);
+ const before=structuredClone(saved);
+ assert.equal(extra.templateId,null);
+ assert.throws(()=>editSessionExercise(saved,session.id,extra.id,{range:'12'},true),/session only/i);
+ assert.throws(()=>removeSessionExercise(saved,session.id,extra.id,true),/session only/i);
+ assert.throws(()=>moveSessionExercise(saved,session.id,extra.id,-1,true),/session only/i);
+ assert.deepEqual(saved,before);
+ const edited=editSessionExercise(saved,session.id,extra.id,{range:'12'});
+ assert.equal(edited.sessions[0].exercises.at(-1).range,'12');
+ assert.deepEqual(edited.templates,db.templates);
+});
+
+
+test('a legacy row cannot claim a template row already linked to another exercise in the session',()=>{
+ const session=makeSession();
+ const legacy={...structuredClone(session.exercises[0]),id:'synthetic-unlinked'};
+ delete legacy.templateId;
+ session.exercises.push(legacy);
+ const db=makeDb({sessions:[session]});
+ assert.throws(()=>removeSessionExercise(db,session.id,legacy.id,true),/not uniquely linked/);
+ assert.equal(removeSessionExercise(db,session.id,legacy.id).sessions[0].exercises.length,session.exercises.length-1);
+});

@@ -58,3 +58,29 @@ test('negative set numbers cannot invalidate a saved profile backup',async({page
  await expect.poll(async()=> (await readDb(page)).sessions[0].exercises[0].sets[0])
   .toMatchObject({weight:0,reps:'',rpe:'8',done:true,tag:'Top'});
 });
+
+test('removing a same-name session extra cannot delete the linked template row',async({page})=>{
+ await page.setViewportSize({width:390,height:844});
+ const session=makeSession();
+ session.exercises[0].sets[0]={weight:185,reps:5,rpe:8,done:true,tag:'Top'};
+ await seed(page,makeDb({sessions:[session]}));
+ await page.getByLabel('Workout date').fill(DAY);
+ const add=card(page,'Add exercise');
+ await add.getByLabel('New exercise name').fill('Barbell bench press');
+ await add.getByRole('button',{name:'Add exercise',exact:true}).click();
+ await expect(card(page,'Barbell bench press')).toHaveCount(2);
+ await page.reload();
+ await page.getByLabel('Workout date').fill(DAY);
+ await page.getByLabel('Apply exercise changes to future sessions',{exact:true}).check();
+ page.once('dialog',dialog=>dialog.accept());
+ await card(page,'Barbell bench press').last().getByTitle('Remove exercise',{exact:true}).click();
+ await expect(page.getByRole('button',{name:'Remove from this session only',exact:true})).toBeVisible();
+ await expect(card(page,'Barbell bench press')).toHaveCount(2);
+ await page.getByRole('button',{name:'Remove from this session only',exact:true}).click();
+ await expect(card(page,'Barbell bench press')).toHaveCount(1);
+ const saved=await readDb(page);
+ expect(saved.templates['Push A'][0][0]).toBe('Barbell bench press');
+ expect(saved.templates['Push A']).toHaveLength(6);
+ expect(saved.sessions[0].exercises[0].sets[0]).toEqual(session.exercises[0].sets[0]);
+ expect(()=>validateProfileDb(saved)).not.toThrow();
+});
