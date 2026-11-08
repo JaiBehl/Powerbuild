@@ -12,10 +12,10 @@ This README is the product manual and the handoff for a fresh AI development con
 | Site | [powerbuild-flexible-goals.vercel.app](https://powerbuild-flexible-goals.vercel.app) |
 | Hosting | Existing Vercel project `powerbuild-flexible-goals`, team/dashboard slug `power-build` |
 | Backend | Supabase project `zgbldcmahkokmkfqeljh`; Auth and the account-snapshot table/RPC described below |
-| Source reviewed through | `53915fe` plus the Progress chart month-end cutoff fix in this change |
-| Release work | Strength and bodyweight chart ranges retain points at month-end cutoffs when the target month is shorter. Dates and stored weights are unchanged. |
-| Date | November 7, 2026, America/Los_Angeles |
-| Validation | The previous date calculation dropped the February 28 point from a six-month range ending August 31. Calendar regressions cover 3M, 6M and 1Y, including leap days; a phone browser regression checks both charts and their independent All controls. 141 local unit/integration tests and the production build pass. Chromium could not launch locally, so the full browser gate runs in GitHub Actions. [Previous main regression and production smoke passed](https://github.com/JaiBehl/Powerbuild/actions/runs/42200025364); this release is verified separately after merge. |
+| Source reviewed through | `e952eab` plus the session-only exercise link fix in this change |
+| Release work | An extra exercise added only to a session cannot edit, move or remove a same-name row in the reusable workout. Existing logged sets stay intact. |
+| Date | November 8, 2026, America/Los_Angeles |
+| Validation | A synthetic test reproduced the unintended template link before the fix. 143 local unit/integration tests and the production build pass. A phone regression exercises removal after reload and validates the saved profile. The full browser gate runs in GitHub Actions. [Previous main regression and production smoke passed](https://github.com/JaiBehl/Powerbuild/actions/runs/42362555591); this release is verified separately after merge. |
 
 The source baseline identifies code actually reviewed and tested. Documentation-only or merge commits may be newer. Fetch current `main`, inspect commits since that baseline, and check open PRs before changing anything. Current source governs implemented behavior; the latest explicit user instruction governs desired behavior.
 
@@ -79,7 +79,7 @@ Source access is still required for edits. Current workouts, foods, goals and pr
 - Date picker, previous/next day and Today; scheduled-workout/rest label. Date is shared with Progress and nutrition.
 - Start the scheduled workout or any active saved workout manually, including on rest days. The model is one session per date.
 - Each exercise logs weight, reps, optional RPE, done flag and Top/Backoff tag; add/remove sets. Negative and non-finite set edits are ignored so backups remain valid. Zero and blank entries still work. Previously saved negative values can be corrected in Train; they are not rewritten automatically. Overview shows completed/total sets, completed volume and finished status.
-- Add any exercise; edit name, rep range or effort; remove an exercise. By default these affect only this session. The explicit future-template checkbox also updates the matching template. Ambiguous older links are rejected instead of changing the wrong exercise.
+- Add any exercise; edit name, rep range or effort; remove an exercise. By default these affect only this session. The explicit future-template checkbox also updates the matching template. Extras added to this session only stay unlinked even when their name matches a template exercise. Legacy name matching also refuses a template row already linked to another exercise in the session. Ambiguous older links are rejected instead of changing the wrong exercise.
 - New unsaved exercises start at three sets, 8–12 reps, 1–2 RIR; choosing a saved exercise uses its defaults. Individual set-count changes affect the session, not the future template.
 - **Reorder exercises mid-session** using the small up/down arrows in each exercise header. These work on expanded or minimized cards and save automatically. The top/bottom movement button is disabled. Completed sets and pending edits remain attached to the same exercise. The existing optional future-template checkbox extends valid linked order changes to the saved workout template, without rewriting past logs.
 - Previous finished session appears as a **compact, expandable one-line reference** above the set table. The row shows the date, workout, first completed set and number of other sets; expanding shows every recorded set and RPE. It uses movement aliases and current units, excludes the current/future dates, and never overwrites the current workout.
@@ -278,7 +278,7 @@ First-device migration: export backups on the device with existing data, sign in
 | `strengthGoals` | `[{id, exercise, targetWeight, deadline}]` |
 | `exerciseAliases` | Normalized logged name → canonical display name; identity overrides permit opting out |
 | `sessions` | `[{id, date, type, workoutId?, notes, finished, exercises}]`; type/exercises remain dated snapshots |
-| `exercises[]` | `{id, templateId?, libraryExerciseId?, name, range, target, kind, resistance?, sets}` plus optional import provenance |
+| `exercises[]` | `{id, templateId?, libraryExerciseId?, name, range, target, kind, resistance?, sets}` plus optional import provenance; `templateId: null` marks a session-only addition, and an omitted link allows unique legacy name matching |
 | `sets[]` | `{weight, reps, rpe, done, tag}`; weight is external or added load according to exercise resistance; blank values may be `''`, entered values can be strings |
 | `weights` | `[{date, weight, id?, sourceImportId?}]`, canonical lb |
 | `calories` | `[{date, items, cardio, plan}]` |
@@ -345,7 +345,7 @@ Explicit correction updates records owned by the same import ID. Optional remova
 | `index.html`, `src/main.jsx` | Entry; app state, normalization/migration, profiles, dates, exports/imports, undo and persistence orchestration |
 | `src/data.js`, `src/dates.js` | Default program/settings, session factory, estimator compatibility export, strict dates and calendar arithmetic |
 | `src/ScheduleEditor.jsx`, `src/scheduleLibrary.js` | Rotation/fixed-day editor, program snapshot library, restoration and application log; case-insensitive collision-safe snapshot restore |
-| `src/TrainTab.jsx`, `src/workoutOperations.js` | Workout UI, backup-compatible set entry, explicit template edits and stable identity matching |
+| `src/TrainTab.jsx`, `src/workoutOperations.js` | Workout UI, backup-compatible set entry, explicit template edits, stable identity matching and unlinked session extras |
 | `src/ExerciseLibrary.jsx`, `src/exerciseLibrary.js`, `src/libraryCore.js` | Exercise catalog/editor, migration, linked template updates, archive, revisions and shared library helpers |
 | `src/libraryDeletion.js` | Scoped permanent library deletion, typed confirmation and schedule reference cleanup |
 | `src/WorkoutLibrary.jsx`, `src/programLibrary.js` | Reusable workout library/editor, stable identity, rename/duplicate/archive and version restore |
@@ -447,6 +447,7 @@ The bug audit examined active-session template matching and recovery failures, c
 - Strength projection is an illustrative, assumption-dependent scenario, not a validated personal prediction; sparse data, old anchors, changing technique/programs and future energy balance limit it. Experience presets are editable assumptions; phase filtering requires actual dated weight history.
 - Permanent deletion is scoped to the selected library definition and its edit history, not independent workout logs, program/application snapshots or existing backups. Recovery restoration can deliberately bring it back.
 - One session per date; saving a weigh-in replaces that date's prior measurements.
+- Earlier session exercises without a template ID keep the legacy unique-name fallback when the template row is unclaimed. Their original link intent cannot always be inferred, so existing logs are not migrated.
 - Libraries retain archived entries; edit history keeps 10 prior versions per definition/program, and the schedule application log keeps 100 plans. Limits are 500 workouts, 500 saved schedules, 10,000 exercise definitions, 200 exercises/workout and 100 sets/exercise.
 - Existing sessions without an explicit resistance mode retain external-load interpretation. Ambiguous variants need an explicit bodyweight toggle. Added-load records do not estimate effective body mass, assistance, 1RM or relative resistance.
 - Historical PR bodyweights are approximations when a same-day measurement is missing. Without a weigh-in within 30 days, a lift remains an absolute record but cannot enter relative rankings.
