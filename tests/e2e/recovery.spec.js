@@ -33,3 +33,52 @@ test('invalid all-profile JSON cannot replace existing profiles',async({page})=>
  await panel.getByLabel('All-profile backup JSON',{exact:true}).setInputFiles({name:'bad-account.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify({profileState:{profiles:[{id:'missing'}]},profileData:{}}))});
  await expect(panel).toContainText('Existing profiles were left unchanged');expect((await readDb(page)).sessions.length).toBe(1);
 });
+
+test('quota failure during all-profile import preserves both original profiles on disk',async({page})=>{
+ const session=makeSession();
+ session.notes='a'.repeat(1000);
+ await seed(page,makeDb({sessions:[session]}));
+ await page.evaluate(()=>{
+  const key='powerbuild-profiles-v1',meta=JSON.parse(localStorage.getItem(key));
+  const second=JSON.parse(localStorage.getItem('powerbuild-tracker-v1:profile:test'));
+  second.sessions[0].notes='';
+  localStorage.setItem('powerbuild-tracker-v1:profile:other',JSON.stringify(second));
+  meta.profiles.push({id:'other',name:'Other profile',createdAt:'2026-01-01'});
+  localStorage.setItem(key,JSON.stringify(meta));
+ });
+ await page.reload();
+ await openTab(page,'Settings & backup');
+ const before=await page.evaluate(()=>{
+  const keys=['powerbuild-tracker-v1:profile:test','powerbuild-tracker-v1:profile:other','powerbuild-profiles-v1'];
+  const original=Storage.prototype.setItem,read=()=>keys.map(k=>localStorage.getItem(k));
+  const saved=read(),limit=saved.reduce((sum,v)=>sum+v.length,0);
+  window.workspaceWrites=[];
+  Storage.prototype.setItem=function(k,v){
+   if(this!==localStorage||!keys.includes(k))return original.call(this,k,v);
+   const size=read().reduce((sum,item)=>sum+item.length,0);
+   if(size-this.getItem(k).length+v.length>limit)throw new DOMException('Synthetic quota','QuotaExceededError');
+   original.call(this,k,v);
+   window.workspaceWrites.push(k);
+  };
+  return saved;
+ });
+ const [first,second,meta]=before.map(JSON.parse);
+ second.sessions[0].notes=first.sessions[0].notes;
+ first.sessions[0].notes='';
+ meta.profiles[0].name+=' renamed';
+ const incoming={profileState:meta,profileData:{test:first,other:second}};
+ const recovery=card(page,'Recovery copies');
+ page.once('dialog',d=>d.accept());
+ await recovery.getByLabel('All-profile backup JSON',{exact:true}).setInputFiles({name:'synthetic-workspace.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(incoming))});
+ await expect(recovery.getByRole('status')).toContainText('Could not save all profiles');
+ const after=await page.evaluate(()=>({
+  stored:['powerbuild-tracker-v1:profile:test','powerbuild-tracker-v1:profile:other','powerbuild-profiles-v1'].map(k=>localStorage.getItem(k)),
+  writes:window.workspaceWrites,
+  recovery:JSON.parse(localStorage.getItem('powerbuild-recovery-v1:workspace'))[0].data,
+ }));
+ expect(after.writes.slice(0,2)).toEqual(['powerbuild-tracker-v1:profile:test','powerbuild-tracker-v1:profile:other']);
+ expect(after.stored).toEqual(before);
+ expect(after.recovery.profileData.test.sessions[0].notes).toBe(session.notes);
+ await page.reload();
+ expect((await readDb(page)).sessions[0].notes).toBe(session.notes);
+});

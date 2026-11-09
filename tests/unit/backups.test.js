@@ -7,3 +7,22 @@ test('all-profile writes roll back if a later write fails',()=>{const meta={prof
 test('malformed settings, goals, saved foods and daily plans are rejected before import',()=>{
  for(const patch of [{settings:'broken'},{strengthGoals:[null]},{savedFoods:[null]},{calorieSettings:{milesWalked:'NaN'}},{calorieSettings:{lifted:'false'}},{calories:[{date:'2026-10-30',items:[],plan:'broken'}]}])assert.throws(()=>validateProfileDb(makeDb(patch)));
 });
+
+test('workspace rollback releases later writes before restoring an earlier larger profile',()=>{
+ const meta={profiles:[{id:'a',name:'Alpha'},{id:'b',name:'Beta'}],activeProfileId:'a'};
+ const values=new Map([
+  [profileDataKey('a'),JSON.stringify({notes:'a'.repeat(100)})],
+  [profileDataKey('b'),JSON.stringify({notes:''})],
+  [PROFILE_META_KEY,JSON.stringify(meta)],
+ ]);
+ const before=new Map(values),size=()=>[...values.values()].reduce((sum,v)=>sum+v.length,0);
+ const limit=size(),writes=[];
+ const storage={getItem:k=>values.get(k)??null,removeItem:k=>values.delete(k),setItem:(k,v)=>{
+  if(size()-(values.get(k)?.length||0)+v.length>limit)throw Error('quota');
+  writes.push(k);values.set(k,v);
+ }};
+ const incoming={...meta,profiles:[{id:'a',name:'A longer name'},{id:'b',name:'Beta'}]};
+ assert.throws(()=>saveWorkspaceSnapshot(incoming,{a:{notes:''},b:{notes:'b'.repeat(100)}},storage),/Could not save all profiles/);
+ assert.deepEqual(values,before);
+ assert.deepEqual(writes,[profileDataKey('a'),profileDataKey('b'),profileDataKey('b'),profileDataKey('a')]);
+});

@@ -48,6 +48,15 @@ export function removeProfileDb(id){
 export function saveWorkspaceSnapshot(meta,data,storage=globalThis.localStorage){
  const writes=[...meta.profiles.map(p=>[profileDataKey(p.id),JSON.stringify(data[p.id])]),[PROFILE_META_KEY,JSON.stringify(meta)]];
  const old=writes.map(([key])=>[key,storage.getItem(key)]);
- try{for(const [key,value]of writes)storage.setItem(key,value);}
- catch(error){for(const [key,value]of old){try{if(value===null)storage.removeItem(key);else storage.setItem(key,value);}catch{}}throw Error('Could not save all profiles on this device. Recovery copies were retained. '+error.message);}
+ let applied=0;
+ try{
+  for(const [key,value]of writes){storage.setItem(key,value);applied++;}
+ }catch(error){
+  // Retrace successful writes to release quota before restoring larger values.
+  for(let i=applied-1;i>=0;i--){
+   const [key,value]=old[i];
+   try{if(value===null)storage.removeItem(key);else storage.setItem(key,value);}catch{}
+  }
+  throw Error('Could not save all profiles on this device. Recovery copies were retained. '+error.message);
+ }
 }
