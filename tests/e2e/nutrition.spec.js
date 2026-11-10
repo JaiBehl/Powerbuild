@@ -46,7 +46,7 @@ test('negative known maintenance cannot make a dated profile backup invalid',asy
  const date='2026-10-30';
  await page.getByLabel('Calculator date',{exact:true}).fill(date);
  const target=card(page,'Daily calorie target');
- await target.getByLabel('Maintenance source',{exact:true}).selectOption('custom');
+ await target.getByLabel('Maintenance source').selectOption('custom');
  const maintenance=target.getByLabel('Known total maintenance (kcal/day)',{exact:true});
  await maintenance.fill('2450');
  await maintenance.fill('-100');
