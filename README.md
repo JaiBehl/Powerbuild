@@ -12,10 +12,10 @@ This README is the product manual and the handoff for a fresh AI development con
 | Site | [powerbuild-flexible-goals.vercel.app](https://powerbuild-flexible-goals.vercel.app) |
 | Hosting | Existing Vercel project `powerbuild-flexible-goals`, team/dashboard slug `power-build` |
 | Backend | Supabase project `zgbldcmahkokmkfqeljh`; Auth and the account-snapshot table/RPC described below |
-| Source reviewed through | `eeb07fd` plus the all-profile quota rollback fix in this change |
-| Release work | A failed all-profile write reverses completed writes in reverse order, freeing quota before restoring larger earlier profiles. |
-| Date | November 9, 2026, America/Los_Angeles |
-| Validation | A synthetic quota regression reproduced a partially overwritten profile before the fix. 144 local unit/integration tests and the production build pass. A browser regression checks that a failed all-profile import preserves both profiles, metadata and a recovery copy. Full browser gate runs in GitHub Actions. [Previous main regression and production smoke passed](https://github.com/JaiBehl/Powerbuild/actions/runs/42469723481); this release is verified separately after merge. |
+| Source reviewed through | `c44f592` plus the daily nutrition input validation fix in this change |
+| Release work | Negative or non-finite numeric edits to daily calculator settings are rejected before saving, preserving the last valid plan and backup. |
+| Date | November 10, 2026, America/Los_Angeles |
+| Validation | The synthetic nutrition regression reproduced an invalid backup before the fix. 145 local unit/integration tests and the production build pass. A phone browser regression checks invalid maintenance edits, backup validation and subsequent valid edits. Full browser gate runs in GitHub Actions. [Previous release regression and production smoke](https://github.com/JaiBehl/Powerbuild/actions/runs/42795460948) are tracked separately from this release. |
 
 The source baseline identifies code actually reviewed and tested. Documentation-only or merge commits may be newer. Fetch current `main`, inspect commits since that baseline, and check open PRs before changing anything. Current source governs implemented behavior; the latest explicit user instruction governs desired behavior.
 
@@ -146,6 +146,7 @@ Exact rep/effort prescriptions live in `src/data.js`; profiles can override temp
 - Save a new portion or bookmark a logged food. Saving a template does not log consumption. Search/edit/delete saved foods, choose meal/servings, then add to the selected date.
 - Saved templates hold per-serving values. Logged entries retain independent `perServing` snapshots and consumed totals, optionally linked by `sourceSavedFoodId`; template edits/deletes cannot change past logs.
 - Foods and cardio coexist in the same date record without overwriting each other. Libraries and logs are profile-scoped and included in backup/sync.
+- Daily nutrition settings reject negative or non-finite numeric edits before writing a dated plan. Zero targets and optional blank values retain their existing behavior. This does not rewrite previously saved values; correct any earlier invalid entry in its dated plan.
 
 ### Profiles, backups and recovery
 
@@ -357,7 +358,7 @@ Explicit correction updates records owned by the same import ID. Optional remova
 | `src/trainingStats.js`, `src/PreviousPerformance.jsx`, `src/PersonalRecords.jsx` | Previous finished sets, absolute/relative single/estimated/rep records and historical bodyweight context |
 | `src/recordBodyweight.js` | Cached historical bodyweight matching, same-day averages, bounded interpolation/nearest estimates and source provenance |
 | `src/trends.js`, `src/WeeklyReview.jsx` | Calendar month cutoffs for both Progress charts, daily-weight averages and weekly training/nutrition summary |
-| `src/CalorieTracker.jsx`, `src/nutrition.js`, `src/maintenance.js` | Nutrition cards, daily snapshots/defaults, persistent automatic weight source/provenance, weekly goal pace, RMR/net-activity models and maintenance override |
+| `src/CalorieTracker.jsx`, `src/nutrition.js`, `src/maintenance.js` | Nutrition cards, numeric edit validation, daily snapshots/defaults, persistent automatic weight source/provenance, weekly goal pace, RMR/net-activity models and maintenance override |
 | `src/strengthEstimation.js` | Shared exercise-specific population tables, RPE/RIR adjustment, prediction gates and achievement distinction |
 | `src/FoodLog.jsx`, `src/SavedFoods.jsx`, `src/ServingPicker.jsx`, `src/foodLibrary.js` | Foods, reusable templates, portions, validation and totals |
 | `src/CardioLog.jsx` | Dated custom cardio CRUD and finite nonnegative edit guards |
