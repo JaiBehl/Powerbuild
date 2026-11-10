@@ -12,10 +12,10 @@ This README is the product manual and the handoff for a fresh AI development con
 | Site | [powerbuild-flexible-goals.vercel.app](https://powerbuild-flexible-goals.vercel.app) |
 | Hosting | Existing Vercel project `powerbuild-flexible-goals`, team/dashboard slug `power-build` |
 | Backend | Supabase project `zgbldcmahkokmkfqeljh`; Auth and the account-snapshot table/RPC described below |
-| Source reviewed through | `e952eab` plus the session-only exercise link fix in this change |
-| Release work | An extra exercise added only to a session cannot edit, move or remove a same-name row in the reusable workout. Existing logged sets stay intact. |
-| Date | November 8, 2026, America/Los_Angeles |
-| Validation | A synthetic test reproduced the unintended template link before the fix. 143 local unit/integration tests and the production build pass. A phone regression exercises removal after reload and validates the saved profile. The full browser gate runs in GitHub Actions. [Previous main regression and production smoke passed](https://github.com/JaiBehl/Powerbuild/actions/runs/42362555591); this release is verified separately after merge. |
+| Source reviewed through | `eeb07fd` plus the all-profile quota rollback fix in this change |
+| Release work | A failed all-profile write reverses completed writes in reverse order, freeing quota before restoring larger earlier profiles. |
+| Date | November 9, 2026, America/Los_Angeles |
+| Validation | A synthetic quota regression reproduced a partially overwritten profile before the fix. 144 local unit/integration tests and the production build pass. A browser regression checks that a failed all-profile import preserves both profiles, metadata and a recovery copy. Full browser gate runs in GitHub Actions. [Previous main regression and production smoke passed](https://github.com/JaiBehl/Powerbuild/actions/runs/42469723481); this release is verified separately after merge. |
 
 The source baseline identifies code actually reviewed and tested. Documentation-only or merge commits may be newer. Fetch current `main`, inspect commits since that baseline, and check open PRs before changing anything. Current source governs implemented behavior; the latest explicit user instruction governs desired behavior.
 
@@ -266,7 +266,7 @@ First-device migration: export backups on the device with existing data, sign in
 - Without a common base, divergent copies require a choice. Choosing one version saves recovery copies first. Download both versions or restore an account copy from the sidebar; all-profile file import accepts those downloads.
 - Retry rechecks remote state/revision before saving; offline edits stay local and survive reload. Background updates preserve current UI. Obsolete session responses cannot reactivate sync or replace later local edits.
 - Account checkpoints and up to five recent account recovery copies use the browser’s IndexedDB. On the next account check, existing copies move there before their old storage entries are removed. Both recovery copies commit together before a merge or a conflict choice can replace data. If device storage still fails, Cloud Sync offers a device backup download and retry. Profile and workspace recovery copies use their existing storage.
-- Applying all-profile data attempts rollback if a storage write fails and retains recovery copies. No server-side revision archive is maintained.
+- Applying all-profile data reverses completed storage writes in reverse order after a failed write. This releases space used by later writes before restoring a larger earlier profile. Recovery copies remain available if storage also refuses rollback. No server-side revision archive is maintained.
 - Sign-out retains local data. On shared browsers, profiles are not password-protected and cached data is not account-isolated; review which data is present before uploading to another account.
 - Editing a loaded page can continue offline, but no service worker/PWA asset cache guarantees a fresh offline page load.
 
@@ -362,7 +362,7 @@ Explicit correction updates records owned by the same import ID. Optional remova
 | `src/FoodLog.jsx`, `src/SavedFoods.jsx`, `src/ServingPicker.jsx`, `src/foodLibrary.js` | Foods, reusable templates, portions, validation and totals |
 | `src/CardioLog.jsx` | Dated custom cardio CRUD and finite nonnegative edit guards |
 | `src/SettingsTab.jsx` | Defaults, units, schedule, optional goals and backup/recovery controls |
-| `src/ProfileSwitcher.jsx`, `src/profiles.js` | Profile UI, keys, loading/saving and all-profile write rollback |
+| `src/ProfileSwitcher.jsx`, `src/profiles.js` | Profile UI, keys, loading/saving and reverse-order all-profile write rollback under quota |
 | `src/cloudSync.jsx`, `src/syncMerge.js`, `src/accountSyncStorage.js` | Auth, revision syncing, three-way merge, retry, IndexedDB account recovery and snapshot validation |
 | `src/historicalImport.js`, `src/HistoricalImportPanel.jsx` | Historical validation/normalization, preview, merge/correction/removal |
 | `src/recovery.js`, `src/RecoveryPanel.jsx`, `src/backupSafety.js` | Bounded snapshots, recovery UI, deletion detection and backup validation |
