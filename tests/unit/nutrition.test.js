@@ -19,3 +19,18 @@ test('incomplete saved plans inherit automatic weight mode instead of reviving a
  const db=makeDb({calorieSettings:{weightMode:'auto',bodyWeight:220},weights:[{date:'2026-10-29',weight:180},{date:'2026-10-30',weight:185}],calories:[{date:'2026-10-30',items:[],plan:{calorieSettings:{bodyWeight:220,milesWalked:6}}}]});
  const n=calculateNutrition(db,'2026-10-30');assert.equal(n.cs.weightMode,'auto');assert.equal(n.weight,185);assert.equal(n.weightDate,'2026-10-30');assert.equal(n.cs.milesWalked,6);
 });
+
+test('invalid numeric nutrition edits leave the dated plan and its backup intact',async()=>{
+ const {validateProfileDb}=await import('../../src/backupSafety.js');
+ const date='2026-10-30';
+ const db=updateDayPlan(makeDb(),date,{calorieSettings:{maintenanceMode:'custom',customMaintenance:2400}});
+ const before=structuredClone(db);
+ for(const value of [-100,Infinity,NaN]){
+  assert.throws(()=>updateDayPlan(db,date,{calorieSettings:{customMaintenance:value}}),/finite, nonnegative/);
+ }
+ assert.deepEqual(db,before);
+ assert.doesNotThrow(()=>validateProfileDb(JSON.parse(JSON.stringify(db))));
+ const next=updateDayPlan(db,date,{calorieSettings:{customCalorieTarget:0,bodyWeight:''}});
+ assert.equal(next.calories[0].plan.calorieSettings.customCalorieTarget,0);
+ assert.equal(next.calories[0].plan.calorieSettings.bodyWeight,'');
+});

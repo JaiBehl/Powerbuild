@@ -37,3 +37,24 @@ test('changing starting defaults does not rewrite an already recorded date',asyn
  await openTab(page,'Settings & backup');await page.getByLabel('Default starting weight (lb)',{exact:true}).fill('200');await openTab(page,'Calorie tracker');await expect(card(page,'Baseline maintenance').getByLabel('Weight (lb)',{exact:true})).toHaveValue('180');
  await card(page,'Food & meal log').getByLabel('Food log date',{exact:true}).fill('2026-10-30');await expect(card(page,'Baseline maintenance').getByLabel('Weight (lb)',{exact:true})).toHaveValue('200');
 });
+
+test('negative known maintenance cannot make a dated profile backup invalid',async({page})=>{
+ const {validateProfileDb}=await import('../../src/backupSafety.js');
+ await page.setViewportSize({width:390,height:844});
+ await seed(page);
+ await openTab(page,'Calorie tracker');
+ const date='2026-10-30';
+ await page.getByLabel('Calculator date',{exact:true}).fill(date);
+ const target=card(page,'Daily calorie target');
+ await target.getByLabel('Maintenance source').selectOption('custom');
+ const maintenance=target.getByLabel('Known total maintenance (kcal/day)',{exact:true});
+ await maintenance.fill('2450');
+ await maintenance.fill('-100');
+ await expect(page.getByRole('alert')).toContainText('finite, nonnegative number');
+ await expect(maintenance).toHaveValue('2450');
+ const saved=await readDb(page);
+ expect(saved.calories.find(day=>day.date===date).plan.calorieSettings.customMaintenance).toBe(2450);
+ expect(()=>validateProfileDb(saved)).not.toThrow();
+ await maintenance.fill('2500');
+ await expect.poll(async()=>(await readDb(page)).calories.find(day=>day.date===date).plan.calorieSettings.customMaintenance).toBe(2500);
+});

@@ -41,6 +41,10 @@ export function updateDayRecord(db,date,fn){
  return {...db,calories:[...db.calories.filter(x=>x.date!==date),next]};
 }
 export function updateDayPlan(db,date,changes){
+ // Number inputs can emit negative values despite their HTML minimums.
+ if(Object.values(changes.calorieSettings||{}).some(value=>typeof value==='number'&&(!Number.isFinite(value)||value<0))){
+  throw Error('Enter a finite, nonnegative number for nutrition settings.');
+ }
  return updateDayRecord(db,date,day=>({...day,plan:{...day.plan,calorieSettings:{...day.plan.calorieSettings,...changes.calorieSettings},goal:{...day.plan.goal,...changes.goal}}}));
 }
 export function normalizeDayPlans(db){
