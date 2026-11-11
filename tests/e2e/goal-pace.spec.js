@@ -45,6 +45,7 @@ test('pausing bodyweight goals hides automatic calorie targets and preserves mac
  await expect(goal.getByLabel('Goal weight (lb)',{exact:true})).toHaveValue('182');
  await expect(goal.getByLabel('Goal deadline',{exact:true})).toHaveValue('2026-11-13');
  await expect(goal.getByLabel('Weekly goal pace',{exact:true})).toHaveText('+1.00 lb/week');
+ await page.setViewportSize({width:1200,height:900});
  await expect(page.locator('.goalpill')).toBeVisible();
  await expect(macroSummary).toHaveText(originalMacros);
 });
