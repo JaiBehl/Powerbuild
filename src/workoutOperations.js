@@ -34,7 +34,7 @@ export function editSessionExercise(db,sessionId,exerciseId,changes,updateFuture
   if(changes.resistance!==undefined){if(!['bodyweight','external'].includes(changes.resistance))throw Error('Choose a valid exercise resistance.');row[6]={...row[6],resistance:changes.resistance,defaultAddedWeight:row[6]?.defaultAddedWeight||0};}
   if(changes.name&&changes.name!==row[0])row[6]={...row[6],exerciseId:undefined};row[0]=changes.name??row[0];row[2]=changes.range??row[2];row[3]=changes.target??row[3];templateId=row[5];list[index]=row;templates={...templates,[type]:list};next=replaceWorkoutRows({...db,templates:normalizeTemplates(db.templates)},type,list);
  }
- return {...next,templates,sessions:db.sessions.map(s=>s.id!==sessionId?s:{...s,exercises:s.exercises.map(e=>e.id!==exerciseId?e:{...e,...changes,...(changes.resistance==='bodyweight'?{sets:e.sets.map(s=>s.weight===''?{...s,weight:0}:s)}:{}),...(templateId?{templateId}:{})})})};
+ return {...next,templates,sessions:db.sessions.map(s=>s.id!==sessionId?s:{...s,exercises:s.exercises.map(e=>e.id!==exerciseId?e:{...e,...changes,...(changes.resistance==='bodyweight'&&e.resistance!=='bodyweight'?{sets:e.sets.map(s=>s.weight===''?{...s,weight:0}:s)}:{}),...(templateId?{templateId}:{})})})};
 }
 export function removeSessionExercise(db,sessionId,exerciseId,updateFuture=false){
  const session=db.sessions.find(s=>s.id===sessionId),exercise=session?.exercises.find(e=>e.id===exerciseId);

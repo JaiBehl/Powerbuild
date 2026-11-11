@@ -35,3 +35,28 @@ test('exercise editor owns bodyweight mode, with session-only and future-templat
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1)).toBe(true);
 });
 test('libraries, saved schedules and bodyweight sets survive portable all-profile backup and CSV exports',async({page})=>{let db=bodyweightDb();const s=createSession('Synthetic calisthenics','2026-10-30',db.templates);s.exercises[0].sets[0]={weight:0,reps:12,rpe:8,done:true};db.sessions=[s];db=saveSchedule(db,{name:'Synthetic portable program'});await seed(page,normalizeProgram(db));await openTab(page,'Settings & backup');const panel=card(page,'Recovery copies');let wait=page.waitForEvent('download');await panel.getByRole('button',{name:'Export all profiles',exact:true}).click();const backup=await downloadBuffer(await wait);page.once('dialog',d=>d.accept());await page.getByRole('button',{name:'Reset profile',exact:true}).click();page.once('dialog',d=>d.accept());await panel.getByLabel('All-profile backup JSON',{exact:true}).setInputFiles({name:'synthetic-program-backup.json',mimeType:'application/json',buffer:backup});await expect.poll(async()=> (await readDb(page)).savedSchedules.length).toBe(1);const restored=await readDb(page);expect(restored.exerciseLibrary.some(e=>e.name==='Synthetic bodyweight movement'&&e.resistance==='bodyweight')).toBe(true);expect(restored.sessions[0].exercises[0].sets[0].weight).toBe(0);expect(restored.savedSchedules[0].snapshot.templates['Synthetic calisthenics'][0][6].resistance).toBe('bodyweight');await openTab(page,'Settings & backup');wait=page.waitForEvent('download');await page.getByRole('button',{name:'Export sets CSV',exact:true}).click();const csv=(await downloadBuffer(await wait)).toString();expect(csv).toContain('Resistance');expect(csv).toContain('bodyweight');expect(csv).toContain('Added weight');await openTab(page,'Library');await expect(card(page,'Workout library')).toContainText('Synthetic calisthenics');await openTab(page,'Schedule');await expect(card(page,'Saved schedules')).toContainText('Synthetic portable program');});
+
+test('editing a bodyweight prescription preserves a blank load after reload',async({page})=>{
+ await page.setViewportSize({width:390,height:844});
+ const date='2026-10-30',db=bodyweightDb(),session=createSession('Synthetic calisthenics',date,db.templates);
+ session.exercises[0].sets[0]={weight:'',reps:12,rpe:8,done:true,tag:''};
+ session.exercises[0].sets[1]={weight:0,reps:5,rpe:8,done:true,tag:''};
+ db.sessions=[session];
+ await seed(page,db);
+ await page.getByLabel('Workout date').fill(date);
+ const exercise=card(page,'Synthetic bodyweight movement');
+ await exercise.getByTitle('Edit exercise',{exact:true}).click();
+ await exercise.getByLabel('Edit exercise rep range',{exact:true}).fill('10–15');
+ await exercise.getByRole('button',{name:'Save exercise',exact:true}).click();
+ await expect(exercise).toContainText('10–15');
+ await page.reload();
+ await page.getByLabel('Workout date').fill(date);
+ await expect(exercise.getByLabel('Added weight set 1 (lb)',{exact:true})).toHaveValue('');
+ expect((await readDb(page)).sessions[0].exercises[0].sets).toEqual(session.exercises[0].sets);
+ await openTab(page,'Progress');
+ const records=card(page,'Absolute strength records');
+ await records.getByLabel('Exercise for records').selectOption('Synthetic bodyweight movement');
+ await records.getByLabel('Records through date',{exact:true}).fill(date);
+ await expect(records).toContainText('Bodyweight × 5');
+ await expect(records).not.toContainText('Bodyweight × 12');
+});

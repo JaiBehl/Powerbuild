@@ -12,10 +12,10 @@ This README is the product manual and the handoff for a fresh AI development con
 | Site | [powerbuild-flexible-goals.vercel.app](https://powerbuild-flexible-goals.vercel.app) |
 | Hosting | Existing Vercel project `powerbuild-flexible-goals`, team/dashboard slug `power-build` |
 | Backend | Supabase project `zgbldcmahkokmkfqeljh`; Auth and the account-snapshot table/RPC described below |
-| Source reviewed through | `c44f592` plus the daily nutrition input validation fix in this change |
-| Release work | Negative or non-finite numeric edits to daily calculator settings are rejected before saving, preserving the last valid plan and backup. |
-| Date | November 10, 2026, America/Los_Angeles |
-| Validation | The synthetic nutrition regression reproduced an invalid backup before the fix. 145 local unit/integration tests and the production build pass. A phone browser regression checks invalid maintenance edits, backup validation and subsequent valid edits. Full browser gate runs in GitHub Actions. [Previous release regression and production smoke](https://github.com/JaiBehl/Powerbuild/actions/runs/42795460948) are tracked separately from this release. |
+| Source reviewed through | `ec9b84a` plus the bodyweight set preservation fix in this change |
+| Release work | Saving a prescription edit on an already-bodyweight exercise preserves blank loads and cannot turn them into zero-load records. |
+| Date | November 11, 2026, America/Los_Angeles |
+| Validation | A synthetic regression reproduced the blank-to-zero change before the fix. The local unit/integration suite and production build pass. The phone browser regression checks the saved sets after reload and confirms that only explicit zero loads count as bodyweight-only records. The full browser gate runs in GitHub Actions. [Previous main regression and production smoke passed](https://github.com/JaiBehl/Powerbuild/actions/runs/42797072405). |
 
 The source baseline identifies code actually reviewed and tested. Documentation-only or merge commits may be newer. Fetch current `main`, inspect commits since that baseline, and check open PRs before changing anything. Current source governs implemented behavior; the latest explicit user instruction governs desired behavior.
 
@@ -67,7 +67,7 @@ Source access is still required for edits. Current workouts, foods, goals and pr
 
 ### Bodyweight and weighted calisthenics
 
-- Toggle **Bodyweight exercise** inside the **exercise editor** (pencil button in Train), saved exercise definition editor, or workout-template editor—not as a standalone checkbox in the active set logger. Session edits use Save/Cancel; the resistance warning and recovery checkpoint protect existing records. Bodyweight mode logs **added weight**; zero is bodyweight only. Default added load is reusable; individual sets can vary it. External-load exercises keep their normal weight fields. Both modes convert correctly between lb/kg while storing pounds.
+- Toggle **Bodyweight exercise** inside the **exercise editor** (pencil button in Train), saved exercise definition editor, or workout-template editor—not as a standalone checkbox in the active set logger. Session edits use Save/Cancel; the resistance warning and recovery checkpoint protect existing records. Bodyweight mode logs **added weight**; zero is bodyweight only. Default added load is reusable; individual sets can vary it. Editing an existing bodyweight prescription preserves blank added loads. Blank loads do not count as zero-load records. An explicit switch from external to bodyweight mode still initializes blank loads to zero. External-load exercises keep their normal weight fields. Both modes convert correctly between lb/kg while storing pounds.
 - The exercise library includes Push-up, Pull-up, Chin-up, Dip, Inverted row and Bodyweight squat. Unambiguous calisthenic names seed bodyweight defaults for future templates; ambiguous “Pull-up or lat pulldown” stays external until explicitly chosen. Existing logged sets retain their prior interpretation. Switching a populated session asks before changing the meaning of its weights and saves recovery; applying mode changes to future templates remains explicit.
 - Absolute strength records includes **Bodyweight exercise records**: most bodyweight-only reps, heaviest added load and best added load at each rep count, all-time/recent, with dated bodyweight context. These sets do not become external-load 1RMs or relative lift/BW ratios. Previous performance matches the resistance mode and labels BW + added weight. External-load volume counts added weight only, without guessing how much body mass a movement displaces.
 - JSON/program snapshots retain mode/default added load. Sets CSV appends Resistance and Load basis columns; its Weight field means added load for bodyweight exercises. No assistance-load calculator or movement-specific effective-mass model is included.
@@ -346,7 +346,7 @@ Explicit correction updates records owned by the same import ID. Optional remova
 | `index.html`, `src/main.jsx` | Entry; app state, normalization/migration, profiles, dates, exports/imports, undo and persistence orchestration |
 | `src/data.js`, `src/dates.js` | Default program/settings, session factory, estimator compatibility export, strict dates and calendar arithmetic |
 | `src/ScheduleEditor.jsx`, `src/scheduleLibrary.js` | Rotation/fixed-day editor, program snapshot library, restoration and application log; case-insensitive collision-safe snapshot restore |
-| `src/TrainTab.jsx`, `src/workoutOperations.js` | Workout UI, backup-compatible set entry, explicit template edits, stable identity matching and unlinked session extras |
+| `src/TrainTab.jsx`, `src/workoutOperations.js` | Workout UI, backup-compatible set entry, explicit template edits, stable identity matching, unlinked session extras and preserving blank loads on bodyweight prescription edits |
 | `src/ExerciseLibrary.jsx`, `src/exerciseLibrary.js`, `src/libraryCore.js` | Exercise catalog/editor, migration, linked template updates, archive, revisions and shared library helpers |
 | `src/libraryDeletion.js` | Scoped permanent library deletion, typed confirmation and schedule reference cleanup |
 | `src/WorkoutLibrary.jsx`, `src/programLibrary.js` | Reusable workout library/editor, stable identity, rename/duplicate/archive and version restore |
