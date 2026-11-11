@@ -61,6 +61,7 @@ export const initialSettings={
   startWeight:180,
   targetWeight:160,
   weightDeadline:'2027-04-12',
+  weightGoalEnabled:true,
   strengthDeadline:'2027-10-12',
   units:'lb',
   schedule:[1,2,3,5,6],

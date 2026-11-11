@@ -34,3 +34,34 @@ test('invalid numeric nutrition edits leave the dated plan and its backup intact
  assert.equal(next.calories[0].plan.calorieSettings.customCalorieTarget,0);
  assert.equal(next.calories[0].plan.calorieSettings.bodyWeight,'');
 });
+
+test('pausing a weight goal preserves manual and calculated macros across dates',()=>{
+ const first='2026-10-29',second='2026-10-30';
+ let db=makeDb();
+ db.settings.targetWeight=190;
+ db=updateDayPlan(db,first,{goal:{targetWeight:172}});
+ db=updateDayPlan(db,second,{calorieSettings:{calorieTargetMode:'custom',customCalorieTarget:2400,macroTargetMode:'custom',customProtein:170,customCarbs:270,customFat:70}});
+ const before=[first,second].map(date=>calculateNutrition(db,date));
+ const paused={...db,settings:{...db.settings,weightGoalEnabled:false}};
+ for(const [index,date] of [first,second].entries()){
+  const current=calculateNutrition(paused,date),previous=before[index];
+  assert.equal(current.weightGoalEnabled,false);
+  assert.equal(current.calculatedTarget,null);
+  assert.equal(current.target,index===0?null:2400);
+  for(const key of ['protein','carbs','fat','macroCalories','maintenance','goal'])assert.deepEqual(current[key],previous[key]);
+ }
+ assert.deepEqual(paused.calories,db.calories);
+ const restored={...paused,settings:{...paused.settings,weightGoalEnabled:true}};
+ assert.deepEqual([first,second].map(date=>calculateNutrition(restored,date)),before);
+});
+
+test('a paused bodyweight goal round-trips through a profile backup',async()=>{
+ const {validateProfileDb}=await import('../../src/backupSafety.js');
+ const db=makeDb();
+ db.settings.weightGoalEnabled=false;
+ assert.equal(validateProfileDb(JSON.parse(JSON.stringify(db))).settings.weightGoalEnabled,false);
+ db.settings.weightGoalEnabled='false';
+ assert.throws(()=>validateProfileDb(db),/Bodyweight goal setting/);
+ delete db.settings.weightGoalEnabled;
+ assert.equal(calculateNutrition(validateProfileDb(db),'2026-10-30').weightGoalEnabled,true);
+});

@@ -12,10 +12,10 @@ This README is the product manual and the handoff for a fresh AI development con
 | Site | [powerbuild-flexible-goals.vercel.app](https://powerbuild-flexible-goals.vercel.app) |
 | Hosting | Existing Vercel project `powerbuild-flexible-goals`, team/dashboard slug `power-build` |
 | Backend | Supabase project `zgbldcmahkokmkfqeljh`; Auth and the account-snapshot table/RPC described below |
-| Source reviewed through | `ec9b84a` plus the bodyweight set preservation fix in this change |
-| Release work | Saving a prescription edit on an already-bodyweight exercise preserves blank loads and cannot turn them into zero-load records. |
+| Source reviewed through | `5ebf94d` plus the Split, RPE and optional bodyweight goal changes in this release |
+| Release work | Workout schedules are labeled Split, effort prescriptions display as RPE, and the bodyweight goal can be paused without changing macro targets. |
 | Date | November 11, 2026, America/Los_Angeles |
-| Validation | A synthetic regression reproduced the blank-to-zero change before the fix. The local unit/integration suite and production build pass. The phone browser regression checks the saved sets after reload and confirms that only explicit zero loads count as bodyweight-only records. The full browser gate runs in GitHub Actions. [Previous main regression and production smoke passed](https://github.com/JaiBehl/Powerbuild/actions/runs/42797072405). |
+| Validation | The [Split regression gate](https://github.com/JaiBehl/Powerbuild/actions/runs/43014476477) and [RPE regression gate](https://github.com/JaiBehl/Powerbuild/actions/runs/43015346812) passed. The combined release gate covers the bodyweight toggle, macro continuity and restoration. |
 
 The source baseline identifies code actually reviewed and tested. Documentation-only or merge commits may be newer. Fetch current `main`, inspect commits since that baseline, and check open PRs before changing anything. Current source governs implemented behavior; the latest explicit user instruction governs desired behavior.
 
@@ -32,7 +32,7 @@ Source access is still required for edits. Current workouts, foods, goals and pr
 - **Edit → editor navigation:** Choosing Edit, Duplicate or Create in the Workout and Exercise libraries immediately expands the corresponding editor card, scrolls it into view and focuses its first field. Loading, creating or reviewing a saved split jumps to Split editor the same way, including from a collapsed card. Train exercise pencil edits, logged-food pencil edits and Saved Foods pencil edits focus their inline form automatically. This is a navigation/focus improvement only: no edit is applied until Save and it does not rewrite other session or food data.
 - Panel state is remembered on the device by profile, tab and panel. Exercise cards use stable template/session identity. These preferences are separate from synced training data.
 - Separate Bodyweight goal, Baseline maintenance, Daily activity, Custom cardio, Daily calorie target, Macro targets, Food & meal log and Saved Foods cards. Saved Foods sits below the food log and its individual cards remain compact.
-- Calculate maintenance independently of goals. Keep uncapped goal/deadline arithmetic, manual calorie/macro overrides and warnings for impossible or expired goals.
+- Calculate maintenance independently of goals. Use **Calorie tracker → Bodyweight goal → Enable bodyweight goal** to pause goal tracking for the current profile. While off, the weekly pace, header badge and automatic daily calorie goal are hidden. Saved weights, deadline, macro targets and explicitly selected manual calorie goals remain available. Auto macros keep their existing calorie basis, including the same calculated carb target; maintenance still follows the selected weight and activity. Keep uncapped goal/deadline arithmetic, manual calorie/macro overrides and warnings for impossible or expired goals.
 - Store weights in pounds and convert only at input/display/export boundaries. Saved-food edits must never change previously logged nutrition.
 - Workout exercise edits affect the session by default. Updating future templates requires explicit permission, reset for each workout; match stable identity, not position.
 - During a workout, each exercise has visible **Move up / Move down** arrow buttons in its card header (including while minimized). The entire exercise and its logged sets, RPE, bodyweight mode and notes move together without changing historical sessions. Order changes affect only that dated session by default. If **Apply exercise changes to future sessions** is explicitly selected, the corresponding pair of linked exercises is reordered in the reusable template by stable ID or a uniquely matched legacy name; existing archived/logged sessions are unchanged. Unlinked/ambiguous template matches produce a clear error and do not partially change the session.
@@ -276,7 +276,7 @@ First-device migration: export backups on the device with existing data, sign in
 
 | Field | Shape/meaning |
 | --- | --- |
-| `settings` | Split mode/start, starting/target weights, weight/strength deadlines, units, weekdays, rotation/offset or fixed assignments; weights lb |
+| `settings` | Split mode/start, starting/target weights, weight/strength deadlines, profile-wide `weightGoalEnabled` (legacy default on), units, weekdays, rotation/offset or fixed assignments; weights lb |
 | `strengthGoals` | `[{id, exercise, targetWeight, deadline}]` |
 | `exerciseAliases` | Normalized logged name → canonical display name; identity overrides permit opting out |
 | `sessions` | `[{id, date, type, workoutId?, notes, finished, exercises}]`; type/exercises remain dated snapshots |

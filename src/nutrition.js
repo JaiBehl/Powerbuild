@@ -73,14 +73,20 @@ export function calculateNutrition(db,date){
  const record=db.calories.find(x=>x.date===date),cardioExtra=(record?.cardio||[]).reduce((sum,x)=>sum+Math.max(0,Number(x.calories)||0),0);
  const expenditure=maintenanceEstimate({...cs,heightIn,age,sex},weight,cardioExtra),{estimatedBaseline,customBaseline,baselineMode,baseline,walkExtra,runExtra,liftExtra,maintenance}=expenditure;
  const validDeadline=isISODate(goal.weightDeadline),daysRemaining=validDeadline?Math.round((new Date(goal.weightDeadline+'T12:00:00')-new Date(date+'T12:00:00'))/86400000):null,days=Math.max(1,daysRemaining??1);
- const goalDifference=Number(goal.targetWeight)-weight,goalRate=goalDifference*7/days,calculatedTarget=Math.round(maintenance+goalDifference*3500/days);
+ const weightGoalEnabled=db.settings.weightGoalEnabled!==false;
+ const goalDifference=Number(goal.targetWeight)-weight,goalRate=goalDifference*7/days;
+ const goalBasedTarget=Math.round(maintenance+goalDifference*3500/days);
+ const calculatedTarget=weightGoalEnabled?goalBasedTarget:null;
  const mode=Math.abs(goalDifference)<.1?'Maintain':goalDifference>0?'Bulk':'Cut';
  const calorieTargetMode=cs.calorieTargetMode==='custom'?'custom':'calculated';
  const hasOverride=cs.customCalorieTarget!==null&&cs.customCalorieTarget!==''&&Number.isFinite(Number(cs.customCalorieTarget))&&Number(cs.customCalorieTarget)>=0;
- const manualCalorieTarget=hasOverride?Number(cs.customCalorieTarget):Math.max(0,calculatedTarget),target=calorieTargetMode==='custom'?Math.round(manualCalorieTarget):calculatedTarget;
- const calculatedProtein=Math.round(weight*cs.proteinPerLb),calculatedFat=Math.round(weight*cs.fatPerLb),calculatedCarbs=Math.max(0,Math.round((target-calculatedProtein*4-calculatedFat*9)/4));
+ const manualCalorieTarget=hasOverride?Number(cs.customCalorieTarget):Math.max(0,goalBasedTarget);
+ const macroCalorieBasis=calorieTargetMode==='custom'?Math.round(manualCalorieTarget):goalBasedTarget;
+ const target=calorieTargetMode==='custom'?macroCalorieBasis:calculatedTarget;
+ // Pausing weight-goal tracking must preserve both calculated and manual macro targets.
+ const calculatedProtein=Math.round(weight*cs.proteinPerLb),calculatedFat=Math.round(weight*cs.fatPerLb),calculatedCarbs=Math.max(0,Math.round((macroCalorieBasis-calculatedProtein*4-calculatedFat*9)/4));
  const macroTargetMode=cs.macroTargetMode==='custom'?'custom':'calculated';
  const protein=macroTargetMode==='custom'?Math.max(0,Number(cs.customProtein??calculatedProtein)):calculatedProtein,carbs=macroTargetMode==='custom'?Math.max(0,Number(cs.customCarbs??calculatedCarbs)):calculatedCarbs,fat=macroTargetMode==='custom'?Math.max(0,Number(cs.customFat??calculatedFat)):calculatedFat;
  const macroCalories=Math.round(protein*4+carbs*4+fat*9);
- return {...expenditure,cs,stored,goal,weight,weightSource,weightDate,heightIn,age,sex,estimatedBaseline,customBaseline,baselineMode,baseline,heightFeet,heightRemainder,cardioExtra,walkExtra,runExtra,liftExtra,maintenance,days,daysRemaining,validDeadline,goalDifference,goalRate,calculatedTarget,mode,calorieTargetMode,manualCalorieTarget,target,calculatedProtein,calculatedFat,calculatedCarbs,macroTargetMode,protein,carbs,fat,macroCalories};
+ return {...expenditure,cs,stored,goal,weightGoalEnabled,weight,weightSource,weightDate,heightIn,age,sex,estimatedBaseline,customBaseline,baselineMode,baseline,heightFeet,heightRemainder,cardioExtra,walkExtra,runExtra,liftExtra,maintenance,days,daysRemaining,validDeadline,goalDifference,goalRate,calculatedTarget,mode,calorieTargetMode,manualCalorieTarget,target,calculatedProtein,calculatedFat,calculatedCarbs,macroTargetMode,protein,carbs,fat,macroCalories};
 }

@@ -6,6 +6,7 @@ const checkResistance=value=>{if(!value)return;if(value.resistance!==undefined&&
 export function validateProfileDb(value){
  if(!value||typeof value!=='object'||!value.settings||typeof value.settings!=='object'||Array.isArray(value.settings))throw Error('Not a valid Powerbuild profile backup.');
  for(const key of ['deletedExerciseIds','deletedExerciseNames'])if(value[key]!==undefined){array(value[key],key);if(value[key].length>100000||value[key].some(x=>typeof x!=='string'||!x))throw Error('Deleted exercise identifiers are invalid.');}
+ if(value.settings.weightGoalEnabled!==undefined&&typeof value.settings.weightGoalEnabled!=='boolean')throw Error('Bodyweight goal setting must be true or false.');
  array(value.sessions,'Workouts');array(value.weights,'Weigh-ins');
  if(value.settings.schedule!==undefined&&(!Array.isArray(value.settings.schedule)||value.settings.schedule.some(n=>!Number.isInteger(n)||n<1||n>7)))throw Error('Training weekdays are invalid.');
  for(const s of value.sessions){if(!s||!isISODate(s.date))throw Error('A workout date is invalid.');array(s.exercises,'Workout exercises');for(const e of s.exercises){if(!e||typeof e.name!=='string')throw Error('Exercise names are invalid.');array(e.sets,'Exercise sets');for(const v of e.sets){if(!v||typeof v!=='object')throw Error('A set is invalid.');number(v.weight,'Set weight');number(v.reps,'Set reps');number(v.rpe,'Set RPE');}}}

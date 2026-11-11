@@ -298,7 +298,7 @@ function App(){
     <main>
       {storageError&&<div className="recovery-banner warning" role="alert"><span>{storageError}</span><button className="secondary" onClick={exportJson}>Export current profile</button></div>}
       {undoPoint&&<div className="recovery-banner" role="status"><span>A recovery copy was saved before this change.</span><button className="secondary" onClick={undo}>Undo last change</button><button className="textbtn" onClick={()=>setUndoPoint(null)}>Dismiss</button></div>}
-      <header><div><p className="eyebrow">POWERBUILD TRACKER</p><h1>{title}</h1><p className="muted">{subtitle}</p></div><span className="goalpill"><Target size={15}/> {toDisplayWeight(db.settings.targetWeight,db.settings.units,1)} {unit} · {db.settings.weightDeadline}</span></header>
+      <header><div><p className="eyebrow">POWERBUILD TRACKER</p><h1>{title}</h1><p className="muted">{subtitle}</p></div>{db.settings.weightGoalEnabled!==false&&<span className="goalpill"><Target size={15}/> {toDisplayWeight(db.settings.targetWeight,db.settings.units,1)} {unit} · {db.settings.weightDeadline}</span>}</header>
       {tab==='today'&&<TrainTab {...{db,patch,date,setDate,scheduled,session,updateSession,start,showManual,setShowManual,manualType,setManualType,changeDate}}/>}
       {tab==='calendar'&&<ScheduleTab {...{db,patch,setTab,setDate,viewWeek,setViewWeek,weekDates}}/>}
       {tab==='library'&&<><WorkoutLibrary {...{db,patch}} onChooseWorkout={name=>{setManualType(name);setShowManual(true);setTab('today');}}/><ExerciseLibrary {...{db,patch}}/></>}
