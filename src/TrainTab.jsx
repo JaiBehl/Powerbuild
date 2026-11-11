@@ -1,3 +1,4 @@
+import {defaultEffortTarget,displayEffortTarget} from './effortTarget.js';
 import ResistanceFields from './ResistanceFields';
 import {isBodyweight} from './resistance';
 import {activeWorkoutNames,normalizeProgram} from './programLibrary';
@@ -38,7 +39,7 @@ export default function TrainTab({db,patch,date,setDate,scheduled,session,update
     const ex=session.exercises[ei];
     if(editingExerciseId===ex.id){setEditingExerciseId(null);setExerciseDraft(null);return;}
     setEditingExerciseId(ex.id);
-    setExerciseDraft({name:ex.name,range:ex.range||'8–12',target:ex.target||'1–2 RIR',resistance:isBodyweight(ex)?'bodyweight':'external'});
+    setExerciseDraft({name:ex.name,range:ex.range||'8–12',target:displayEffortTarget(ex.target||defaultEffortTarget),resistance:isBodyweight(ex)?'bodyweight':'external'});
     setExerciseError('');
   };
   const saveExercise=(ex)=>{
@@ -48,7 +49,7 @@ export default function TrainTab({db,patch,date,setDate,scheduled,session,update
     const changes={
       name,
       range:exerciseDraft.range.trim()||'8–12',
-      target:exerciseDraft.target.trim()||'1–2 RIR',
+      target:exerciseDraft.target.trim()||defaultEffortTarget,
       resistance:exerciseDraft.resistance,
     };
     const changingResistance=changes.resistance!==(isBodyweight(ex)?'bodyweight':'external');
@@ -85,13 +86,13 @@ export default function TrainTab({db,patch,date,setDate,scheduled,session,update
       {exerciseError&&<p className="error" role="alert">{exerciseError}</p>}{removalFallback&&<div className="actions"><p className="muted">The future template could not be updated. You can still remove {removalFallback.name} from this session.</p><button className="secondary" onClick={()=>{if(changeExercise(value=>removeSessionExercise(value,session.id,removalFallback.id,false),{checkpoint:'Before removing unlinked session exercise'}))setRemovalFallback(null);}}>Remove from this session only</button><button className="textbtn" onClick={()=>{setRemovalFallback(null);setExerciseError('');}}>Cancel removal</button></div>}
       <p className="muted">Volume counts external load and added weight only; bodyweight-only reps remain logged without a guessed tonnage.</p><p className="muted">Set RPE: 10 = no reps left, 9 = about 1, 8 = about 2, 7 = about 3. Record actual set effort, not the prescribed target. Blank RPE stays unknown.</p>
       </CalorieSection>
-      {session.exercises.map((e,ei)=><CalorieSection key={e.id??ei} collapseKey={'exercise:'+(e.templateId||e.id||e.name)} title={e.name} description={e.range+' reps · '+e.target} summary={e.sets.filter(v=>v.done).length+' / '+e.sets.length+' sets'} className="train-exercise-section" headerActions={<div className="train-order-controls" role="group" aria-label={'Reorder '+e.name}><button type="button" className="iconbtn subtle" title="Move exercise up" aria-label={'Move '+e.name+' up'} disabled={ei===0} onClick={()=>moveExercise(e.id,-1)}><ArrowUp size={16}/></button><button type="button" className="iconbtn subtle" title="Move exercise down" aria-label={'Move '+e.name+' down'} disabled={ei===session.exercises.length-1} onClick={()=>moveExercise(e.id,1)}><ArrowDown size={16}/></button></div>}><div className="exhead"><span className="muted">Exercise controls</span><div className="exactions"><button className="iconbtn subtle" title="Add a set" onClick={()=>editEx(ei,x=>({...x,sets:[...x.sets,{weight:isBodyweight(x)?0:'',reps:'',rpe:'',done:false,tag:''}]}))}><Plus size={18}/></button><button className="iconbtn subtle" title="Edit exercise" onClick={()=>editExercise(ei)}><Pencil size={15}/></button><button className="iconbtn subtle" title="Remove exercise" onClick={()=>removeExercise(ei)}><Trash2 size={15}/></button></div></div>
+      {session.exercises.map((e,ei)=><CalorieSection key={e.id??ei} collapseKey={'exercise:'+(e.templateId||e.id||e.name)} title={e.name} description={e.range+' reps'+(e.target?' · '+displayEffortTarget(e.target):'')} summary={e.sets.filter(v=>v.done).length+' / '+e.sets.length+' sets'} className="train-exercise-section" headerActions={<div className="train-order-controls" role="group" aria-label={'Reorder '+e.name}><button type="button" className="iconbtn subtle" title="Move exercise up" aria-label={'Move '+e.name+' up'} disabled={ei===0} onClick={()=>moveExercise(e.id,-1)}><ArrowUp size={16}/></button><button type="button" className="iconbtn subtle" title="Move exercise down" aria-label={'Move '+e.name+' down'} disabled={ei===session.exercises.length-1} onClick={()=>moveExercise(e.id,1)}><ArrowDown size={16}/></button></div>}><div className="exhead"><span className="muted">Exercise controls</span><div className="exactions"><button className="iconbtn subtle" title="Add a set" onClick={()=>editEx(ei,x=>({...x,sets:[...x.sets,{weight:isBodyweight(x)?0:'',reps:'',rpe:'',done:false,tag:''}]}))}><Plus size={18}/></button><button className="iconbtn subtle" title="Edit exercise" onClick={()=>editExercise(ei)}><Pencil size={15}/></button><button className="iconbtn subtle" title="Remove exercise" onClick={()=>removeExercise(ei)}><Trash2 size={15}/></button></div></div>
       {editingExerciseId===e.id&&exerciseDraft&&<div ref={inlineEditorRef} className="inline-exercise-editor">
         <div className="between"><strong>Edit exercise</strong><span className="muted">Changes are saved only when you select Save.</span></div>
         <div className="formgrid">
           <label>Exercise name<input aria-label="Edit exercise name" value={exerciseDraft.name} onChange={ev=>setExerciseDraft(d=>({...d,name:ev.target.value}))}/></label>
           <label>Rep range<input aria-label="Edit exercise rep range" value={exerciseDraft.range} onChange={ev=>setExerciseDraft(d=>({...d,range:ev.target.value}))}/></label>
-          <label>Target / effort<input aria-label="Edit exercise target" value={exerciseDraft.target} onChange={ev=>setExerciseDraft(d=>({...d,target:ev.target.value}))}/></label>
+          <label>RPE target<input aria-label="Edit exercise RPE target" value={exerciseDraft.target} onChange={ev=>setExerciseDraft(d=>({...d,target:ev.target.value}))}/></label>
         </div>
         <ResistanceFields resistance={exerciseDraft.resistance} defaults={false} onChange={changes=>setExerciseDraft(d=>({...d,...changes}))}/>
         <div className="actions">

@@ -16,7 +16,7 @@ function BodyweightPercentage({record,supported}){
  return <small className="muted">{record.bodyweight.estimated||record.kind==='estimated'?'Est. ':''}{percent.toFixed(1)}% BW</small>;
 }
 const display=(record,units,supported)=>record?<>{formatWeight(record.value,units,1)+' · '+record.date}<BodyweightContext bodyweight={record.bodyweight} units={units}/><BodyweightPercentage record={record} supported={supported}/></>:'No record';
-function EstimateEffort({record}){return <small className="muted">{record.missingRpe?'RPE missing · assumes failure':record.reps+(record.reps===1?' rep':' reps')+' @ RPE '+record.rpe+' · '+Number((10-record.rpe).toFixed(1))+' RIR'}</small>;}
+function EstimateEffort({record}){return <small className="muted">{record.missingRpe?'RPE missing · assumes failure':record.reps+(record.reps===1?' rep':' reps')+' @ RPE '+record.rpe}</small>;}
 const estimateDisplay=(record,units,supported)=>record?<>{display(record,units,supported)}<EstimateEffort record={record}/></>:'No qualifying estimate';
 const relativeDisplay=(record,units)=>record?<>{record.value.toFixed(3)}× BW · {record.date}<small className="muted">{record.kind==='estimated'?'Estimated 1RM':'Lifted'} {formatWeight(record.load,units,1)}</small><BodyweightContext bodyweight={record.bodyweight} units={units}/>{record.kind==='estimated'&&<EstimateEffort record={record}/>}</>:'No record with bodyweight';
 const bwDisplay=(r,units,unweighted=false)=>r?<>{unweighted?'Bodyweight × '+r.reps:'BW + '+formatWeight(r.value,units,1)+' × '+r.reps} · {r.date}<BodyweightContext bodyweight={r.bodyweight} units={units}/></>:'No record';
@@ -30,7 +30,7 @@ export default function PersonalRecords({db,date,setDate,lift,setLift}){
  const names=exerciseNames(db),all=result.all.relative,recent=result.recent.relative;
  return <><CalorieSection title="Absolute strength records" collapseKey="Personal records" description="Achieved singles, RPE-aware strength estimates and rep PRs, with bodyweight percentages and recent comparisons." summary={result.all.count+' qualifying sets'}>
  <RecordControls {...{names,lift,setLift,date,setDate}}/>
- <p className="muted">All time through {date}. Recent means the last 90 calendar days. Achieved singles show the load actually lifted. Estimates use RPE 7–10 (10 − RPE = reps in reserve), up to 10 reps including reserve. Blank RPE assumes failure and may underestimate capacity; easy sets are excluded from predictions.</p>
+ <p className="muted">All time through {date}. Recent means the last 90 calendar days. Achieved singles show the load actually lifted. Estimates use RPE 7–10 and allow up to 10 total reps after the effort adjustment. Blank RPE assumes failure and may underestimate capacity; easy sets are excluded from predictions.</p>
  <p className="muted">BW uses the same-day weigh-in average. Est. BW interpolates between weigh-ins within {MAX_BODYWEIGHT_GAP_DAYS} days on each side, or uses the nearest within {MAX_BODYWEIGHT_GAP_DAYS} days. Only weigh-ins through {date} are used; adding or editing them updates this context. Percentages show the record's load as a percentage of BW; Est. marks an estimated bodyweight or 1RM.</p>
  <div className="records-scroll"><table className="records-table"><thead><tr><th>Record</th><th>All time</th><th>Last 90 days</th></tr></thead><tbody>
  <tr><th>Achieved single</th><td>{display(result.all.single,units,all.supported)}</td><td>{display(result.recent.single,units,all.supported)}</td></tr>

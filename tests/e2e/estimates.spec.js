@@ -7,7 +7,7 @@ test('editing recorded RPE updates predictions while preserving actual singles',
   await row.getByRole('spinbutton').nth(2).fill('8');await openTab(page,'Progress');
   const records=card(page,'Absolute strength records');await records.getByLabel('Records through date').fill(DAY);
   await expect(records.getByRole('row').filter({hasText:'Estimated 1RM (RPE-aware)'})).toContainText('239.5 lb');
-  await expect(records).toContainText('5 reps @ RPE 8 · 2 RIR');
+  await expect(records).toContainText('5 reps @ RPE 8');
   await expect(records.getByRole('row').filter({hasText:'Achieved single'})).toContainText('225 lb');
   await expect(card(page,'Strength goals')).toContainText('239.5 lb');
   await page.reload();await openTab(page,'Progress');await expect(card(page,'Absolute strength records')).toContainText('239.5 lb');

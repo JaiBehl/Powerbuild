@@ -21,7 +21,7 @@ test('relative PRs choose independent winners and keep ratios invariant in kg',a
  await seed(page,makeDb({sessions:[old,recent],weights:[{date:'2026-01-01',weight:200},{date:'2026-10-01',weight:170}]}));await openTab(page,'Progress');
  let relative=card(page,'Relative strength records');await relative.getByLabel('Relative records through date').fill(DAY);
  const singles=relative.getByRole('row').filter({hasText:'Achieved single ÷ BW'});await expect(singles).toContainText('1.265× BW');await expect(singles).toContainText('Lifted 215 lb');await expect(singles).toContainText('BW 170 lb');await expect(card(page,'Absolute strength records').getByRole('row').filter({hasText:'Achieved single'})).toContainText('225 lb');
- await expect(relative.getByRole('row').filter({hasText:'Estimated 1RM ÷ BW (RPE-aware)'})).toContainText('1 rep @ RPE 8 · 2 RIR');
+ await expect(relative.getByRole('row').filter({hasText:'Estimated 1RM ÷ BW (RPE-aware)'})).toContainText('1 rep @ RPE 8');
  const fiveRep=relative.getByRole('table',{name:'Relative rep records',exact:true}).getByRole('row').filter({has:page.getByRole('rowheader',{name:'5',exact:true})});await expect(fiveRep).toContainText('1.118× BW');await expect(fiveRep).toContainText('Lifted 190 lb');
  await openTab(page,'Settings & backup');await page.getByLabel('Weight unit').selectOption('kg');await openTab(page,'Progress');relative=card(page,'Relative strength records');await expect(relative.getByRole('row').filter({hasText:'Achieved single ÷ BW'})).toContainText('1.265× BW');await expect(relative).toContainText('BW 77.1 kg');
 });

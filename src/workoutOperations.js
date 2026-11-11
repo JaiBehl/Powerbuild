@@ -1,3 +1,4 @@
+import {defaultEffortTarget,displayEffortTarget} from './effortTarget.js';
 import {resistanceConfig} from './resistance.js';
 // Template IDs are stable across renames/reordering; old sessions resolve only by a unique name.
 const id=()=>globalThis.crypto?.randomUUID?.()||'exercise-'+Date.now()+'-'+Math.random().toString(36).slice(2);
@@ -28,6 +29,7 @@ export function editSessionExercise(db,sessionId,exerciseId,changes,updateFuture
  const session=db.sessions.find(s=>s.id===sessionId),exercise=session?.exercises.find(e=>e.id===exerciseId);
  if(!exercise)throw Error('Exercise no longer exists.');
  if(changes.resistance!==undefined&&!['bodyweight','external'].includes(changes.resistance))throw Error('Choose a valid exercise resistance.');
+ if(changes.target!==undefined)changes={...changes,target:displayEffortTarget(changes.target)};
  let templates=db.templates,templateId=exercise.templateId,next=db;
  if(updateFuture){
   templates=normalizeTemplates(db.templates);const type=sessionTemplateName(db,session),list=[...(templates[type]||[])];const index=targetTemplate(list,exercise,session.exercises),row=[...list[index]];
@@ -46,7 +48,7 @@ export function removeSessionExercise(db,sessionId,exerciseId,updateFuture=false
 export function addSessionExercise(db,sessionId,name,updateFuture=false,definition=null){
  const session=db.sessions.find(s=>s.id===sessionId);if(!session||!name.trim())return db;
  const exerciseId=id(),templateId=id(),config=resistanceConfig(definition||{},name);
- const exercise={id:exerciseId,resistance:config.resistance,name:name.trim(),range:definition?.range||'8–12',target:definition?.target||'1–2 RIR',kind:definition?.kind||'accessory',...(definition?{libraryExerciseId:definition.id}:{}),templateId:updateFuture?templateId:null,sets:Array.from({length:definition?.sets||3},()=>({weight:config.resistance==='bodyweight'?config.defaultAddedWeight:'',reps:'',rpe:'',done:false,tag:''}))};
+ const exercise={id:exerciseId,resistance:config.resistance,name:name.trim(),range:definition?.range||'8–12',target:displayEffortTarget(definition?.target||defaultEffortTarget),kind:definition?.kind||'accessory',...(definition?{libraryExerciseId:definition.id}:{}),templateId:updateFuture?templateId:null,sets:Array.from({length:definition?.sets||3},()=>({weight:config.resistance==='bodyweight'?config.defaultAddedWeight:'',reps:'',rpe:'',done:false,tag:''}))};
  let templates=db.templates,next=db;
  if(updateFuture){templates=normalizeTemplates(db.templates);const type=sessionTemplateName(db,session);templates={...templates,[type]:[...(templates[type]||[]),[exercise.name,definition?.sets||3,exercise.range,exercise.target,exercise.kind,templateId,{...config,...(definition?{exerciseId:definition.id}:{})}]]};next=replaceWorkoutRows({...db,templates:normalizeTemplates(db.templates)},type,templates[type]);}
  return {...next,templates,sessions:db.sessions.map(s=>s.id!==sessionId?s:{...s,exercises:[...s.exercises,exercise]})};

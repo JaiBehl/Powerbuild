@@ -1,6 +1,6 @@
 import {test,expect} from '@playwright/test';
 import {validateProfileDb} from '../../src/backupSafety.js';
-import {seed,makeDb,makeSession,readDb,card,DAY} from '../fixtures.js';
+import {seed,makeDb,makeSession,readDb,card,openTab,DAY} from '../fixtures.js';
 test('session-only removal preserves template and survives reload',async({page})=>{
  const s=makeSession();await seed(page,makeDb({sessions:[s]}));await page.getByLabel('Workout date').fill(DAY);
  page.once('dialog',dialog=>dialog.accept());
@@ -17,7 +17,7 @@ test('future edit on reordered legacy workout matches the right exercise',async(
  await exercise.getByTitle('Edit exercise',{exact:true}).click();
  await exercise.getByLabel('Edit exercise name').fill('Updated supported press');
  await exercise.getByLabel('Edit exercise rep range').fill('6–8');
- await exercise.getByLabel('Edit exercise target').fill('2 RIR');
+ await exercise.getByLabel('Edit exercise RPE target').fill('2 RIR');
  await exercise.getByRole('button',{name:'Save exercise',exact:true}).click();
  await expect.poll(async()=> (await readDb(page)).templates['Push A'][1][0]).toBe('Updated supported press');
  expect((await readDb(page)).templates['Push A'][0][0]).toBe('Barbell bench press');
@@ -83,4 +83,27 @@ test('removing a same-name session extra cannot delete the linked template row',
  expect(saved.templates['Push A']).toHaveLength(6);
  expect(saved.sessions[0].exercises[0].sets[0]).toEqual(session.exercises[0].sets[0]);
  expect(()=>validateProfileDb(saved)).not.toThrow();
+});
+
+test('legacy RIR prescriptions display as RPE in Train and both library editors',async({page})=>{
+ const workout=makeSession(),target='Top RPE 8; backoffs 2–3 RIR',converted='Top RPE 8; backoffs RPE 7–8';
+ workout.exercises[0].target=target;
+ workout.exercises[0].sets[0]={weight:185,reps:5,rpe:8,done:true,tag:'Top'};
+ const db=makeDb({sessions:[workout]});
+ db.templates['Push A'][0][3]=target;
+ await seed(page,db);
+ await page.getByLabel('Workout date').fill(workout.date);
+ const exercise=card(page,'Barbell bench press');
+ await expect(exercise).toContainText(converted);
+ await exercise.getByTitle('Edit exercise',{exact:true}).click();
+ await expect(exercise.getByLabel('Edit exercise RPE target')).toHaveValue(converted);
+ await openTab(page,'Library');
+ await page.getByRole('button',{name:'Edit workout Push A',exact:true}).click();
+ await expect(card(page,'Workout editor').getByLabel('RPE target',{exact:true}).first()).toHaveValue(converted);
+ await expect(card(page,'Exercise library').getByRole('row').filter({hasText:'Barbell bench press'})).toContainText(converted);
+ await page.getByRole('button',{name:'Edit saved exercise Barbell bench press',exact:true}).click();
+ await expect(card(page,'Exercise editor').getByLabel('Default RPE target')).toHaveValue(converted);
+ const stored=(await readDb(page)).sessions[0].exercises[0];
+ expect(stored.target).toBe(target);
+ expect(stored.sets[0].rpe).toBe(8);
 });
