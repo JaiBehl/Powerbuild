@@ -16,11 +16,15 @@ test('all tabs remain usable at phone width without page-wide overflow',async({p
 test('Split retains saved schedules and earlier panel preferences',async({page})=>{
  const {saveSchedule}=await import('../../src/scheduleLibrary.js');
  await page.addInitScript(()=>{
-  localStorage.setItem('powerbuild-panel-state-v1',JSON.stringify({[JSON.stringify(['test','calendar','Saved schedules'])]:true}));
+  localStorage.setItem('powerbuild-panel-state-v1',JSON.stringify({
+   [JSON.stringify(['test','calendar','Saved schedules'])]:true,
+   [JSON.stringify(['test','calendar','schedule-editor-0'])]:true,
+  }));
  });
  await seed(page,saveSchedule(makeDb(),{name:'Existing plan'}));
  await openTab(page,'Split');
  await expect(page.getByRole('heading',{name:'Workout split',exact:true})).toBeVisible();
+ await expect(card(page,'Split editor').getByRole('button',{name:'Expand Split editor',exact:true})).toBeVisible();
  const saved=card(page,'Saved splits');
  await saved.getByRole('button',{name:'Expand Saved splits',exact:true}).click();
  await expect(saved.getByRole('button',{name:'Load split Existing plan',exact:true})).toBeVisible();
