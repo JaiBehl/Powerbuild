@@ -37,7 +37,7 @@ export default function SettingsTab({db,patch,patchSettings,exportJson,exportCsv
   };
 
   return <>
-    <CalorieSection title="Units, goals & schedule" description="Adjust units, bodyweight planning and your weekly training rotation." summary={units+' · '+(db.settings.schedule?.length||0)+' training days'}>
+    <CalorieSection collapseKey="Units, goals & schedule" title="Units, goals & split" description="Adjust units, bodyweight planning and your weekly training rotation." summary={units+' · '+(db.settings.schedule?.length||0)+' training days'}>
       <p className="muted">Choose pounds or kilograms for every weight input and display. Powerbuild keeps the underlying data consistent when you switch units.</p>
       <div className="formgrid">
         <label>Weight unit<select value={units} onChange={e=>patchSettings({units:e.target.value})}><option value="lb">Pounds (lb)</option><option value="kg">Kilograms (kg)</option></select></label>
@@ -49,7 +49,7 @@ export default function SettingsTab({db,patch,patchSettings,exportJson,exportCsv
       </div>
       <p className="muted">Bodyweight settings here are defaults for new nutrition dates. To change a recorded day's goal, open that date in Calorie tracker.</p>
       <h3>Training weekdays</h3>
-      <p className="muted">Edit and save whole programs in Schedule. These weekdays advance a repeating rotation; fixed weekday assignments are edited in Schedule.</p>
+      <p className="muted">Edit and save whole programs in Split. These weekdays advance a repeating rotation; fixed weekday assignments are edited in Split.</p>
       <div className="weekpick">{['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map((x,i)=><label key={x}><input type="checkbox" disabled={db.settings.scheduleMode==='weekdays'} checked={db.settings.schedule.includes(i+1)} onChange={e=>patchSettings({schedule:e.target.checked?[...db.settings.schedule,i+1].sort():db.settings.schedule.filter(n=>n!==i+1)})}/>{x}</label>)}</div>
     </CalorieSection>
 

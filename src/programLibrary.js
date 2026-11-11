@@ -35,6 +35,6 @@ export function duplicateWorkout(db,id){const next=normalizeProgram(db),entry=wo
  return saveWorkout(next,{name,description:entry[1].description,rows:next.templates[entry[0]].map(row=>{const r=structuredClone(row);r[5]=libraryId();return r;})});}
 export function archiveWorkout(db,id,archived=true){const next=normalizeProgram(db),entry=workoutEntry(next,id);if(!entry)throw Error('Workout no longer exists.');const [name,meta]=entry;
  const scheduled=next.settings.scheduleMode==='weekdays'?Object.values(next.settings.weekdayWorkouts||{}):programCycle(next.settings);
- if(archived&&scheduled.includes(name))throw Error('Remove this workout from the active schedule before archiving it.');
+ if(archived&&scheduled.includes(name))throw Error('Remove this workout from the active split before archiving it.');
  return {...next,workoutMeta:{...next.workoutMeta,[name]:{...meta,archived,updatedAt:new Date().toISOString()}}};}
 export function restoreWorkoutRevision(db,id,index){const next=normalizeProgram(db),entry=workoutEntry(next,id),revision=entry?.[1].revisions?.[index];if(!revision)throw Error('Revision no longer exists.');return saveWorkout(next,{id,name:revision.name,description:revision.description,rows:revision.exercises});}

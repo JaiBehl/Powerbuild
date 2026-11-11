@@ -10,5 +10,18 @@ test('another profile does not inherit collapsed panels',async({page})=>{
 });
 test('all tabs remain usable at phone width without page-wide overflow',async({page})=>{
  await page.setViewportSize({width:390,height:844});await seed(page,makeDb({sessions:[makeSession()]}));
- for(const tab of ['Train','Schedule','Progress','Calorie tracker','Settings & backup']){await openTab(page,tab);await expect(page.getByRole('heading',{level:1})).toBeVisible();expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1)).toBe(true);}
+ for(const tab of ['Train','Split','Progress','Calorie tracker','Settings & backup']){await openTab(page,tab);await expect(page.getByRole('heading',{level:1})).toBeVisible();expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1)).toBe(true);}
+});
+
+test('Split retains saved schedules and earlier panel preferences',async({page})=>{
+ const {saveSchedule}=await import('../../src/scheduleLibrary.js');
+ await page.addInitScript(()=>{
+  localStorage.setItem('powerbuild-panel-state-v1',JSON.stringify({[JSON.stringify(['test','calendar','Saved schedules'])]:true}));
+ });
+ await seed(page,saveSchedule(makeDb(),{name:'Existing plan'}));
+ await openTab(page,'Split');
+ await expect(page.getByRole('heading',{name:'Workout split',exact:true})).toBeVisible();
+ const saved=card(page,'Saved splits');
+ await saved.getByRole('button',{name:'Expand Saved splits',exact:true}).click();
+ await expect(saved.getByRole('button',{name:'Load split Existing plan',exact:true})).toBeVisible();
 });
