@@ -23,16 +23,16 @@ test('Edit workout and saved exercise jump to the appropriate editor and reopen 
 
 test('loading a saved schedule opens its minimized editor and focuses it',async({page})=>{
   await seed(page);
-  await openTab(page,'Schedule');
-  const editor=card(page,'Schedule editor');
-  await editor.getByLabel('Schedule name',{exact:true}).fill('My existing schedule');
-  await editor.getByRole('button',{name:'Save entire schedule',exact:true}).click();
-  await editor.getByRole('button',{name:'Minimize Schedule editor',exact:true}).click();
-  await card(page,'Saved schedules').getByRole('button',{name:'Load schedule My existing schedule',exact:true}).click();
-  await expect(editor.getByRole('button',{name:'Minimize Schedule editor',exact:true})).toBeVisible();
-  await expect(editor.getByLabel('Schedule name',{exact:true})).toBeVisible();
+  await openTab(page,'Split');
+  const editor=card(page,'Split editor');
+  await editor.getByLabel('Split name',{exact:true}).fill('My existing schedule');
+  await editor.getByRole('button',{name:'Save entire split',exact:true}).click();
+  await editor.getByRole('button',{name:'Minimize Split editor',exact:true}).click();
+  await card(page,'Saved splits').getByRole('button',{name:'Load split My existing schedule',exact:true}).click();
+  await expect(editor.getByRole('button',{name:'Minimize Split editor',exact:true})).toBeVisible();
+  await expect(editor.getByLabel('Split name',{exact:true})).toBeVisible();
   await expect.poll(async()=>editor.evaluate(node=>{const r=node.getBoundingClientRect();return r.top>=-30&&r.top<window.innerHeight*.8;})).toBe(true);
-  await expect(editor.getByLabel('Schedule name',{exact:true})).toHaveValue('My existing schedule');
+  await expect(editor.getByLabel('Split name',{exact:true})).toHaveValue('My existing schedule');
 });
 
 test('inline Train exercise edit focuses the pencil editor without changing sets',async({page})=>{

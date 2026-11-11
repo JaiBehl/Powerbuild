@@ -11,13 +11,13 @@ import {calculateNutrition,normalizeCalorieSettings,setNutritionWeightMode,updat
 
 export default function CalorieTracker({db,patch,date,setDate,entry,setEntry}){
   const units=unitName(db.settings.units);
-  const {cs,stored,goal,weight,weightSource,weightDate,heightIn,age,sex,estimatedBaseline,customBaseline,baselineMode,baseline,heightFeet,heightRemainder,cardioExtra,walkExtra,runExtra,liftExtra,maintenance,days,daysRemaining,validDeadline,goalDifference,goalRate,calculatedTarget,mode,calorieTargetMode,manualCalorieTarget,target,calculatedProtein,calculatedFat,calculatedCarbs,macroTargetMode,protein,carbs,fat,macroCalories,rmr,rmrMethod,adult,baselineFactor,walkPace,liftMet,estimatedMaintenance,maintenanceMode,customMaintenance,maintenanceOverrideValid}=calculateNutrition(db,date);
+  const {cs,stored,goal,weightGoalEnabled,weight,weightSource,weightDate,heightIn,age,sex,estimatedBaseline,customBaseline,baselineMode,baseline,heightFeet,heightRemainder,cardioExtra,walkExtra,runExtra,liftExtra,maintenance,days,daysRemaining,validDeadline,goalDifference,goalRate,calculatedTarget,mode,calorieTargetMode,manualCalorieTarget,target,calculatedProtein,calculatedFat,calculatedCarbs,macroTargetMode,protein,carbs,fat,macroCalories,rmr,rmrMethod,adult,baselineFactor,walkPace,liftMet,estimatedMaintenance,maintenanceMode,customMaintenance,maintenanceOverrideValid}=calculateNutrition(db,date);
   const update=(key,value)=>patch(p=>updateDayPlan(p,date,{calorieSettings:{[key]:value}}));
   const changeGoal=(key,value)=>patch(p=>updateDayPlan({...p,settings:{...p.settings,[key]:value}},date,{goal:{[key]:value}}));
   const record=db.calories.find(x=>x.date===date);
   const logged=Array.isArray(record?.items)?record.items:[],savedFoods=Array.isArray(db.savedFoods)?db.savedFoods:[],cardioEntries=Array.isArray(record?.cardio)?record.cardio:[];
   const updateDayRecord=fn=>patch(p=>updateNutritionDay(p,date,fn));
-  const setCalorieTargetMode=nextMode=>patch(p=>updateDayPlan(p,date,{calorieSettings:{calorieTargetMode:nextMode,customCalorieTarget:cs.customCalorieTarget??Math.max(0,calculatedTarget)}}));
+  const setCalorieTargetMode=nextMode=>patch(p=>updateDayPlan(p,date,{calorieSettings:{calorieTargetMode:nextMode,customCalorieTarget:cs.customCalorieTarget??Math.max(0,calculatedTarget??maintenance)}}));
   const setMacroTargetMode=nextMode=>patch(p=>updateDayPlan(p,date,{calorieSettings:{macroTargetMode:nextMode,customProtein:cs.customProtein??calculatedProtein,customCarbs:cs.customCarbs??calculatedCarbs,customFat:cs.customFat??calculatedFat}}));
   const updateCardio=entries=>updateDayRecord(day=>({...day,cardio:entries}));
   const saveToLibrary=food=>patch(p=>({...p,savedFoods:[...(p.savedFoods||[]),food]}));
@@ -29,7 +29,7 @@ export default function CalorieTracker({db,patch,date,setDate,entry,setEntry}){
   const displayedWeight=toDisplayWeight(weight,units,1);
   const rateUnit=units==='kg'?'kg/week':'lb/week';
   const displayedGoalRate=toDisplayRate(goalRate,units,2);
-  const hasGoalPace=validDeadline&&daysRemaining>0&&Number.isFinite(displayedGoalRate);
+  const hasGoalPace=weightGoalEnabled&&validDeadline&&daysRemaining>0&&Number.isFinite(displayedGoalRate);
   const goalPace=hasGoalPace?(displayedGoalRate>0?'+':'')+displayedGoalRate.toFixed(2)+' '+rateUnit:null;
   const proteinRate=displayMacroRate(cs.proteinPerLb,units,2);
   const fatRate=displayMacroRate(cs.fatPerLb,units,2);
@@ -41,10 +41,13 @@ export default function CalorieTracker({db,patch,date,setDate,entry,setEntry}){
     <CalorieSection
       title="Bodyweight goal"
       description="Choose your target weight and deadline for bulk, cut, or maintenance planning."
-      summary={displayedGoal+' '+units+' · '+goal.weightDeadline+(goalPace?' · '+goalPace:'')}
+      summary={weightGoalEnabled?displayedGoal+' '+units+' · '+goal.weightDeadline+(goalPace?' · '+goalPace:''):'Off'}
       className="calorie-weight-goal"
     >
-      <div className="weight-goal-summary-row">
+      <label className="weekpick"><input type="checkbox" checked={weightGoalEnabled}
+        onChange={e=>{const enabled=e.target.checked;patch(p=>({...p,settings:{...p.settings,weightGoalEnabled:enabled}}));}}
+      /> Enable bodyweight goal</label>
+      {weightGoalEnabled?<><div className="weight-goal-summary-row">
         <div className="weight-goal-overview">
           <small>CURRENT PLAN</small>
           <strong>{mode}</strong>
@@ -61,7 +64,7 @@ export default function CalorieTracker({db,patch,date,setDate,entry,setEntry}){
       <div className="formgrid">
         <label>Goal weight ({units})<input type="number" min="20" max="700" step={units==='kg'?'0.1':'0.5'} value={displayedGoal} onChange={e=>changeGoal('targetWeight',fromDisplayWeight(e.target.value,units))}/></label>
         <label>Goal deadline<input type="date" value={goal.weightDeadline} onChange={e=>changeGoal('weightDeadline',e.target.value)}/></label>
-      </div>
+      </div></>:<p className="muted">Your target weight and deadline are saved for when you turn the goal back on.</p>}
     </CalorieSection>
 
     <CalorieSection
@@ -117,21 +120,21 @@ export default function CalorieTracker({db,patch,date,setDate,entry,setEntry}){
     <CalorieSection
       title="Daily calorie target"
       description="Review estimated maintenance and choose an automatic or manual daily calorie goal."
-      summary={target.toLocaleString()+' kcal goal'}
+      summary={target===null?'No calorie goal':target.toLocaleString()+' kcal goal'}
     >
       <div className="summary">
         <div className="metric"><small>BASELINE</small><strong>{baseline.toLocaleString()} <span>kcal</span></strong></div>
         <div className="metric"><small>EST. MAINTENANCE</small><strong>{maintenance.toLocaleString()} <span>kcal</span></strong></div>
-        <div className="metric"><small>CALCULATED GOAL</small><strong>{calculatedTarget.toLocaleString()} <span>kcal</span></strong></div>
-        <div className="metric"><small>DAILY CALORIE GOAL</small><strong>{target.toLocaleString()} <span>kcal</span></strong></div>
+        {weightGoalEnabled&&<div className="metric"><small>CALCULATED GOAL</small><strong>{calculatedTarget.toLocaleString()} <span>kcal</span></strong></div>}
+        {target!==null&&<div className="metric"><small>DAILY CALORIE GOAL</small><strong>{target.toLocaleString()} <span>kcal</span></strong></div>}
       </div>
-      <p className="muted note">Maintenance uses your chosen estimate or known total, independently of your weight goal. The goal-based calculation is <b>{Math.abs(toDisplayRate(goalRate,units,2)).toFixed(2)} {rateUnit}</b> {mode==='Bulk'?'gain':mode==='Cut'?'loss':'change'} per week using the remaining days. No arbitrary calorie adjustment cap is applied. These values are estimates, not safe-intake recommendations.</p>
+      {weightGoalEnabled&&<p className="muted note">Maintenance uses your chosen estimate or known total, independently of your weight goal. The goal-based calculation is <b>{Math.abs(toDisplayRate(goalRate,units,2)).toFixed(2)} {rateUnit}</b> {mode==='Bulk'?'gain':mode==='Cut'?'loss':'change'} per week using the remaining days. No arbitrary calorie adjustment cap is applied. These values are estimates, not safe-intake recommendations.</p>}
       <div className="formgrid">
         <label>Maintenance source<select value={maintenanceMode} onChange={e=>patch(p=>updateDayPlan(p,date,{calorieSettings:{maintenanceMode:e.target.value,customMaintenance:cs.customMaintenance??estimatedMaintenance}}))}><option value="estimate">Estimate from baseline + activity</option><option value="custom">Use my known total maintenance</option></select></label>
         {maintenanceMode==='custom'&&<label>Known total maintenance (kcal/day)<input type="number" min="1" step="10" value={customMaintenance} onChange={e=>update('customMaintenance',Number(e.target.value))}/></label>}
         <label>Daily calorie goal source
           <select value={calorieTargetMode} onChange={e=>setCalorieTargetMode(e.target.value)}>
-            <option value="calculated">Calculate from weight goal + deadline</option>
+            <option value="calculated">{weightGoalEnabled?'Calculate from weight goal + deadline':'No daily calorie goal'}</option>
             <option value="custom">Set my own daily calorie goal</option>
           </select>
         </label>
@@ -141,10 +144,10 @@ export default function CalorieTracker({db,patch,date,setDate,entry,setEntry}){
       </div>
       <p className="muted">{maintenanceMode==='custom'?'Your known total replaces the full estimate; activity is not added again. ':'Estimate from baseline + activity: '+estimatedMaintenance.toLocaleString()+' kcal/day. '}Compare consistently logged intake with several weeks of weight averages. Stable weight with complete logs is more useful for personal calibration than a single day. Missing meals or water-weight changes prevent reliable automatic calibration.</p>
       {maintenanceMode==='custom'&&!maintenanceOverrideValid&&<p className="error">Enter a positive known maintenance value. The activity estimate is used until a valid value is entered.</p>}
-      {!validDeadline&&<p className="error">Choose a valid goal deadline. Maintenance is still calculated; goal math uses a one-day fallback until a date is selected.</p>}
-      {validDeadline&&daysRemaining<=0&&<p className="error">The selected deadline has passed or is today. The calculation uses a one-day fallback; choose a future date for a meaningful goal.</p>}
-      {calculatedTarget<=0&&<p className="error">The mathematical calorie target for this goal is {calculatedTarget.toLocaleString()} kcal/day, which is not a viable food intake. Set a realistic deadline or choose your own daily target.</p>}
-      {calculatedTarget>maintenance*1.5&&<p className="muted note">This goal implies a large surplus. Consider checking your rate of weight change over time rather than treating the calculated result as a required intake.</p>}
+      {weightGoalEnabled&&!validDeadline&&<p className="error">Choose a valid goal deadline. Maintenance is still calculated; goal math uses a one-day fallback until a date is selected.</p>}
+      {weightGoalEnabled&&validDeadline&&daysRemaining<=0&&<p className="error">The selected deadline has passed or is today. The calculation uses a one-day fallback; choose a future date for a meaningful goal.</p>}
+      {weightGoalEnabled&&calculatedTarget<=0&&<p className="error">The mathematical calorie target for this goal is {calculatedTarget.toLocaleString()} kcal/day, which is not a viable food intake. Set a realistic deadline or choose your own daily target.</p>}
+      {weightGoalEnabled&&calculatedTarget>maintenance*1.5&&<p className="muted note">This goal implies a large surplus. Consider checking your rate of weight change over time rather than treating the calculated result as a required intake.</p>}
     </CalorieSection>
 
     <CalorieSection
@@ -174,7 +177,7 @@ export default function CalorieTracker({db,patch,date,setDate,entry,setEntry}){
           <input type="number" min="0" step="1" value={value} onChange={e=>update(key,Math.max(0,Number(e.target.value)||0))}/>
         </label>)}
       </div>}
-      <p className="muted note">The macros above total about {macroCalories.toLocaleString()} kcal. {Math.abs(macroCalories-target)>25?'They differ from your calorie goal; adjust them independently if you want the numbers to match.':'They are close to your calorie goal.'} Food entries below count toward both calories and macro totals.</p>
+      <p className="muted note">The macros above total about {macroCalories.toLocaleString()} kcal. {target!==null&&(Math.abs(macroCalories-target)>25?'They differ from your calorie goal; adjust them independently if you want the numbers to match.':'They are close to your calorie goal.')} Food entries below count toward both calories and macro totals.</p>
     </CalorieSection>
 
     <FoodLog date={date} setDate={setDate} items={logged} updateDayRecord={updateDayRecord} entry={entry} setEntry={setEntry} target={target} macros={{protein,carbs,fat}} onSaveToLibrary={saveToLibrary}/>

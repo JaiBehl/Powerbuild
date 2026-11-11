@@ -13,7 +13,7 @@ export default function FoodLog({date,setDate,items=[],updateDayRecord,entry,set
   const [editDraft,setEditDraft]=useState(emptyFood());
   const logged=Array.isArray(items)?items:[];
   const totals=sumFoods(logged);
-  const remaining=target-totals.calories;
+  const remaining=target===null?null:target-totals.calories;
   const macroRows=[
     ['Protein',totals.protein,macros.protein],
     ['Carbs',totals.carbs,macros.carbs],
@@ -77,8 +77,8 @@ export default function FoodLog({date,setDate,items=[],updateDayRecord,entry,set
     </div>
 
     <div className="summary food-summary">
-      <div className="metric"><small>CALORIES EATEN</small><strong>{formatAmount(totals.calories)} <span>kcal</span></strong><small>of {formatAmount(target)} kcal goal</small></div>
-      <div className="metric"><small>CALORIES {remaining>=0?'REMAINING':'OVER GOAL'}</small><strong>{formatAmount(Math.abs(remaining))} <span>kcal</span></strong></div>
+      <div className="metric"><small>CALORIES EATEN</small><strong>{formatAmount(totals.calories)} <span>kcal</span></strong>{target!==null&&<small>of {formatAmount(target)} kcal goal</small>}</div>
+      {remaining!==null&&<div className="metric"><small>CALORIES {remaining>=0?'REMAINING':'OVER GOAL'}</small><strong>{formatAmount(Math.abs(remaining))} <span>kcal</span></strong></div>}
       {macroRows.map(([name,eaten,goal])=><div className="metric" key={name}>
         <small>{name.toUpperCase()} EATEN</small><strong>{formatAmount(eaten)} <span>g</span></strong><small>of {formatAmount(goal)} g goal · {formatAmount(goal-eaten)} g remaining</small>
       </div>)}

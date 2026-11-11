@@ -7,7 +7,7 @@ test('all five tabs render and notes survive refresh',async({page})=>{
  await expect.poll(async()=> (await readDb(page)).sessions[0].notes).toBe('Synthetic recovery note');
  await page.reload();await page.getByLabel('Workout date').fill(DAY);
  await expect(page.getByPlaceholder('Sleep, fatigue, technique, soreness, sticking points...')).toHaveValue('Synthetic recovery note');
- for(const name of ['Schedule','Progress','Calorie tracker','Settings & backup','Train']){await openTab(page,name);await expect(page.getByRole('heading',{level:1})).toBeVisible();}
+ for(const name of ['Split','Progress','Calorie tracker','Settings & backup','Train']){await openTab(page,name);await expect(page.getByRole('heading',{level:1})).toBeVisible();}
 });
 test('food fractions update totals and saved food is reusable',async({page})=>{
  await seed(page);await openTab(page,'Calorie tracker');
