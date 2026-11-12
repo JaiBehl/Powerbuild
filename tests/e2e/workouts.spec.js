@@ -86,7 +86,7 @@ test('removing a same-name session extra cannot delete the linked template row',
 });
 
 test('legacy RIR prescriptions display as RPE in Train and both library editors',async({page})=>{
- const workout=makeSession(),target='Top RPE 8; backoffs 2–3 RIR',converted='Top RPE 8; backoffs RPE 7–8';
+ const workout=makeSession(),target='Top RPE 8. Backoffs RIR 2–3.',converted='Top RPE 8. Backoffs RPE 7–8.';
  workout.exercises[0].target=target;
  workout.exercises[0].sets[0]={weight:185,reps:5,rpe:8,done:true,tag:'Top'};
  const db=makeDb({sessions:[workout]});
