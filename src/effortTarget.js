@@ -5,7 +5,7 @@ const reserveAmount = String.raw`\d+(?:\.\d+)?`;
 const reserveRange = `(${reserveAmount})(?:\\s*(?:[-–—]|\\bto\\b)\\s*(${reserveAmount}))?`;
 const reserveTarget = new RegExp(
   String.raw`(?<![\w.+−–—-])` + reserveRange + String.raw`\s*` + reserveUnit +
-  String.raw`|\b` + reserveUnit + String.raw`\s*` + reserveRange + String.raw`(?![\w.])`,
+  String.raw`|\b` + reserveUnit + String.raw`\s*` + reserveRange + String.raw`(?!\w|\.\d)`,
   'gi',
 );
 

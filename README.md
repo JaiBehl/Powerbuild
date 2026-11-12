@@ -12,10 +12,10 @@ This README is the product manual and the handoff for a fresh AI development con
 | Site | [powerbuild-flexible-goals.vercel.app](https://powerbuild-flexible-goals.vercel.app) |
 | Hosting | Existing Vercel project `powerbuild-flexible-goals`, team/dashboard slug `power-build` |
 | Backend | Supabase project `zgbldcmahkokmkfqeljh`; Auth and the account-snapshot table/RPC described below |
-| Source reviewed through | `5ebf94d` plus the Split, RPE and optional bodyweight goal changes in this release |
-| Release work | Workout schedules are labeled Split, effort prescriptions display as RPE, and the bodyweight goal can be paused without changing macro targets. |
-| Date | November 11, 2026, America/Los_Angeles |
-| Validation | The [Split regression gate](https://github.com/JaiBehl/Powerbuild/actions/runs/43014476477) and [RPE regression gate](https://github.com/JaiBehl/Powerbuild/actions/runs/43015346812) passed. The combined release gate covers the bodyweight toggle, macro continuity and restoration. |
+| Source reviewed through | `44fa493` plus the legacy RIR punctuation fix in this release |
+| Release work | Legacy effort targets convert complete RIR ranges before sentence-ending periods, preserving the punctuation. |
+| Date | November 12, 2026, America/Los_Angeles |
+| Validation | The [previous main gate](https://github.com/JaiBehl/Powerbuild/actions/runs/43017051037) passed regression and production smoke. This fix passed 151 local unit/integration tests and the production build. The browser regression runs in GitHub Actions because the local environment could not start the Playwright server. |
 
 The source baseline identifies code actually reviewed and tested. Documentation-only or merge commits may be newer. Fetch current `main`, inspect commits since that baseline, and check open PRs before changing anything. Current source governs implemented behavior; the latest explicit user instruction governs desired behavior.
 
@@ -82,7 +82,7 @@ Source access is still required for edits. Current workouts, foods, goals and pr
 - Add any exercise; edit name, rep range or effort; remove an exercise. By default these affect only this session. The explicit future-template checkbox also updates the matching template. Extras added to this session only stay unlinked even when their name matches a template exercise. Legacy name matching also refuses a template row already linked to another exercise in the session. Ambiguous older links are rejected instead of changing the wrong exercise.
 - New unsaved exercises start at three sets, 8–12 reps, RPE 8–9; choosing a saved exercise uses its defaults. Individual set-count changes affect the session, not the future template.
 - **Reorder exercises mid-session** using the small up/down arrows in each exercise header. These work on expanded or minimized cards and save automatically. The top/bottom movement button is disabled. Completed sets and pending edits remain attached to the same exercise. The existing optional future-template checkbox extends valid linked order changes to the saved workout template, without rewriting past logs.
-- Effort targets display as RPE across Train, the workout/exercise editors and libraries, and strength records. Older numeric RIR targets and ranges are translated on display (1–2 RIR becomes RPE 8–9) and when used in new prescriptions. Existing set RPE values, arbitrary notes, and untouched workout snapshots retain their original data.
+- Effort targets display as RPE across Train, the workout/exercise editors and libraries, and strength records. Older numeric RIR targets and ranges are translated on display (1–2 RIR becomes RPE 8–9) and when used in new prescriptions. A prefix range at the end of a sentence, such as “Backoffs RIR 2–3.”, displays as “Backoffs RPE 7–8.” Existing set RPE values, arbitrary notes, and untouched workout snapshots retain their original data.
 - Previous finished session appears as a **compact, expandable one-line reference** above the set table. The row shows the date, workout, first completed set and number of other sets; expanding shows every recorded set and RPE. It uses movement aliases and current units, excludes the current/future dates, and never overwrites the current workout.
 - Notes save as typed. Finish/reopen changes status; delete requires confirmation and creates a recovery copy. Finishing does not manually advance the date-based rotation.
 
@@ -360,7 +360,7 @@ Explicit correction updates records owned by the same import ID. Optional remova
 | `src/recordBodyweight.js` | Cached historical bodyweight matching, same-day averages, bounded interpolation/nearest estimates and source provenance |
 | `src/trends.js`, `src/WeeklyReview.jsx` | Calendar month cutoffs for both Progress charts, daily-weight averages and weekly training/nutrition summary |
 | `src/CalorieTracker.jsx`, `src/nutrition.js`, `src/maintenance.js` | Nutrition cards, numeric edit validation, daily snapshots/defaults, persistent automatic weight source/provenance, weekly goal pace, RMR/net-activity models and maintenance override |
-| `src/effortTarget.js` | Converts legacy numeric effort prescriptions to RPE for display and reuse |
+| `src/effortTarget.js` | Converts legacy numeric effort prescriptions to RPE for display and reuse, preserving sentence punctuation |
 | `src/strengthEstimation.js` | Shared exercise-specific population tables, RPE/RIR adjustment, prediction gates and achievement distinction |
 | `src/FoodLog.jsx`, `src/SavedFoods.jsx`, `src/ServingPicker.jsx`, `src/foodLibrary.js` | Foods, reusable templates, portions, validation and totals |
 | `src/CardioLog.jsx` | Dated custom cardio CRUD and finite nonnegative edit guards |

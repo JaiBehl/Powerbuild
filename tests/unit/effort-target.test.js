@@ -21,6 +21,12 @@ test('legacy numeric effort targets convert to ascending RPE without changing un
  }
 });
 
+test('prefix RIR converts whole targets before sentence punctuation',()=>{
+ assert.equal(displayEffortTarget('Top set RIR 1. Backoffs RIR 1–2.'),'Top set RPE 9. Backoffs RPE 8–9.');
+ assert.equal(displayEffortTarget('Backoffs RIR 1.5.'),'Backoffs RPE 8.5.');
+ assert.equal(displayEffortTarget('RIR 1.5kg'),'RIR 1.5kg');
+});
+
 test('new workouts use RPE even when started from an older template',()=>{
  const db=makeDb();
  db.templates['Push A'][0][3]='Top RPE 8; backoffs 2 RIR';
