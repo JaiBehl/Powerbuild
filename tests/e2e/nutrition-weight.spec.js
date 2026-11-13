@@ -1,3 +1,4 @@
+import {validateProfileDb} from '../../src/backupSafety.js';
 import {test,expect} from '@playwright/test';
 import {seed,makeDb,card,openTab,readDb,DAY} from '../fixtures.js';
 test('following weigh-ins persists across days and new Progress weights update maintenance and goal weight',async({page})=>{
@@ -14,4 +15,34 @@ test('partial historical nutrition settings cannot freeze an automatic bodyweigh
 });
 test('one-click reconnection and visible dates remain clear in kg and on a phone',async({page})=>{
  await page.setViewportSize({width:390,height:844});const db=makeDb({calorieSettings:{weightMode:'manual',bodyWeight:220},weights:[{date:'2026-10-29',weight:180},{date:DAY,weight:185},{date:'2026-10-31',weight:190}]});db.settings.units='kg';await seed(page,db);await openTab(page,'Calorie tracker');await page.getByLabel('Calculator date',{exact:true}).fill(DAY);const baseline=card(page,'Baseline maintenance');await baseline.getByRole('button',{name:'Follow weigh-ins for this and new dates',exact:true}).click();await expect(baseline.getByLabel('Weight (kg)',{exact:true})).toHaveValue('83.9');await expect(baseline).toContainText('Weigh-in used: 83.9 kg from '+DAY);expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1)).toBe(true);
+});
+
+test('invalid kg weigh-ins preserve the dated record and a valid replacement survives reload',async({page})=>{
+ await page.setViewportSize({width:390,height:844});
+ const weights=[{date:'2026-10-29',weight:179},{date:DAY,weight:180}];
+ const db=makeDb({weights});
+ db.settings.units='kg';
+ await seed(page,db);
+ await openTab(page,'Progress');
+ await page.getByLabel('Bodyweight entry date').fill(DAY);
+ const log=card(page,'Bodyweight log');
+ const input=log.getByPlaceholder('Weight (kg)');
+ const save=log.getByRole('button',{name:'Save weight',exact:true});
+ for(const invalid of ['0','-1','1e308']){
+  await input.fill(invalid);
+  await save.click();
+  expect((await readDb(page)).weights).toEqual(weights);
+  await expect(log.getByRole('alert')).toContainText('Enter a finite weight greater than zero');
+ }
+ await input.fill('82.5');
+ await save.click();
+ await expect(log.getByRole('alert')).toHaveCount(0);
+ await page.reload();
+ await openTab(page,'Progress');
+ await expect(card(page,'Bodyweight log')).toContainText('82.5 kg');
+ const saved=await readDb(page);
+ expect(saved.weights[0]).toEqual(weights[0]);
+ expect(saved.weights[1].date).toBe(DAY);
+ expect(saved.weights[1].weight).toBeCloseTo(181.88,2);
+ expect(()=>validateProfileDb(saved)).not.toThrow();
 });
