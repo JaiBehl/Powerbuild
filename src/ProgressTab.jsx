@@ -37,6 +37,7 @@ export default function ProgressTab({db,patch,date,setDate,setTab,weightEntry,se
   const visibleWorkouts=matchingWorkouts.slice(0,visibleWorkoutCount);
   const resetWorkoutPage=()=>setVisibleWorkoutCount(30);
   const [bodyweightRange,setBodyweightRange]=useState('6M');
+  const [weightError,setWeightError]=useState('');
   const [bodyweightYear,setBodyweightYear]=useState('all');
   const [bodyweightSearch,setBodyweightSearch]=useState('');
   const [visibleBodyweightCount,setVisibleBodyweightCount]=useState(30);
@@ -153,14 +154,20 @@ export default function ProgressTab({db,patch,date,setDate,setTab,weightEntry,se
 
       <div className="weightform">
         <input type="date" aria-label="Bodyweight entry date" value={date} onChange={e=>setDate(e.target.value)}/>
-        <input type="number" step="0.1" min="0" placeholder={'Weight ('+units+')'} value={weightEntry} onChange={e=>setWeightEntry(e.target.value)}/>
+        <input type="number" step="0.1" min="0" placeholder={'Weight ('+units+')'} value={weightEntry} onChange={e=>{setWeightEntry(e.target.value);setWeightError('');}}/>
         <button className="primary" onClick={()=>{
-          if(Number(weightEntry)>0){
-            patch(p=>({...p,weights:[...p.weights.filter(w=>w.date!==date),{date,weight:fromDisplayWeight(weightEntry,units)}]}));
+          const weight=fromDisplayWeight(weightEntry,units);
+          if(!Number.isFinite(weight)||weight<=0){
+            setWeightError('Enter a finite weight greater than zero.');
+            return;
+          }
+          if(patch(p=>({...p,weights:[...p.weights.filter(w=>w.date!==date),{date,weight}]}))){
             setWeightEntry('');
+            setWeightError('');
           }
         }}><Plus size={16}/> Save weight</button>
       </div>
+      {weightError&&<p className="error" role="alert">{weightError}</p>}
       {allBodyweightLogs.length===0?<p className="empty">No bodyweight entries yet. Save a weigh-in above or import your historical records.</p>:<>
         <div className="workout-history-filters">
           <label>Year

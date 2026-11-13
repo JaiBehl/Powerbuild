@@ -12,10 +12,10 @@ This README is the product manual and the handoff for a fresh AI development con
 | Site | [powerbuild-flexible-goals.vercel.app](https://powerbuild-flexible-goals.vercel.app) |
 | Hosting | Existing Vercel project `powerbuild-flexible-goals`, team/dashboard slug `power-build` |
 | Backend | Supabase project `zgbldcmahkokmkfqeljh`; Auth and the account-snapshot table/RPC described below |
-| Source reviewed through | `44fa493` plus the legacy RIR punctuation fix in this release |
-| Release work | Legacy effort targets convert complete RIR ranges before sentence-ending periods, preserving the punctuation. |
-| Date | November 12, 2026, America/Los_Angeles |
-| Validation | The [previous main gate](https://github.com/JaiBehl/Powerbuild/actions/runs/43017051037) passed regression and production smoke. This fix passed 151 local unit/integration tests and the production build. The browser regression runs in GitHub Actions because the local environment could not start the Playwright server. |
+| Source reviewed through | `decd38e` plus the weigh-in validation fix in this release |
+| Release work | The Bodyweight log checks the converted weight before replacing a dated weigh-in. |
+| Date | November 13, 2026, America/Los_Angeles |
+| Validation | The [previous main gate](https://github.com/JaiBehl/Powerbuild/actions/runs/43197240807) passed regression and production smoke. The weigh-in fix passed 151 local unit/integration tests and the production build. The mobile browser regression runs in GitHub Actions because the local environment could not start the Playwright server. |
 
 The source baseline identifies code actually reviewed and tested. Documentation-only or merge commits may be newer. Fetch current `main`, inspect commits since that baseline, and check open PRs before changing anything. Current source governs implemented behavior; the latest explicit user instruction governs desired behavior.
 
@@ -129,7 +129,7 @@ Exact rep/effort prescriptions live in `src/data.js`; profiles can override temp
 - Standard bench labels share a movement series; custom reversible aliases and same-name opt-outs are in Settings. Linking does not rewrite original logs. Charts, goals, previous-session comparisons and records use the same resolution.
 - Weekly review covers seven days ending on the selected date: finished workouts/sets/volume, average consumed calories/protein on food-log days, custom cardio, weight average and change versus the preceding week. Missing days are unknown, not zero. Multiple weigh-ins on one day are averaged before averaging days.
 - Workout and bodyweight history include every year, year/search filters and 30-record increments. Workout search includes date/type/exercises/notes; opening a workout shows its original date/notes.
-- Saving a weigh-in replaces that date's measurements. Deleting removes only the selected record, with recovery available.
+- Saving a valid weigh-in replaces that date's measurements. The weight must be positive and finite after conversion to pounds. Invalid entries show an error and preserve the existing measurements. Deleting removes only the selected record, with recovery available.
 
 ### Calorie tracker, food and cardio
 
@@ -353,7 +353,7 @@ Explicit correction updates records owned by the same import ID. Optional remova
 | `src/WorkoutLibrary.jsx`, `src/programLibrary.js` | Reusable workout library/editor, stable identity, rename/duplicate/archive and version restore |
 | `src/ScheduleTab.jsx` | Weekly calendar and current rotation/fixed-weekday preview |
 | `src/StrengthProjection.jsx`, `src/strengthProjection.js`, `src/WorkoutPoint.jsx` | Dated strength scenarios, transparent empirical fit/assumptions and accessible original-workout chart navigation |
-| `src/ProgressTab.jsx` | Goal summaries, charts and all-years histories |
+| `src/ProgressTab.jsx` | Goal summaries, charts, all-years histories and validated weigh-in entry |
 | `src/exerciseCatalog.js`, `src/ExerciseAliases.jsx` | Canonical movement resolution, shared selectors/history and alias editor |
 | `src/resistance.js`, `src/ResistanceFields.jsx` | Resistance modes, calisthenic defaults and shared bodyweight/added-load controls |
 | `src/trainingStats.js`, `src/PreviousPerformance.jsx`, `src/PersonalRecords.jsx` | Previous finished sets, absolute/relative single/estimated/rep records and historical bodyweight context |
