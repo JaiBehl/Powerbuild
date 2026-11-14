@@ -29,3 +29,31 @@ test('saved schedule restores around differently capitalized workout names on a 
  saved=await readDb(page);expect(saved.settings.workoutCycle[0]).toBe('Push A restored 2');
  expect(Object.keys(saved.templates)).toHaveLength(Object.keys(db.templates).length+1);
 });
+
+test('removing other rotation slots preserves the starting workout',async({page})=>{
+ const db=makeDb();
+ Object.assign(db.settings,{
+  startDate:'2026-11-02',schedule:[1,2],cycleOffset:2,
+  workoutCycle:['Push A',null,'Pull A','Legs A'],
+ });
+ await seed(page,db);
+ await openTab(page,'Split');
+ const editor=card(page,'Split editor');
+ const start=editor.getByLabel('Starting rotation slot');
+ const remove=index=>editor.getByRole('button',{name:'Remove rotation slot '+index,exact:true}).click();
+ await remove(4);
+ await expect(start).toHaveValue('2');
+ await remove(2);
+ await expect(start).toHaveValue('1');
+ await editor.getByRole('button',{name:'Apply split',exact:true}).click();
+ await openTab(page,'Train');
+ await page.getByLabel('Workout date').fill('2026-11-02');
+ await expect(page.getByRole('button',{name:'Start Pull A',exact:true})).toBeVisible();
+ await page.reload();
+ await openTab(page,'Split');
+ await expect(start).toHaveValue('1');
+ await remove(2);
+ await expect(start).toHaveValue('0');
+ await remove(1);
+ await expect(start).toHaveValue('0');
+});
