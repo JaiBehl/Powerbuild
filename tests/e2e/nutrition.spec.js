@@ -58,3 +58,32 @@ test('negative known maintenance cannot make a dated profile backup invalid',asy
  await maintenance.fill('2500');
  await expect.poll(async()=>(await readDb(page)).calories.find(day=>day.date===date).plan.calorieSettings.customMaintenance).toBe(2500);
 });
+
+test('food calculations that overflow leave the library and dated log intact',async({page})=>{
+ const {validateProfileDb}=await import('../../src/backupSafety.js');
+ await seed(page);
+ await openTab(page,'Calorie tracker');
+ const log=card(page,'Food & meal log');
+ const name=log.getByLabel('Food / meal name',{exact:true});
+ const calories=log.getByLabel('Calories (kcal) per serving',{exact:true});
+ const fat=log.getByLabel('Fat (g) per serving',{exact:true});
+ const add=log.getByRole('button',{name:'Add food to daily totals'});
+ const save=log.getByRole('button',{name:'Save to Saved Foods'});
+ await name.fill('Synthetic meal');
+ await fat.fill('1e308');
+ await save.click();
+ await expect(log.getByRole('alert')).toContainText('Food nutrition is too large');
+ expect((await readDb(page)).savedFoods).toEqual([]);
+ await fat.fill('');
+ await calories.fill('1e308');
+ await log.getByLabel('Servings',{exact:true}).fill('2');
+ await add.click();
+ await expect(log.getByRole('alert')).toContainText('Food nutrition is too large');
+ expect((await readDb(page)).calories).toEqual([]);
+ await calories.fill('160');
+ await add.click();
+ await expect(log.getByRole('alert')).toHaveCount(0);
+ const saved=await readDb(page);
+ expect(saved.calories[0].items[0]).toMatchObject({name:'Synthetic meal',calories:320,perServing:{calories:160}});
+ expect(()=>validateProfileDb(saved)).not.toThrow();
+});

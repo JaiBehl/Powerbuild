@@ -13,3 +13,9 @@ test('population estimator rejects failed and high-rep sets',()=>{assert.equal(e
 test('history merge preserves existing same-day data and repeats safely',()=>{const db={settings:{keep:true},sessions:[],weights:[],calories:[]};const data={format:'powerbuild-historical-import-v1',metadata:{importId:'synthetic'},sessions:[{id:'s',date:'2026-01-01',notes:'Example',exercises:[{id:'ex',name:'Bench',sets:[]}]}],weights:[{id:'w',date:'2026-01-01',weight:180}]};validateHistoricalImport(data);const a=mergeHistoricalImport(db,data).db;assert.deepEqual(mergeHistoricalImport(a,data).db,a);assert.equal(a.settings,db.settings);assert.equal(db.sessions.length,0);});
 
 test('completed singles use actual load rather than an inflated estimate',()=>{assert.equal(e1rm(225,1),225);assert.equal(e1rm(315,1),315);assert.equal(e1rm(225,1.5),null);assert.equal(e1rm(Infinity,5),null);});
+
+test('calculated food nutrition must fit in a finite number before saving',()=>{
+ assert.throws(()=>savedFoodFrom({name:'Synthetic food',fat:1e308}),/Food nutrition is too large/);
+ assert.throws(()=>makeLoggedFood({name:'Synthetic food',calories:1e308},2),/Food nutrition is too large/);
+ assert.equal(makeLoggedFood({name:'Synthetic food',calories:1e308},0.5).calories,5e307);
+});
