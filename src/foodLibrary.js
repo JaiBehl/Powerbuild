@@ -8,7 +8,12 @@ export const asNumber=(value)=>Math.max(0,Number(value)||0);
 export const formatAmount=(value)=>Number(value||0).toLocaleString('en-US',{maximumFractionDigits:2});
 export const normalizeMeal=(meal)=>MEALS.includes(meal)?meal:'Other';
 
-const round=(n)=>Math.round((n+Number.EPSILON)*100)/100;
+function round(n){
+  if(!Number.isFinite(n))throw Error('Food nutrition is too large. Enter a smaller amount.');
+  // At this magnitude there is no fractional precision left to round.
+  if(n>=Number.MAX_SAFE_INTEGER)return n;
+  return Math.round((n+Number.EPSILON)*100)/100;
+}
 const makeId=()=>globalThis.crypto?.randomUUID?.()||'food-'+Date.now()+'-'+Math.random().toString(36).slice(2);
 
 export function parseServings(value){
