@@ -96,8 +96,7 @@ test('an unreadable legacy food cannot take over another entry’s draft',async(
  await openTab(page,'Calorie tracker');
  await page.getByLabel('Calculator date',{exact:true}).fill(DAY);
  const log=card(page,'Food & meal log');
- const previous=log.locator('.food-item').filter({has:log.getByRole('button',{name:'Edit Synthetic lunch',exact:true})});
- await previous.getByRole('button',{name:'Edit Synthetic lunch',exact:true}).click();
+ await log.getByRole('button',{name:'Edit Synthetic lunch',exact:true}).click();
  await log.getByLabel('Name',{exact:true}).fill('Updated lunch');
  await log.getByRole('button',{name:'Edit food entry',exact:true}).click();
  await expect(log.getByRole('alert')).toContainText('Enter calories or macronutrients for this food');
