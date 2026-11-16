@@ -47,10 +47,10 @@ export default function FoodLog({date,setDate,items=[],updateDayRecord,entry,set
   };
 
   const editFood=(food)=>{
-    setEditingId(food.id);
     try{
       const portion=portionOfLoggedFood(food);
       setEditDraft({...portion,servings:String(food.servings??'1')});
+      setEditingId(food.id);
       setError('');
       setMessage('');
     }catch(e){setError(e.message);}
