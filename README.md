@@ -12,10 +12,10 @@ This README is the product manual and the handoff for a fresh AI development con
 | Site | [powerbuild-flexible-goals.vercel.app](https://powerbuild-flexible-goals.vercel.app) |
 | Hosting | Existing Vercel project `powerbuild-flexible-goals`, team/dashboard slug `power-build` |
 | Backend | Supabase project `zgbldcmahkokmkfqeljh`; Auth and the account-snapshot table/RPC described below |
-| Source reviewed through | `035e969` plus the food calculation validation fix in this release |
-| Release work | Food entries reject non-finite results from calorie estimation or serving multiplication before saving. |
-| Date | November 15, 2026, America/Los_Angeles |
-| Validation | The [previous main gate](https://github.com/JaiBehl/Powerbuild/actions/runs/43583464371) passed regression and production smoke. The food calculation fix passed 152 local unit/integration tests and the production build. GitHub Actions runs the browser gate because the local environment could not start the Playwright server. |
+| Source reviewed through | `320eb0b` plus the food editor fix in this release |
+| Release work | The food editor keeps an open draft attached to its original entry if another entry cannot be loaded. |
+| Date | November 16, 2026, America/Los_Angeles |
+| Validation | The [previous main gate](https://github.com/JaiBehl/Powerbuild/actions/runs/43702085234) passed regression and production smoke. The food editor fix passed 152 local unit/integration tests and the production build. GitHub Actions runs the browser gate because the local environment could not start the Playwright server. |
 
 The source baseline identifies code actually reviewed and tested. Documentation-only or merge commits may be newer. Fetch current `main`, inspect commits since that baseline, and check open PRs before changing anything. Current source governs implemented behavior; the latest explicit user instruction governs desired behavior.
 
@@ -143,7 +143,7 @@ Exact rep/effort prescriptions live in `src/data.js`; profiles can override temp
 - Calculated or manual calories; calculated bodyweight-based macros or independently entered protein/carbs/fat. A zero manual calorie target remains zero. Macro calories may differ from the calorie goal and the UI explains the difference.
 - Individual foods: name, Breakfast/Lunch/Dinner/Snacks/Other, per-serving calories/protein/carbs/fat and serving amount. Blank calories compute from macros; explicit calories take precedence. Missing names, all-zero nutrition and negative/non-finite nutrients are rejected.
 - Serving buttons ¼, ½, 1, 2, 3; custom positive decimal up to 100. Type `0.5`, not `1/2`, in the numeric field. Nutrient multiplication rounds to two decimals. If estimated calories or scaled nutrients overflow, the form shows an error and leaves the dated log and saved foods intact.
-- Add/edit/delete meals, meal grouping and consumed/remaining totals. Older unnamed total-only entries remain supported.
+- Add/edit/delete meals, meal grouping and consumed/remaining totals. Older unnamed total-only entries remain supported. If an entry has no usable nutrition to edit, the editor shows an error and preserves any open draft on its original row.
 - Save a new portion or bookmark a logged food. Saving a template does not log consumption. Search/edit/delete saved foods, choose meal/servings, then add to the selected date.
 - Saved templates hold per-serving values. Logged entries retain independent `perServing` snapshots and consumed totals, optionally linked by `sourceSavedFoodId`; template edits/deletes cannot change past logs.
 - Foods and cardio coexist in the same date record without overwriting each other. Libraries and logs are profile-scoped and included in backup/sync.
@@ -362,7 +362,7 @@ Explicit correction updates records owned by the same import ID. Optional remova
 | `src/CalorieTracker.jsx`, `src/nutrition.js`, `src/maintenance.js` | Nutrition cards, numeric edit validation, daily snapshots/defaults, persistent automatic weight source/provenance, weekly goal pace, RMR/net-activity models and maintenance override |
 | `src/effortTarget.js` | Converts legacy numeric effort prescriptions to RPE for display and reuse, preserving sentence punctuation |
 | `src/strengthEstimation.js` | Shared exercise-specific population tables, RPE/RIR adjustment, prediction gates and achievement distinction |
-| `src/FoodLog.jsx`, `src/SavedFoods.jsx`, `src/ServingPicker.jsx`, `src/foodLibrary.js` | Foods, reusable templates, portions and validation of inputs and calculated totals |
+| `src/FoodLog.jsx`, `src/SavedFoods.jsx`, `src/ServingPicker.jsx`, `src/foodLibrary.js` | Foods, reusable templates, portions, guarded draft loading and validation of calculated totals |
 | `src/CardioLog.jsx` | Dated custom cardio CRUD and finite nonnegative edit guards |
 | `src/SettingsTab.jsx` | Defaults, units, split, optional goals and backup/recovery controls |
 | `src/ProfileSwitcher.jsx`, `src/profiles.js` | Profile UI, keys, loading/saving and reverse-order all-profile write rollback under quota |

@@ -87,3 +87,24 @@ test('food calculations that overflow leave the library and dated log intact',as
  expect(saved.calories[0].items[0]).toMatchObject({name:'Synthetic meal',calories:320,perServing:{calories:160}});
  expect(()=>validateProfileDb(saved)).not.toThrow();
 });
+
+test('an unreadable legacy food cannot take over another entry’s draft',async({page})=>{
+ const {makeDb,DAY}=await import('../fixtures.js');
+ const valid={id:'valid-food',name:'Synthetic lunch',meal:'Lunch',calories:150};
+ const legacy={id:'legacy-zero',calories:0};
+ await seed(page,makeDb({calories:[{date:DAY,items:[valid,legacy]}]}));
+ await openTab(page,'Calorie tracker');
+ await page.getByLabel('Calculator date',{exact:true}).fill(DAY);
+ const log=card(page,'Food & meal log');
+ const previous=log.locator('.food-item').filter({has:log.getByRole('button',{name:'Edit Synthetic lunch',exact:true})});
+ await previous.getByRole('button',{name:'Edit Synthetic lunch',exact:true}).click();
+ await log.getByLabel('Name',{exact:true}).fill('Updated lunch');
+ await log.getByRole('button',{name:'Edit food entry',exact:true}).click();
+ await expect(log.getByRole('alert')).toContainText('Enter calories or macronutrients for this food');
+ await expect(log.getByRole('button',{name:'Edit food entry',exact:true})).toBeVisible();
+ await expect(log.getByLabel('Name',{exact:true})).toHaveValue('Updated lunch');
+ await log.getByRole('button',{name:'Save changes',exact:true}).click();
+ const items=(await readDb(page)).calories.find(day=>day.date===DAY).items;
+ expect(items[0]).toMatchObject({id:valid.id,name:'Updated lunch',calories:150});
+ expect(items[1]).toEqual(legacy);
+});
