@@ -34,7 +34,14 @@ export default function TrainTab({db,patch,date,setDate,scheduled,session,update
     updateSession(s=>({...s,exercises:s.exercises.map((e,i)=>i!==ei?e:{...e,sets:e.sets.map((v,j)=>j!==si?v:{...v,[key]:value})})}));
   };
   const changeExercise=(fn,options)=>{try{const next=normalizeProgram(fn(db),{newEntryDate:new Date().toISOString()});if(patch(()=>next,options)===false)return false;setExerciseError('');return true;}catch(e){setExerciseError(e.message);}};
-  const addExercise=()=>{if(!newExerciseName.trim()||!session)return;changeExercise(value=>addSessionExercise(value,session.id,newExerciseName,updateFuture,db.exerciseLibrary?.find(e=>e.name.toLowerCase()===newExerciseName.trim().toLowerCase())));setNewExerciseName('');};
+  const addExercise=()=>{
+    const name=newExerciseName.trim();
+    if(!name||!session)return;
+    const definition=db.exerciseLibrary?.find(e=>e.name.toLowerCase()===name.toLowerCase());
+    if(changeExercise(value=>addSessionExercise(value,session.id,name,updateFuture,definition))){
+      setNewExerciseName('');
+    }
+  };
   const editExercise=(ei)=>{
     const ex=session.exercises[ei];
     if(editingExerciseId===ex.id){setEditingExerciseId(null);setExerciseDraft(null);return;}

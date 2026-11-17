@@ -107,3 +107,28 @@ test('legacy RIR prescriptions display as RPE in Train and both library editors'
  expect(stored.target).toBe(target);
  expect(stored.sets[0].rpe).toBe(8);
 });
+
+test('failed future-template additions keep the draft available for a session-only retry',async({page})=>{
+ const session={...makeSession(),workoutId:'deleted-template'};
+ await seed(page,makeDb({sessions:[session]}));
+ await page.getByLabel('Workout date').fill(DAY);
+ const applyFuture=page.getByLabel('Apply exercise changes to future sessions',{exact:true});
+ const panel=card(page,'Add exercise');
+ const input=panel.getByLabel('New exercise name');
+ const add=panel.getByRole('button',{name:'Add exercise',exact:true});
+ const name='Synthetic retry exercise';
+ const before=await readDb(page);
+ await applyFuture.check();
+ await input.fill(name);
+ await add.click();
+ await expect(page.getByRole('alert')).toContainText('no longer linked to a saved template');
+ await expect(input).toHaveValue(name);
+ expect((await readDb(page)).sessions).toEqual(before.sessions);
+ await applyFuture.uncheck();
+ await add.click();
+ await expect(input).toHaveValue('');
+ await expect(card(page,name)).toBeVisible();
+ const after=await readDb(page);
+ expect(after.templates).toEqual(before.templates);
+ expect(after.sessions[0].exercises.at(-1)).toMatchObject({name,templateId:null});
+});

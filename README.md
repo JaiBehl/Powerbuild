@@ -12,10 +12,10 @@ This README is the product manual and the handoff for a fresh AI development con
 | Site | [powerbuild-flexible-goals.vercel.app](https://powerbuild-flexible-goals.vercel.app) |
 | Hosting | Existing Vercel project `powerbuild-flexible-goals`, team/dashboard slug `power-build` |
 | Backend | Supabase project `zgbldcmahkokmkfqeljh`; Auth and the account-snapshot table/RPC described below |
-| Source reviewed through | `320eb0b` plus the food editor fix in this release |
-| Release work | The food editor keeps an open draft attached to its original entry if another entry cannot be loaded. |
-| Date | November 16, 2026, America/Los_Angeles |
-| Validation | The [previous main gate](https://github.com/JaiBehl/Powerbuild/actions/runs/43702085234) passed regression and production smoke. The food editor fix passed 152 local unit/integration tests and the production build. GitHub Actions runs the browser gate because the local environment could not start the Playwright server. |
+| Source reviewed through | `f361f5c` plus the failed exercise-add draft fix in this release |
+| Release work | Train retains the typed exercise name if adding it fails. |
+| Date | November 17, 2026, America/Los_Angeles |
+| Validation | The [previous main gate](https://github.com/JaiBehl/Powerbuild/actions/runs/43851214546) passed regression and production smoke. The exercise-add fix passed 152 local unit/integration tests and the production build. GitHub Actions runs the browser gate because the local environment could not start the Playwright server. |
 
 The source baseline identifies code actually reviewed and tested. Documentation-only or merge commits may be newer. Fetch current `main`, inspect commits since that baseline, and check open PRs before changing anything. Current source governs implemented behavior; the latest explicit user instruction governs desired behavior.
 
@@ -79,7 +79,7 @@ Source access is still required for edits. Current workouts, foods, goals and pr
 - Date picker, previous/next day and Today; scheduled-workout/rest label. Date is shared with Progress and nutrition.
 - Start the scheduled workout or any active saved workout manually, including on rest days. The model is one session per date.
 - Each exercise logs weight, reps, optional RPE, done flag and Top/Backoff tag; add/remove sets. Negative and non-finite set edits are ignored so backups remain valid. Zero and blank entries still work. Previously saved negative values can be corrected in Train; they are not rewritten automatically. Overview shows completed/total sets, completed volume and finished status.
-- Add any exercise; edit name, rep range or effort; remove an exercise. By default these affect only this session. The explicit future-template checkbox also updates the matching template. Extras added to this session only stay unlinked even when their name matches a template exercise. Legacy name matching also refuses a template row already linked to another exercise in the session. Ambiguous older links are rejected instead of changing the wrong exercise.
+- Add any exercise; edit name, rep range or effort; remove an exercise. If adding fails, the name remains available for retry. By default these affect only this session. The explicit future-template checkbox also updates the matching template. Extras added to this session only stay unlinked even when their name matches a template exercise. Legacy name matching also refuses a template row already linked to another exercise in the session. Ambiguous older links are rejected instead of changing the wrong exercise.
 - New unsaved exercises start at three sets, 8–12 reps, RPE 8–9; choosing a saved exercise uses its defaults. Individual set-count changes affect the session, not the future template.
 - **Reorder exercises mid-session** using the small up/down arrows in each exercise header. These work on expanded or minimized cards and save automatically. The top/bottom movement button is disabled. Completed sets and pending edits remain attached to the same exercise. The existing optional future-template checkbox extends valid linked order changes to the saved workout template, without rewriting past logs.
 - Effort targets display as RPE across Train, the workout/exercise editors and libraries, and strength records. Older numeric RIR targets and ranges are translated on display (1–2 RIR becomes RPE 8–9) and when used in new prescriptions. A prefix range at the end of a sentence, such as “Backoffs RIR 2–3.”, displays as “Backoffs RPE 7–8.” Existing set RPE values, arbitrary notes, and untouched workout snapshots retain their original data.
@@ -347,7 +347,7 @@ Explicit correction updates records owned by the same import ID. Optional remova
 | `index.html`, `src/main.jsx` | Entry; app state, normalization/migration, profiles, dates, exports/imports, undo and persistence orchestration |
 | `src/data.js`, `src/dates.js` | Default program/settings, session factory, estimator compatibility export, strict dates and calendar arithmetic |
 | `src/ScheduleEditor.jsx`, `src/scheduleLibrary.js` | Rotation/fixed-day editor with starting-slot preservation on removal, program snapshot library, restoration and application log; case-insensitive collision-safe snapshot restore |
-| `src/TrainTab.jsx`, `src/workoutOperations.js` | Workout UI, backup-compatible set entry, explicit template edits, stable identity matching, unlinked session extras and preserving blank loads on bodyweight prescription edits |
+| `src/TrainTab.jsx`, `src/workoutOperations.js` | Workout UI, failed-add draft retention, backup-compatible set entry, explicit template edits, stable identity matching, unlinked session extras and preserving blank loads on bodyweight prescription edits |
 | `src/ExerciseLibrary.jsx`, `src/exerciseLibrary.js`, `src/libraryCore.js` | Exercise catalog/editor, migration, linked template updates, archive, revisions and shared library helpers |
 | `src/libraryDeletion.js` | Scoped permanent library deletion, typed confirmation and split reference cleanup |
 | `src/WorkoutLibrary.jsx`, `src/programLibrary.js` | Reusable workout library/editor, stable identity, rename/duplicate/archive and version restore |
