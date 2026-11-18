@@ -49,3 +49,16 @@ test('bodyweight and assisted exercises cannot predict maxes from added load alo
   for(const name of ['Weighted pull-up','Assisted chin-up','Dips','Pull-up or lat pulldown'])assert.equal(e1rm(25,5,8,name),null);
   assert.equal(e1rm(25,1,10,'Weighted pull-up'),25); // achieved added load only
 });
+
+test('legacy inverted-row sets retain recorded loads without estimating total resistance',()=>{
+ const date='2026-10-30';
+ const sessions=[{date,exercises:[{name:'Inverted row',sets:[{done:true,weight:25,reps:5,rpe:9}]}]}];
+ const db=makeDb({sessions,weights:[{date,weight:180}]});
+ assert.equal(estimateStrength(25,5,9,'Inverted row'),null);
+ assert.deepEqual(buildStrengthHistory(sessions),{});
+ const {all}=personalRecords(db,'Inverted row',date);
+ assert.equal(all.repPRs[5].value,25);
+ assert.equal(all.estimated,null);
+ assert.equal(all.relative.supported,false);
+ assert.equal(all.relative.count,0);
+});

@@ -9,7 +9,7 @@ const tables={
   legPress:[[1,100],[7.04,95],[8.69,90],[10.69,85]],
 };
 const numeric=value=>typeof value==='number'||(typeof value==='string'&&value.trim()!=='')?Number(value):NaN;
-export const usesBodyweightResistance=(exercise='')=>/pull[ -]?up|chin[ -]?up|\bdips?\b|push[ -]?up|hanging|plank|assisted|body[ -]?weight/i.test(exercise);
+export const usesBodyweightResistance=(exercise='')=>/pull[ -]?up|chin[ -]?up|\bdips?\b|push[ -]?up|inverted[ -]row|hanging|plank|assisted|body[ -]?weight/i.test(exercise);
 export function strengthModel(exercise=''){
   const name=String(exercise).trim().toLowerCase().replace(/\s+/g,' ');
   if(['bench','bench press','barbell bench press','touch-and-go bench press'].includes(name))return 'bench';
