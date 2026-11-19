@@ -9,6 +9,12 @@ export function validateProfileDb(value){
  if(value.settings.weightGoalEnabled!==undefined&&typeof value.settings.weightGoalEnabled!=='boolean')throw Error('Bodyweight goal setting must be true or false.');
  array(value.sessions,'Workouts');array(value.weights,'Weigh-ins');
  if(value.settings.schedule!==undefined&&(!Array.isArray(value.settings.schedule)||value.settings.schedule.some(n=>!Number.isInteger(n)||n<1||n>7)))throw Error('Training weekdays are invalid.');
+ const sessionIds=new Set();
+ for(const session of value.sessions){
+  if(session?.id===undefined||session.id===null)continue;
+  if(sessionIds.has(session.id))throw Error('Workout identifiers must be unique.');
+  sessionIds.add(session.id);
+ }
  for(const s of value.sessions){if(!s||!isISODate(s.date))throw Error('A workout date is invalid.');array(s.exercises,'Workout exercises');for(const e of s.exercises){if(!e||typeof e.name!=='string')throw Error('Exercise names are invalid.');array(e.sets,'Exercise sets');for(const v of e.sets){if(!v||typeof v!=='object')throw Error('A set is invalid.');number(v.weight,'Set weight');number(v.reps,'Set reps');number(v.rpe,'Set RPE');}}}
  for(const w of value.weights)if(!w||!isISODate(w.date)||!Number.isFinite(Number(w.weight))||Number(w.weight)<=0)throw Error('A weigh-in is invalid.');
  for(const key of ['calories','savedFoods','strengthGoals'])if(value[key]!==undefined)array(value[key],key);

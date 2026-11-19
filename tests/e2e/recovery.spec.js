@@ -82,3 +82,21 @@ test('quota failure during all-profile import preserves both original profiles o
  await page.reload();
  expect((await readDb(page)).sessions[0].notes).toBe(session.notes);
 });
+
+test('duplicate workout IDs cannot replace the current profile through backup import',async({page})=>{
+ await seed(page,makeDb({sessions:[makeSession()]}));
+ const before=await readDb(page);
+ const first=makeSession('Push A','2026-10-28');
+ const second={...structuredClone(first),date:'2026-10-29'};
+ const bad=makeDb({sessions:[first,second]});
+ await openTab(page,'Settings & backup');
+ const backups=card(page,'Backups & exports');
+ await backups.locator('input[type=file]').setInputFiles({
+  name:'synthetic-duplicate-workouts.json',mimeType:'application/json',
+  buffer:Buffer.from(JSON.stringify(bad)),
+ });
+ await expect(backups).toContainText('Workout identifiers must be unique');
+ expect(await readDb(page)).toEqual(before);
+ await page.reload();
+ expect(await readDb(page)).toEqual(before);
+});

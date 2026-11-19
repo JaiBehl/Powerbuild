@@ -26,3 +26,12 @@ test('workspace rollback releases later writes before restoring an earlier large
  assert.deepEqual(values,before);
  assert.deepEqual(writes,[profileDataKey('a'),profileDataKey('b'),profileDataKey('b'),profileDataKey('a')]);
 });
+
+test('backups reject duplicate workout identities while accepting older sessions without IDs',()=>{
+ const first=makeSession('Push A','2026-10-29');
+ const second={...structuredClone(first),date:'2026-10-30'};
+ assert.throws(()=>validateProfileDb(makeDb({sessions:[first,second]})),/Workout identifiers must be unique/);
+ delete first.id;
+ delete second.id;
+ assert.doesNotThrow(()=>validateProfileDb(makeDb({sessions:[first,second]})));
+});
