@@ -12,10 +12,10 @@ This README is the product manual and the handoff for a fresh AI development con
 | Site | [powerbuild-flexible-goals.vercel.app](https://powerbuild-flexible-goals.vercel.app) |
 | Hosting | Existing Vercel project `powerbuild-flexible-goals`, team/dashboard slug `power-build` |
 | Backend | Supabase project `zgbldcmahkokmkfqeljh`; Auth and the account-snapshot table/RPC described below |
-| Source reviewed through | `9c78d31` plus the inverted-row strength calculation fix in this release |
-| Release work | Inverted rows are excluded from estimated 1RM and relative strength calculations, including legacy logs without a resistance mode. |
-| Date | November 18, 2026, America/Los_Angeles |
-| Validation | The [previous main gate](https://github.com/JaiBehl/Powerbuild/actions/runs/44061373223) passed regression and production smoke. The inverted-row fix passed 153 local unit/integration tests and the production build. GitHub Actions runs the browser gate because the local environment could not start the Playwright server. |
+| Source reviewed through | `d8e1c2a` plus the duplicate workout identity validation fix in this release |
+| Release work | Backup validation rejects duplicate workout identities before replacing profile data. |
+| Date | November 19, 2026, America/Los_Angeles |
+| Validation | The [previous main gate](https://github.com/JaiBehl/Powerbuild/actions/runs/44281491325) passed regression and production smoke. The backup identity fix passed 154 local unit/integration tests and the production build. GitHub Actions runs the browser gate because the local environment could not start the Playwright server. |
 
 The source baseline identifies code actually reviewed and tested. Documentation-only or merge commits may be newer. Fetch current `main`, inspect commits since that baseline, and check open PRs before changing anything. Current source governs implemented behavior; the latest explicit user instruction governs desired behavior.
 
@@ -153,7 +153,7 @@ Exact rep/effort prescriptions live in `src/data.js`; profiles can override temp
 
 - Sidebar profile create/switch/rename; names are nonblank and case-insensitively unique. Only inactive profiles can be deleted, and the last profile cannot be deleted. New profiles have separate empty logs/goals/saved programs and seed their own workout/exercise libraries from cloned templates.
 - Profiles are local data partitions, not separate password-protected accounts. When signed in, all profiles sync to that account. Sign-out keeps local caches.
-- Export profile backup is the active DB as `powerbuild-<name>-backup.json`; import validates it and replaces only that profile after confirmation/checkpoint. CSV exports every workout set in the selected unit, not food/weight logs.
+- Export profile backup is the active DB as `powerbuild-<name>-backup.json`; import validates it and replaces only that profile after confirmation/checkpoint. Duplicate workout IDs are rejected because edits use those IDs to identify a workout. Older backups with omitted IDs retain their existing compatibility. CSV exports every workout set in the selected unit, not food/weight logs.
 - Structural deletions and explicit replacements/reset/import create a recovery copy first. If a recovery copy cannot be saved, replacement is blocked. Ordinary persistence failures display an error while in-memory edits remain exportable.
 - Undo last change is available after a checkpointed change while no later data change has intervened. Later changes invalidate the immediate undo rather than silently discarding newer work; saved recovery versions remain in Settings.
 - Recovery copies can be saved manually, downloaded and restored. All-profile export/import round-trips the profile list and databases; it also accepts account-copy JSON downloaded from Cloud Sync. Validate every listed profile and checkpoint the current workspace before restore.
@@ -368,7 +368,7 @@ Explicit correction updates records owned by the same import ID. Optional remova
 | `src/ProfileSwitcher.jsx`, `src/profiles.js` | Profile UI, keys, loading/saving and reverse-order all-profile write rollback under quota |
 | `src/cloudSync.jsx`, `src/syncMerge.js`, `src/accountSyncStorage.js` | Auth, revision syncing, three-way merge, retry, IndexedDB account recovery and snapshot validation |
 | `src/historicalImport.js`, `src/HistoricalImportPanel.jsx` | Historical validation/normalization, preview, merge/correction/removal |
-| `src/recovery.js`, `src/RecoveryPanel.jsx`, `src/backupSafety.js` | Bounded snapshots, recovery UI, deletion detection and backup validation |
+| `src/recovery.js`, `src/RecoveryPanel.jsx`, `src/backupSafety.js` | Bounded snapshots, recovery UI, deletion detection and backup validation including duplicate workout IDs |
 | `src/CalorieSection.jsx`, `src/panelScope.js`, `src/panelState.js` | Shared mounted collapsible cards and device preference persistence |
 | `src/units.js` | Canonical lb and macro-rate conversions |
 | `src/style.css`, `src/profile.css`, `src/cardio.css`, `src/ui-polish.css` | Active responsive design and refinements |
